@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Globe, CheckCircle2, Layers } from 'lucide-react';
+import { Building2, Globe, CheckCircle2, Layers, Edit, Plus, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Partner } from '../types/partner';
 
@@ -95,12 +96,52 @@ export function transformWideTables(html: string): string {
     }
 }
 
-export const ResponsiveSectionContent = ({ content }: { content: string }) => {
+export const ResponsiveSectionContent = ({
+    id,
+    title,
+    content,
+    description,
+    level = 1,
+    onEdit
+}: {
+    id?: string;
+    title?: string;
+    content: string;
+    description?: string;
+    level?: number;
+    onEdit?: () => void;
+}) => {
     const [processed, setProcessed] = useState(content);
+
     useEffect(() => {
         setProcessed(transformWideTables(content));
     }, [content]);
-    return <div dangerouslySetInnerHTML={{ __html: processed }} />;
+
+    return (
+        <div id={id} className="group relative">
+            <div className="flex items-center justify-between mb-2">
+                <div>
+                    {title && (
+                        <h2 className={`${level === 1 ? 'text-2xl font-bold' : 'text-xl font-semibold'} text-foreground/90`}>
+                            {title}
+                        </h2>
+                    )}
+                    {description && <p className="text-xs text-muted-foreground mt-1 max-w-2xl">{description}</p>}
+                </div>
+                {onEdit && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onEdit}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-primary/60 hover:text-primary hover:bg-primary/10"
+                    >
+                        <Edit className="w-4 h-4" />
+                    </Button>
+                )}
+            </div>
+            <div className={`prose prose-slate max-w-none text-muted-foreground/90 leading-relaxed ${level > 1 ? 'pl-4 border-l border-border/40' : ''}`} dangerouslySetInnerHTML={{ __html: processed }} />
+        </div>
+    );
 };
 
 export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency, overrideWP, onlyOverview }: { workPackages: any[], limitToIndex?: number, currency: string, overrideWP?: any, onlyOverview?: boolean }) => {
@@ -221,7 +262,18 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
     );
 };
 
-export const DynamicBudgetSection = ({ budget, currency }: { budget: any[], currency: string }) => {
+export const DynamicBudgetSection = ({
+    budget,
+    currency,
+    limit,
+    onRebalance
+}: {
+    budget: any[],
+    currency: string,
+    limit?: number,
+    onRebalance?: (limit: number) => void
+}) => {
+    if (!budget || budget.length === 0) return null;
     if (!budget || budget.length === 0) return null;
 
     const formatCurrency = (amount: number) => {
@@ -302,9 +354,31 @@ export const DynamicRiskSection = ({ risks }: { risks: any[] }) => {
     );
 };
 
-export const DynamicPartnerSection = ({ partners }: { partners: Partner[] }) => {
+export const DynamicPartnerSection = ({
+    partners,
+    onAddPartner
+}: {
+    partners: Partner[];
+    onAddPartner?: () => void;
+}) => {
     if (!partners || partners.length === 0) {
-        return <div className="p-4 text-center text-muted-foreground italic border border-dashed rounded-lg">No partners added yet. Please add partners in the 'Structured Data' tab to populate this section.</div>;
+        return (
+            <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-muted/20 flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Users className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                    <p className="text-muted-foreground font-medium italic">No partners added to this consortium yet.</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Add partners to build your project's institutional framework.</p>
+                </div>
+                {onAddPartner && (
+                    <Button onClick={onAddPartner} size="sm" className="gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add Partner
+                    </Button>
+                )}
+            </div>
+        );
     }
     return (
         <div className="space-y-6">

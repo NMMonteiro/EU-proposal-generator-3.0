@@ -75,6 +75,7 @@ export function ViewerTabs({
                 <div className="max-w-5xl mx-auto space-y-8">
                     <DynamicWorkPackageSection
                         workPackages={proposal.workPackages || []}
+                        currency={proposal.settings?.currency || 'EUR'}
                     />
                 </div>
             </TabsContent>

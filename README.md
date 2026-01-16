@@ -2,11 +2,14 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# EU Projects Generator V4.0 🚀
 
-This contains everything you need to run your app locally.
+**The next generation of AI-powered EU Funding Proposal generation.**
 
-View your app in AI Studio: https://ai.studio/apps/drive/1DwSC7FZ3UGJ5HBkfssd4c6ej3IY-6l5K
+V4.0 introduces a modular backend architecture, optimized relational hydration, and a high-performance React UI refactor.
+
+- **Repository**: [https://github.com/NMMonteiro/EU-Projects-Generator-V4.0](https://github.com/NMMonteiro/EU-Projects-Generator-V4.0)
+- **Status**: Production Ready / Optimized
 
 ## Run Locally
 
