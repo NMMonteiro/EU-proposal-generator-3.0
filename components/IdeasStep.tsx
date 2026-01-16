@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, CheckCircle2, AlertTriangle, XCircle, Lightbulb } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertTriangle, XCircle, Lightbulb, BookOpen, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +90,31 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Knowledge Context Notification (RAG indicator) */}
+      {analysisResult.knowledgeContext && analysisResult.knowledgeContext.length > 0 && (
+        <Card className="bg-[#1a2b4b] border-[#4472C4]/30 shadow-lg animate-in fade-in slide-in-from-top-4 duration-500">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="bg-[#4472C4]/20 p-2.5 rounded-full">
+              <Library className="h-5 w-5 text-[#4472C4]" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-[#4472C4]">Expert Intelligence Foundation</p>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {analysisResult.knowledgeContext.map((source, i) => (
+                  <Badge key={i} variant="outline" className="text-[10px] bg-white/5 border-white/10 text-white/70">
+                    <BookOpen className="h-3 w-3 mr-1" />
+                    {source}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div className="text-[10px] px-2 py-1 rounded bg-[#4472C4]/10 text-[#4472C4] font-bold uppercase tracking-wider">
+              RAG Active
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary Card */}
       <Card className="bg-[#323232] border-white/10">
         <CardHeader>

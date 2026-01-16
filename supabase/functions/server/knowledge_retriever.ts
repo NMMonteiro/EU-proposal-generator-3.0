@@ -22,13 +22,11 @@ export class KnowledgeRetriever {
     /**
      * Retrieves relevant intelligence chunks based on provided keywords
      */
-    async getRelevantKnowledge(keywords: string[], limit: number = 5): Promise<string> {
+    async getRelevantKnowledge(keywords: string[], limit: number = 5): Promise<{ content: string; sources: string[] }> {
         try {
-            if (!keywords || keywords.length === 0) return '';
+            if (!keywords || keywords.length === 0) return { content: '', sources: [] };
 
             console.log(`[RAG] Searching knowledge for: ${keywords.join(', ')}`);
-
-            console.log(`🔍 [RAG] Fetching for keywords: ${keywords.join(', ')}`);
 
             // Loop through keywords to avoid complex OR strings that break PostgREST
             const results: any[] = [];
@@ -45,21 +43,25 @@ export class KnowledgeRetriever {
 
             if (results.length === 0) {
                 console.log('[RAG] No relevant chunks found in library.');
-                return '';
+                return { content: '', sources: [] };
             }
 
             // Deduplicate results by content
             const uniqueResults = Array.from(new Map(results.map(item => [item.content, item])).values());
             console.log(`[RAG] Found ${uniqueResults.length} unique intelligence chunks.`);
 
-            return uniqueResults.map(chunk => `
+            const content = uniqueResults.map(chunk => `
 --- EXPERT KNOWLEDGE: ${chunk.source_name} (${chunk.metadata?.type || 'Guideline'}) ---
 ${chunk.content}
 `).join('\n');
 
+            const sources = Array.from(new Set(uniqueResults.map(r => r.source_name)));
+
+            return { content, sources };
+
         } catch (e) {
             console.error('[RAG] Failed to retrieve knowledge:', e);
-            return '';
+            return { content: '', sources: [] };
         }
     }
 

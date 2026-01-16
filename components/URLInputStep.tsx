@@ -71,7 +71,11 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${publicAnonKey}`,
         },
-        body: JSON.stringify({ url: submitUrl, userPrompt: userPrompt.trim() || undefined }),
+        body: JSON.stringify({
+          url: submitUrl,
+          userPrompt: userPrompt.trim() || undefined,
+          fundingSchemeId: selectedSchemeId
+        }),
       });
 
       if (!response.ok) {

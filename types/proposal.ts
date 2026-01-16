@@ -18,6 +18,7 @@ export interface AnalysisResult {
   summary: string;
   constraints: Constraints;
   ideas: Idea[];
+  knowledgeContext?: string[];
 }
 
 export interface RelevanceAnalysis {
