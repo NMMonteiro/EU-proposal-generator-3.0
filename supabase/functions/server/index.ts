@@ -105,6 +105,14 @@ Deno.serve(async (req) => {
             }
         }
 
+        // --- 5. FUNDING SCHEMES ENRICHMENT ---
+        if (path.includes('/enrich-scheme') && req.method === 'POST') {
+            const { schemeId } = await req.json();
+            const { enrichFundingScheme } = await import('./funding_scheme_service.ts');
+            const result = await enrichFundingScheme(schemeId);
+            return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
         return new Response(JSON.stringify({ error: 'Route not found', path }), { status: 404, headers: corsHeaders });
 
     } catch (error: any) {

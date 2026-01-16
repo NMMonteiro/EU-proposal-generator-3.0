@@ -37,6 +37,7 @@ export interface FundingScheme {
     template_json: FundingSchemeTemplate;
     is_default: boolean; // If true, used as fallback template
     is_active: boolean; // If false, hidden from UI
+    expert_playbook?: any;
     created_at: string;
     updated_at: string;
 }

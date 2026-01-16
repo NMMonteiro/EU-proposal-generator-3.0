@@ -262,8 +262,22 @@ export function buildProposalPrompt(
     AI INSTRUCTION: ${s.aiPrompt || 'Write a technical narrative addressing this section.'}`;
   }).join('\n\n');
 
+  const expertPlaybook = fundingScheme?.expert_playbook;
+  const playbookInstructions = expertPlaybook ? `
+  ### CRITICAL SCHEME INTELLIGENCE (FROM EXPERT PLAYBOOK):
+  - CORE OBJECTIVES: ${expertPlaybook.core_objectives?.join(', ')}
+  - SCORING CRITERIA: ${expertPlaybook.scoring_criteria?.join(', ')}
+  - BEST PRACTICES: ${expertPlaybook.best_practices?.join(', ')}
+  - COMMON PITFALLS TO AVOID: ${expertPlaybook.common_pitfalls?.join(', ')}
+  - REQUIRED TERMINOLOGY: ${expertPlaybook.key_terminology?.join(', ')}
+  
+  MANDATORY: You MUST subtly weave this specific terminology and address these objectives throughout the proposal narrative to ensure maximum scoring.
+  ` : '';
+
   return `You are an elite European Grant Writing Consultant with a 100% success rate in Erasmus+ and Horizon Europe funding. 
 Your writing style is highly professional, technical, persuasive, and data-driven. 
+
+${playbookInstructions}
 
 MANDATORY INSTRUCTION: You MUST provide an EXTREMELY DETAILED and EXHAUSTIVE output for the following sections in this EXACT SEQUENCE:
 1. Relevance of the project: Deep context, policy alignment, and urgent need.

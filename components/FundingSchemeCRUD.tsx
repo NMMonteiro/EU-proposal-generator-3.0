@@ -15,7 +15,9 @@ import {
     Star,
     Eye,
     EyeOff,
-    Upload
+    Upload,
+    Sparkles,
+    Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +29,7 @@ export function FundingSchemeCRUD() {
     const [loading, setLoading] = useState(true);
     const [editingScheme, setEditingScheme] = useState<FundingScheme | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [enrichingId, setEnrichingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<FundingScheme>>({
         name: '',
         description: '',
@@ -236,6 +239,36 @@ export function FundingSchemeCRUD() {
         } catch (error: any) {
             console.error('Error toggling active:', error);
             toast.error(error.message || 'Failed to update active status');
+        }
+    };
+
+    const handleEnrich = async (schemeId: string) => {
+        try {
+            setEnrichingId(schemeId);
+            const { serverUrl, publicAnonKey } = await import('../utils/supabase/info');
+            const response = await fetch(`${serverUrl}/enrich-scheme`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${publicAnonKey}`,
+                },
+                body: JSON.stringify({ schemeId }),
+            });
+
+            if (!response.ok) throw new Error('Enrichment failed');
+
+            const result = await response.json();
+            if (result.success) {
+                toast.success('Scheme enriched with Global Library intelligence!');
+                loadSchemes();
+            } else {
+                toast.info(result.message || 'Enrichment completed with no updates.');
+            }
+        } catch (error: any) {
+            console.error('Error enriching scheme:', error);
+            toast.error(error.message || 'Failed to enrich funding scheme');
+        } finally {
+            setEnrichingId(null);
         }
     };
 
@@ -480,6 +513,18 @@ export function FundingSchemeCRUD() {
 
                                 {/* Actions */}
                                 <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleEnrich(scheme.id)}
+                                        disabled={enrichingId === scheme.id}
+                                        className={`p-2 rounded-lg transition ${scheme.expert_playbook ? 'bg-blue-50 text-blue-600' : 'hover:bg-muted text-muted-foreground'}`}
+                                        title={scheme.expert_playbook ? 'Re-enrich with AI' : 'Enrich with Global Library Knowledge'}
+                                    >
+                                        {enrichingId === scheme.id ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Sparkles className={`h-4 w-4 ${scheme.expert_playbook ? 'fill-blue-600' : ''}`} />
+                                        )}
+                                    </button>
                                     <button
                                         onClick={() => handleToggleDefault(scheme)}
                                         className="p-2 hover:bg-muted rounded-lg transition"
