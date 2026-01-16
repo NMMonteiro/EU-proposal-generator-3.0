@@ -17,7 +17,11 @@ import {
     EyeOff,
     Upload,
     Sparkles,
-    Loader2
+    Loader2,
+    ChevronDown,
+    ChevronUp,
+    Info,
+    Brain
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,6 +34,7 @@ export function FundingSchemeCRUD() {
     const [editingScheme, setEditingScheme] = useState<FundingScheme | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [enrichingId, setEnrichingId] = useState<string | null>(null);
+    const [viewPlaybookId, setViewPlaybookId] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<FundingScheme>>({
         name: '',
         description: '',
@@ -563,8 +568,59 @@ export function FundingSchemeCRUD() {
                                     >
                                         <Trash2 className="h-4 w-4 text-destructive" />
                                     </button>
+                                    <button
+                                        onClick={() => setViewPlaybookId(viewPlaybookId === scheme.id ? null : scheme.id)}
+                                        disabled={!scheme.expert_playbook}
+                                        className={`p-2 rounded-lg transition ${viewPlaybookId === scheme.id ? 'bg-slate-100' : 'hover:bg-muted'} ${!scheme.expert_playbook ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                        title="View Expert Playbook"
+                                    >
+                                        {viewPlaybookId === scheme.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                    </button>
                                 </div>
                             </div>
+
+                            {/* Expert Playbook Panel */}
+                            {viewPlaybookId === scheme.id && scheme.expert_playbook && (
+                                <div className="mt-6 pt-6 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="p-2 bg-blue-50 rounded-lg">
+                                            <Brain className="h-4 w-4 text-blue-600" />
+                                        </div>
+                                        <h5 className="font-bold text-slate-900">Expert Playbook Intelligence</h5>
+                                        <span className="text-xs text-blue-500 font-medium px-2 py-0.5 bg-blue-50 rounded-full">Extracted from Global Library</span>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {[
+                                            { label: 'Core Objectives', key: 'core_objectives', color: 'blue' },
+                                            { label: 'Scoring Criteria', key: 'scoring_criteria', color: 'emerald' },
+                                            { label: 'Best Practices', key: 'best_practices', color: 'indigo' },
+                                            { label: 'Common Pitfalls', key: 'common_pitfalls', color: 'red' },
+                                            { label: 'Required Terminology', key: 'key_terminology', color: 'amber' },
+                                            { label: 'Budget Rules', key: 'budget_rules', color: 'slate' }
+                                        ].map((section) => (
+                                            <div key={section.key} className="space-y-2">
+                                                <h6 className={`text-xs font-black uppercase tracking-wider text-${section.color}-600 flex items-center gap-1.5`}>
+                                                    <div className={`w-1 h-1 rounded-full bg-${section.color}-600`} />
+                                                    {section.label}
+                                                </h6>
+                                                <ul className="space-y-1.5">
+                                                    {Array.isArray(scheme.expert_playbook[section.key]) ? (
+                                                        scheme.expert_playbook[section.key].map((item: string, i: number) => (
+                                                            <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
+                                                                <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                                                                {item}
+                                                            </li>
+                                                        ))
+                                                    ) : (
+                                                        <li className="text-sm text-slate-400 italic">No specific {section.label.toLowerCase()} extracted.</li>
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
