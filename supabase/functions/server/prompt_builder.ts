@@ -3,10 +3,29 @@
 
 export const extractNumericBudget = (text: string): number | null => {
   if (!text) return null;
+
+  // Look for budget-specific patterns first
+  const highIntentMatch = text.match(/(?:max|budget|grant|limit|total|amount|sum|allocation|funding)(?:\s+is)?(?:\s+of)?(?:\s+up\s+to)?[:\s]+(?:€|EUR)?\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)/i);
+  if (highIntentMatch) {
+    let val = highIntentMatch[1].replace(/[.,]/g, (m, offset, str) => {
+      // If it's a thousand separator (e.g. 150.000)
+      if (str.length - offset <= 3) return ''; // Decimal or thousand? Actually let's just use the robust logic below
+      return m;
+    });
+    // Let's use the existing robust parsing logic on the matched group
+    const rawVal = highIntentMatch[1];
+    return parseRobustNumber(rawVal);
+  }
+
+  // Fallback to simple pattern
   let clean = text.replace(/&nbsp;/g, ' ').replace(/\s/g, '');
-  const match = clean.match(/(?:€|EUR|budgetof|totalof|amountof)?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?)/i);
+  const match = clean.match(/(?:€|EUR|budgetof|totalof|amountof)?(\d{4,9})/i); // Look for at least 4 digits to avoid dates/years
   if (!match) return null;
-  let val = match[1];
+  return parseInt(match[1]) || null;
+};
+
+// Helper for complex number parsing
+function parseRobustNumber(val: string): number | null {
   if (val.includes('.') && val.includes(',')) {
     val = val.indexOf('.') < val.indexOf(',') ? val.split(',')[0].replace(/\./g, '') : val.split('.')[0].replace(/,/g, '');
   } else if (val.includes('.') || val.includes(',')) {
@@ -14,9 +33,11 @@ export const extractNumericBudget = (text: string): number | null => {
     const parts = val.split(sep);
     if (parts[parts.length - 1].length === 3) val = val.replace(/[.,]/g, '');
     else val = parts[0].replace(/[.,]/g, '');
+  } else {
+    val = val.replace(/\D/g, '');
   }
   return parseInt(val) || null;
-};
+}
 
 export function buildPhase2Prompt(summary: string, constraints: any, userPrompt?: string): string {
   const basePrompt = userPrompt
@@ -206,9 +227,23 @@ export function buildProposalPrompt(
     ? `\n\n🎯 MANDATORY USER REQUIREMENTS - HIGHEST PRIORITY:\n${userPrompt}\n============================================================`
     : '';
 
-  // Robust budget extraction
-  const rawBudget = extractNumericBudget(userPrompt || '') || extractNumericBudget(constraints.budget || '') || 250000;
-  const budgetNum = rawBudget < 1000 ? 250000 : rawBudget;
+  // Robust budget extraction with hierarchical priority
+  let budgetNum = extractNumericBudget(userPrompt || '');
+
+  // If not in prompt, check project constraints
+  if (!budgetNum) {
+    budgetNum = extractNumericBudget(constraints.budget || '') || extractNumericBudget(constraints.budgetLimit || '');
+  }
+
+  // If still not found, check funding scheme template
+  if (!budgetNum && fundingScheme?.template_json?.maxBudget) {
+    budgetNum = parseInt(fundingScheme.template_json.maxBudget);
+  }
+
+  // Final fallback if NO budget information is found anywhere
+  if (!budgetNum || budgetNum < 1000) {
+    budgetNum = 250000; // Standard EU small-medium project fallback
+  }
 
   const finalBudgetStr = `€${budgetNum.toLocaleString()}`;
   const personnelBudget = Math.floor(budgetNum * 0.6);

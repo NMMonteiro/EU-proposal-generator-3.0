@@ -65,13 +65,13 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
   const getScoreColor = (score: string) => {
     switch (score) {
       case 'Good':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
+        return 'bg-green-50 text-green-700 border-green-200 shadow-sm shadow-green-100';
       case 'Fair':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+        return 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm shadow-amber-100';
       case 'Poor':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
+        return 'bg-red-50 text-red-700 border-red-200 shadow-sm shadow-red-100';
       default:
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+        return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
 
@@ -92,23 +92,24 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Knowledge Context Notification (RAG indicator) */}
       {analysisResult.knowledgeContext && analysisResult.knowledgeContext.length > 0 && (
-        <Card className="bg-[#1a2b4b] border-[#4472C4]/30 shadow-lg animate-in fade-in slide-in-from-top-4 duration-500">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="bg-[#4472C4]/20 p-2.5 rounded-full">
-              <Library className="h-5 w-5 text-[#4472C4]" />
+        <Card className="bg-blue-50 border-blue-200 shadow-xl shadow-blue-100/50 animate-in fade-in slide-in-from-top-4 duration-500 overflow-hidden relative">
+          <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
+          <CardContent className="p-5 flex items-center gap-5">
+            <div className="bg-blue-600/10 p-3 rounded-2xl">
+              <Library className="h-6 w-6 text-blue-700" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-[#4472C4]">Expert Intelligence Foundation</p>
-              <div className="flex flex-wrap gap-2 mt-1">
+              <p className="text-sm font-bold text-blue-900 tracking-tight">Expert Intelligence Foundation</p>
+              <div className="flex flex-wrap gap-2 mt-2">
                 {analysisResult.knowledgeContext.map((source, i) => (
-                  <Badge key={i} variant="outline" className="text-[10px] bg-white/5 border-white/10 text-white/70">
+                  <Badge key={i} variant="outline" className="text-[10px] bg-white/50 border-blue-100 text-blue-700 font-medium px-2 py-0.5 rounded-lg">
                     <BookOpen className="h-3 w-3 mr-1" />
                     {source}
                   </Badge>
                 ))}
               </div>
             </div>
-            <div className="text-[10px] px-2 py-1 rounded bg-[#4472C4]/10 text-[#4472C4] font-bold uppercase tracking-wider">
+            <div className="text-[10px] px-3 py-1.5 rounded-full bg-blue-600 text-white font-bold uppercase tracking-widest shadow-lg shadow-blue-200">
               RAG Active
             </div>
           </CardContent>
@@ -116,24 +117,24 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
       )}
 
       {/* Summary Card */}
-      <Card className="bg-[#323232] border-white/10">
-        <CardHeader>
-          <CardTitle>Funding Call Summary</CardTitle>
+      <Card className="bg-white border-slate-200 shadow-lg shadow-slate-200/50 overflow-hidden">
+        <CardHeader className="bg-slate-50 border-b border-slate-100">
+          <CardTitle className="text-lg text-slate-800">Funding Call Summary</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm">{analysisResult.summary}</p>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Partners</p>
-              <p className="text-sm font-medium">{analysisResult.constraints.partners}</p>
+        <CardContent className="space-y-6 p-6">
+          <p className="text-sm text-slate-600 leading-relaxed font-medium">{analysisResult.summary}</p>
+          <div className="grid grid-cols-3 gap-6 pt-4 border-t border-slate-100">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Partners</p>
+              <p className="text-sm font-bold text-slate-800">{analysisResult.constraints.partners}</p>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Budget</p>
-              <p className="text-sm font-medium">{analysisResult.constraints.budget}</p>
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Budget</p>
+              <p className="text-sm font-bold text-slate-800">{analysisResult.constraints.budget}</p>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Duration</p>
-              <p className="text-sm font-medium">{analysisResult.constraints.duration}</p>
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Duration</p>
+              <p className="text-sm font-bold text-slate-800">{analysisResult.constraints.duration}</p>
             </div>
           </div>
         </CardContent>
@@ -169,27 +170,31 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
 
       {/* Ideas Grid */}
       <div>
-        <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-          <Lightbulb className="h-5 w-5 text-[#4472C4]" />
+        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+          <Lightbulb className="h-6 w-6 text-blue-600" />
           Generated Project Ideas ({analysisResult.ideas.length})
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {analysisResult.ideas.map((idea, index) => (
             <Card
               key={index}
-              className={`cursor-pointer transition-all ${selectedIdea === idea
-                ? 'bg-[#4472C4]/20 border-[#4472C4]'
-                : 'bg-[#323232] border-white/10 hover:border-white/20'
+              className={`cursor-pointer transition-all duration-300 rounded-2xl overflow-hidden relative group ${selectedIdea === idea
+                ? 'bg-blue-50 border-blue-400 shadow-xl shadow-blue-100 ring-2 ring-blue-500/20'
+                : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-xl hover:shadow-slate-200/50'
                 }`}
               onClick={() => handleSelectIdea(idea)}
             >
-              <CardHeader>
-                <CardTitle className="text-base">{idea.title}</CardTitle>
+              <CardHeader className={`${selectedIdea === idea ? 'bg-blue-100/50' : 'bg-slate-50/50'} transition-colors px-6 py-5 border-b border-transparent group-hover:border-blue-50`}>
+                <CardTitle className={`text-base font-bold ${selectedIdea === idea ? 'text-blue-900' : 'text-slate-800'}`}>
+                  {idea.title}
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{idea.description}</p>
+              <CardContent className="p-6">
+                <p className={`text-sm leading-relaxed ${selectedIdea === idea ? 'text-blue-700/80' : 'text-slate-600'}`}>
+                  {idea.description}
+                </p>
                 {selectedIdea === idea && (
-                  <Badge className="mt-3 bg-[#4472C4]">Selected</Badge>
+                  <Badge className="mt-5 bg-blue-600 text-white px-3 py-1 rounded-full shadow-lg shadow-blue-200 border-none">Selected</Badge>
                 )}
               </CardContent>
             </Card>
@@ -198,14 +203,14 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
       </div>
 
       {/* Actions */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
+      <div className="flex justify-between items-center pt-8 border-t border-slate-200">
+        <Button variant="outline" onClick={onBack} className="border-slate-200 text-slate-600 px-8 rounded-xl hover:bg-slate-50">
           Back
         </Button>
         <Button
           onClick={handleGenerateProposal}
           disabled={!selectedIdea}
-          className="bg-gradient-to-br from-[#4472C4] to-[#5B9BD5]"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-10 rounded-xl shadow-lg shadow-blue-200 py-6 h-auto text-base font-bold tracking-tight transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
           Generate Proposal
         </Button>

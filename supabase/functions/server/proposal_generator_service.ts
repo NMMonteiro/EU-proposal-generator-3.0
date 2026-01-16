@@ -56,9 +56,23 @@ export const generateProposalFull = async (params: any) => {
     proposal.id = `proposal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     proposal.generatedAt = new Date().toISOString();
 
-    // Finalization logic
-    const rawTargetBudget = PromptBuilder.extractNumericBudget(userPrompt || '') || PromptBuilder.extractNumericBudget(constraints.budget || '') || 250000;
-    const targetBudget = rawTargetBudget < 1000 ? 250000 : rawTargetBudget;
+    // Finalization logic - use the same hierarchical extraction
+    let targetBudget = PromptBuilder.extractNumericBudget(userPrompt || '');
+    if (!targetBudget) {
+        targetBudget = PromptBuilder.extractNumericBudget(constraints.budget || '') ||
+            PromptBuilder.extractNumericBudget(constraints.budgetLimit || '');
+    }
+    if (!targetBudget && fundingScheme?.template_json?.maxBudget) {
+        targetBudget = parseInt(fundingScheme.template_json.maxBudget);
+    }
+    // Deep scan of expert intelligence for budget figures if still missing
+    if (!targetBudget && expertKnowledge.content) {
+        targetBudget = PromptBuilder.extractNumericBudget(expertKnowledge.content);
+    }
+
+    if (!targetBudget || targetBudget < 1000) {
+        targetBudget = 250000;
+    }
 
     rebalanceBudget(proposal, targetBudget);
 

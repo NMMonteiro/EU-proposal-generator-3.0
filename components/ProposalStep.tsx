@@ -124,12 +124,15 @@ export function ProposalStep({
 
     if (generating) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-                <Loader2 className="h-12 w-12 animate-spin text-[#4472C4]" />
-                <div className="text-center">
-                    <h3 className="text-lg font-medium">Generating Your Proposal</h3>
-                    <p className="text-sm text-muted-foreground mt-2">
-                        AI is creating a comprehensive 11-section funding proposal...
+            <div className="flex flex-col items-center justify-center min-h-[500px] space-y-8 animate-in fade-in duration-700">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-blue-100 rounded-full blur-2xl animate-pulse"></div>
+                    <Loader2 className="h-16 w-16 animate-spin text-blue-600 relative z-10" />
+                </div>
+                <div className="text-center space-y-3 max-w-sm">
+                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Generating Your Proposal</h3>
+                    <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                        Our AI is architecting a comprehensive funding proposal tailored to your selected idea and partners...
                     </p>
                 </div>
             </div>
@@ -148,29 +151,30 @@ export function ProposalStep({
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50">
                 <div>
-                    <h2 className="text-2xl font-bold">{proposal.title}</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{proposal.title}</h2>
+                    <p className="text-sm text-slate-500 font-medium flex items-center gap-2 mt-1">
+                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                         Generated {new Date(proposal.generatedAt || '').toLocaleString()}
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setShowPrompt(true)} title="View AI Prompt">
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => setShowPrompt(true)} title="View AI Prompt" className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl">
                         <Terminal className="h-4 w-4 mr-2" />
                         Prompt
                     </Button>
-                    <Button variant="outline" onClick={onBack}>
+                    <Button variant="outline" onClick={onBack} className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl">
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Back
                     </Button>
-                    <Button variant="outline" onClick={handleSave} disabled={saving}>
+                    <Button variant="outline" onClick={handleSave} disabled={saving} className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl">
                         {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                         Save
                     </Button>
-                    <Button onClick={handleViewDetailed} className="bg-gradient-to-br from-[#4472C4] to-[#5B9BD5]">
+                    <Button onClick={handleViewDetailed} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-200 px-6 font-bold tracking-tight transition-all hover:scale-[1.02]">
                         <Eye className="h-4 w-4 mr-2" />
                         View Full Proposal
                     </Button>
@@ -179,117 +183,86 @@ export function ProposalStep({
 
             {/* Prompt Dialog */}
             <Dialog open={showPrompt} onOpenChange={setShowPrompt}>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-[#1E1E1E] text-white border-white/10">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <Terminal className="h-5 w-5 text-[#4472C4]" />
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-slate-950 text-slate-50 border-slate-800">
+                    <DialogHeader className="border-b border-slate-800 pb-4">
+                        <DialogTitle className="flex items-center gap-2 text-blue-400">
+                            <Terminal className="h-5 w-5" />
                             Generation Prompt
                         </DialogTitle>
                     </DialogHeader>
-                    <div className="mt-4 p-4 rounded bg-black/50 font-mono text-xs whitespace-pre-wrap border border-white/5">
+                    <div className="mt-6 p-6 rounded-xl bg-black/40 font-mono text-xs whitespace-pre-wrap border border-slate-800 text-slate-300 leading-relaxed ring-1 ring-white/5">
                         {proposal.generationPrompt || 'Prompt not available for this proposal.'}
                     </div>
                 </DialogContent>
             </Dialog>
 
             {/* Quick Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-[#323232] border-white/10">
-                    <CardHeader>
-                        <CardTitle className="text-sm">Budget</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">€{formatBudgetTotal(proposal.budget || [])}</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-[#323232] border-white/10">
-                    <CardHeader>
-                        <CardTitle className="text-sm">Work Packages</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{proposal.workPackages?.length || 0}</p>
-                    </CardContent>
-                </Card>
-                <Card className="bg-[#323232] border-white/10">
-                    <CardHeader>
-                        <CardTitle className="text-sm">Partners</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{proposal.partners?.length || 0}</p>
-                    </CardContent>
-                </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                    { label: 'Budget', value: `€${formatBudgetTotal(proposal.budget || [])}`, color: 'text-blue-600' },
+                    { label: 'Work Packages', value: proposal.workPackages?.length || 0, color: 'text-indigo-600' },
+                    { label: 'Partners', value: proposal.partners?.length || 0, color: 'text-emerald-600' },
+                ].map((stat, i) => (
+                    <Card key={i} className="bg-white border-slate-200 shadow-lg shadow-slate-200/50 overflow-hidden relative group">
+                        <div className={`absolute top-0 left-0 w-1 h-full ${stat.color.replace('text', 'bg')}`}></div>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className={`text-3xl font-black tracking-tight ${stat.color}`}>{stat.value}</p>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
 
             {/* Summary Preview */}
-            <Card className="bg-[#323232] border-white/10">
-                <CardHeader>
-                    <CardTitle>Executive Summary</CardTitle>
+            <Card className="bg-white border-slate-200 shadow-lg shadow-slate-200/50">
+                <CardHeader className="bg-slate-50 border-b border-slate-100 px-6 py-4">
+                    <CardTitle className="text-lg font-bold text-slate-800">Executive Summary</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-8">
                     <div
-                        className="prose prose-invert max-w-none"
+                        className="prose prose-slate max-w-none prose-p:leading-relaxed prose-headings:text-slate-900"
                         dangerouslySetInnerHTML={{ __html: proposal.summary }}
                     />
                 </CardContent>
             </Card>
 
             {/* Sections Preview */}
-            <Card className="bg-[#323232] border-white/10">
-                <CardHeader>
-                    <CardTitle>Proposal Sections</CardTitle>
+            <Card className="bg-white border-slate-200 shadow-lg shadow-slate-200/50">
+                <CardHeader className="bg-slate-50 border-b border-slate-100 px-6 py-4">
+                    <CardTitle className="text-lg font-bold text-slate-800">Proposal Preview</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="p-6 space-y-6">
                     {proposal.dynamic_sections ? (
                         Object.entries(proposal.dynamic_sections).map(([key, content]) => {
                             const strContent = typeof content === 'string' ? content : '';
                             return (
-                                <div key={key} className="border-b border-white/5 pb-4 last:border-0 last:pb-0">
-                                    <h4 className="font-medium mb-2 capitalize">{key.replace(/_/g, ' ')}</h4>
+                                <div key={key} className="bg-slate-50 rounded-2xl p-6 border border-slate-100 group hover:border-blue-200 transition-colors">
+                                    <h4 className="font-bold text-slate-900 mb-3 capitalize text-base tracking-tight">{key.replace(/_/g, ' ')}</h4>
                                     <div
-                                        className="text-sm text-muted-foreground prose prose-invert max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: strContent.substring(0, 300) + (strContent.length > 300 ? '...' : '') }}
+                                        className="text-sm text-slate-600 leading-relaxed font-medium line-clamp-4 prose-sm prose-slate"
+                                        dangerouslySetInnerHTML={{ __html: strContent.substring(0, 500) }}
                                     />
+                                    {strContent.length > 500 && <p className="mt-2 text-blue-600 text-xs font-bold">Read more in full view...</p>}
                                 </div>
                             );
                         })
                     ) : (
                         <>
-                            {proposal.relevance && (
-                                <div>
-                                    <h4 className="font-medium mb-2">Relevance</h4>
-                                    <div
-                                        className="text-sm text-muted-foreground prose prose-invert max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: (proposal.relevance || '').substring(0, 300) + (proposal.relevance.length > 300 ? '...' : '') }}
-                                    />
-                                </div>
-                            )}
-                            {proposal.impact && (
-                                <div>
-                                    <h4 className="font-medium mb-2">Impact</h4>
-                                    <div
-                                        className="text-sm text-muted-foreground prose prose-invert max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: (proposal.impact || '').substring(0, 300) + (proposal.impact.length > 300 ? '...' : '') }}
-                                    />
-                                </div>
-                            )}
-                            {proposal.methods && (
-                                <div>
-                                    <h4 className="font-medium mb-2">Methodology</h4>
-                                    <div
-                                        className="text-sm text-muted-foreground prose prose-invert max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: (proposal.methods || '').substring(0, 300) + (proposal.methods.length > 300 ? '...' : '') }}
-                                    />
-                                </div>
-                            )}
-                            {proposal.dissemination && (
-                                <div>
-                                    <h4 className="font-medium mb-2">Dissemination</h4>
-                                    <div
-                                        className="text-sm text-muted-foreground prose prose-invert max-w-none"
-                                        dangerouslySetInnerHTML={{ __html: (proposal.dissemination || '').substring(0, 300) + (proposal.dissemination.length > 300 ? '...' : '') }}
-                                    />
-                                </div>
-                            )}
+                            {['relevance', 'impact', 'methods', 'dissemination'].map((sec) => {
+                                const content = (proposal as any)[sec];
+                                if (!content) return null;
+                                return (
+                                    <div key={sec} className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                                        <h4 className="font-bold text-slate-900 mb-3 capitalize text-base tracking-tight">{sec}</h4>
+                                        <div
+                                            className="text-sm text-slate-600 leading-relaxed font-medium line-clamp-4 prose-sm prose-slate"
+                                            dangerouslySetInnerHTML={{ __html: content }}
+                                        />
+                                    </div>
+                                );
+                            })}
                         </>
                     )}
                 </CardContent>
@@ -297,31 +270,31 @@ export function ProposalStep({
 
             {/* Budget Table */}
             {proposal.budget && proposal.budget.length > 0 && (
-                <Card className="bg-[#323232] border-white/10">
-                    <CardHeader>
-                        <CardTitle>Budget Overview</CardTitle>
+                <Card className="bg-white border-slate-200 shadow-lg shadow-slate-200/50 overflow-hidden">
+                    <CardHeader className="bg-slate-50 border-b border-slate-100 px-6 py-4">
+                        <CardTitle className="text-lg font-bold text-slate-800">Budget Overview</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead>
-                                    <tr className="border-b border-white/10">
-                                        <th className="text-left py-2">Item</th>
-                                        <th className="text-right py-2">Cost (€)</th>
-                                        <th className="text-left py-2">Description</th>
+                                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                                        <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Item</th>
+                                        <th className="text-right px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Cost (€)</th>
+                                        <th className="text-left px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Description</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="divide-y divide-slate-50">
                                     {proposal.budget.map((item, index) => (
-                                        <tr key={index} className="border-b border-white/5">
-                                            <td className="py-2">{item.item}</td>
-                                            <td className="text-right py-2">{item.cost.toLocaleString()}</td>
-                                            <td className="text-sm text-muted-foreground py-2">{item.description}</td>
+                                        <tr key={index} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-slate-700 text-sm">{item.item}</td>
+                                            <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">{item.cost.toLocaleString()}</td>
+                                            <td className="px-6 py-4 text-xs text-slate-500 font-medium leading-relaxed">{item.description}</td>
                                         </tr>
                                     ))}
-                                    <tr className="font-bold">
-                                        <td className="py-2">Total</td>
-                                        <td className="text-right py-2">€{formatBudgetTotal(proposal.budget)}</td>
+                                    <tr className="bg-blue-50/50">
+                                        <td className="px-6 py-5 font-black text-blue-900">Total Project Value</td>
+                                        <td className="px-6 py-5 text-right font-black text-blue-700 text-lg">€{formatBudgetTotal(proposal.budget)}</td>
                                         <td></td>
                                     </tr>
                                 </tbody>
@@ -332,14 +305,14 @@ export function ProposalStep({
             )}
 
             {/* Call to Action */}
-            <div className="flex justify-center py-6">
+            <div className="flex justify-center py-10">
                 <Button
                     onClick={handleViewDetailed}
                     size="lg"
-                    className="bg-gradient-to-br from-[#4472C4] to-[#5B9BD5]"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-12 py-8 rounded-2xl shadow-xl shadow-blue-200 text-lg font-bold tracking-tight transition-all hover:scale-105 active:scale-95 group"
                 >
-                    <Eye className="h-5 w-5 mr-2" />
-                    View Full Proposal with All Sections
+                    <Eye className="h-6 w-6 mr-3 transition-transform group-hover:rotate-12" />
+                    Open Detailed Proposal Editor
                 </Button>
             </div>
         </div>

@@ -12,44 +12,44 @@
       theme: {
         extend: {
           colors: {
-            background: '#1a1b26', // Tokyo Night Background
-            foreground: '#a9b1d6', // Tokyo Night Foreground
+            background: '#ffffff',
+            foreground: '#0f172a',
             card: {
-              DEFAULT: 'rgba(26, 27, 38, 0.8)', // #1a1b26 with opacity
-              foreground: '#a9b1d6'
+              DEFAULT: '#ffffff',
+              foreground: '#0f172a'
             },
             popover: {
-              DEFAULT: '#1a1b26',
-              foreground: '#a9b1d6'
+              DEFAULT: '#ffffff',
+              foreground: '#0f172a'
             },
             primary: {
-              DEFAULT: '#7aa2f7', // Tokyo Night Blue
-              foreground: '#1a1b26'
+              DEFAULT: '#2563eb',
+              foreground: '#ffffff'
             },
             secondary: {
-              DEFAULT: '#24283b', // Tokyo Night Storm/Surface
-              foreground: '#a9b1d6'
+              DEFAULT: '#f8fafc',
+              foreground: '#0f172a'
             },
             muted: {
-              DEFAULT: '#565f89', // Tokyo Night Comment/Muted
-              foreground: '#a9b1d6'
+              DEFAULT: '#f1f5f9',
+              foreground: '#64748b'
             },
             accent: {
-              DEFAULT: '#bb9af7', // Tokyo Night Purple
-              foreground: '#1a1b26'
+              DEFAULT: '#eff6ff',
+              foreground: '#1e40af'
             },
             destructive: {
-              DEFAULT: '#f7768e', // Tokyo Night Red
-              foreground: '#1a1b26'
+              DEFAULT: '#ef4444',
+              foreground: '#ffffff'
             },
-            border: 'rgba(86, 95, 137, 0.2)', // #565f89 with opacity
-            input: 'rgba(86, 95, 137, 0.2)',
-            ring: '#7aa2f7',
+            border: '#e2e8f0',
+            input: '#e2e8f0',
+            ring: '#3b82f6',
           },
           borderRadius: {
-            lg: '0.5rem',
-            md: 'calc(0.5rem - 2px)',
-            sm: 'calc(0.5rem - 4px)',
+            lg: 'var(--radius)',
+            md: 'calc(var(--radius) - 2px)',
+            sm: 'calc(var(--radius) - 4px)',
           },
           fontFamily: {
             sans: ['Inter', 'sans-serif'],
@@ -60,7 +60,7 @@
   </script>
 </head>
 
-<body class="bg-[#1a1b26] text-[#a9b1d6] antialiased font-light selection:bg-primary/30">
+<body class="bg-slate-50 text-slate-900 antialiased selection:bg-blue-100">
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

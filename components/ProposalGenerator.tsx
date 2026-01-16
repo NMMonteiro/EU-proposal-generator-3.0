@@ -83,12 +83,12 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
       {currentStep === 'partners' && selectedIdea && (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold italic text-white/90">Step 3: Select Partners</h2>
-            <p className="text-muted-foreground">Select the organizations that will participate in this project.</p>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Step 3: Select Partners</h2>
+            <p className="text-slate-500">Select the organizations that will participate in this project.</p>
           </div>
 
-          <div className="bg-[#323232] border border-white/10 rounded-xl p-8 max-w-2xl w-full text-center space-y-6 shadow-xl">
-            <p className="text-white/70">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-2xl w-full text-center space-y-6 shadow-xl shadow-slate-200/50 transition-all">
+            <p className="text-slate-600 leading-relaxed font-medium">
               Click the button below to browse and select partners from your database.
               The AI will use their profiles to tailor the technical and consortium sections.
             </p>

@@ -121,20 +121,20 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground">
-                        <Building2 className="h-6 w-6 text-primary" />
-                        My Partners <span className="text-[10px] font-normal opacity-30 text-nowrap">v3.2</span>
+                    <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <Building2 className="h-8 w-8 text-blue-600" />
+                        Consortium Partners
                     </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        {partners.length} partner{partners.length !== 1 ? 's' : ''} in your consortium
+                    <p className="text-sm text-slate-500 font-medium mt-1">
+                        Manage your network of participating organizations. {partners.length} partners registered.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Button
                         onClick={handleCreateNew}
-                        className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl px-6 font-bold transition-all hover:scale-105 active:scale-95"
                     >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Partner
@@ -146,76 +146,26 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
                             className="hidden"
                             id="partners-page-pdf-upload"
                             onChange={async (e) => {
-                                console.log('=== FILE INPUT CHANGE DETECTED ===');
                                 const file = e.target.files?.[0];
-                                if (!file) {
-                                    console.log('No file selected');
-                                    return;
-                                }
-                                console.log('=== PDF IMPORT STARTED ===');
-                                console.log('File selected:', file.name, file.size, 'bytes');
-
-                                // Immediate feedback
-                                const toastId = toast.loading('Starting upload...');
-
+                                if (!file) return;
+                                const toastId = toast.loading('Extracting partner data...');
                                 try {
                                     const formData = new FormData();
                                     formData.append('file', file);
-
-                                    console.log('Sending request to:', `${serverUrl}/import-partner-pdf`);
-
-                                    // Add timeout to fetch
-                                    const controller = new AbortController();
-                                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-
-                                    const startTime = Date.now();
                                     const response = await fetch(`${serverUrl}/import-partner-pdf`, {
                                         method: 'POST',
-                                        headers: {
-                                            'Authorization': `Bearer ${publicAnonKey}`,
-                                        },
-                                        body: formData,
-                                        signal: controller.signal
+                                        headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+                                        body: formData
                                     });
-                                    clearTimeout(timeoutId);
-
-                                    const duration = Date.now() - startTime;
-                                    console.log('Response received after', duration, 'ms');
-                                    console.log('Response status:', response.status, response.statusText);
-
-                                    const responseText = await response.text();
-                                    console.log('Response body:', responseText);
-
-                                    if (!response.ok) {
-                                        throw new Error(`Server returned ${response.status}: ${responseText}`);
-                                    }
-
-                                    const data = JSON.parse(responseText);
-                                    console.log('Extraction success! Partner ID:', data.partnerId);
-                                    const { partnerId } = data;
-
+                                    if (!response.ok) throw new Error('Extraction failed');
+                                    const data = await response.json();
                                     toast.dismiss(toastId);
                                     toast.success('Partner imported successfully!');
-
-                                    // Navigate to edit page immediately
-                                    console.log('Navigating to partner edit page for:', partnerId);
-                                    if (onEditPartner) {
-                                        onEditPartner(partnerId);
-                                    } else {
-                                        console.error('onEditPartner callback is missing!');
-                                    }
-
+                                    if (onEditPartner) onEditPartner(data.partnerId);
                                 } catch (error: any) {
-                                    console.error('=== PDF IMPORT ERROR ===', error);
                                     toast.dismiss(toastId);
-
-                                    if (error.name === 'AbortError') {
-                                        toast.error('Request timed out. The server took too long to respond.');
-                                    } else {
-                                        toast.error(`Failed to import PDF: ${error.message}`);
-                                    }
+                                    toast.error(`Import failed: ${error.message}`);
                                 } finally {
-                                    // Reset input
                                     e.target.value = '';
                                 }
                             }}
@@ -223,6 +173,7 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
                         <Button
                             variant="outline"
                             onClick={() => document.getElementById('partners-page-pdf-upload')?.click()}
+                            className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl px-6 font-bold"
                         >
                             <Upload className="h-4 w-4 mr-2" />
                             Import PDF
@@ -231,14 +182,14 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
                 </div>
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="relative max-w-sm w-full">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 border-y border-slate-100">
+                <div className="relative max-w-sm w-full group">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                     <Input
-                        placeholder="Search partners..."
+                        placeholder="Filter partners by name or type..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 h-10 bg-card/50"
+                        className="pl-12 py-6 bg-slate-50 border-slate-200 focus:bg-white text-slate-900 rounded-2xl transition-all"
                     />
                 </div>
                 <div className="flex items-center gap-2">
@@ -271,100 +222,81 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
             </div>
 
             {filteredPartners.length === 0 ? (
-                <div className="text-center py-12">
-                    <Building2 className="h-16 w-16 mx-auto text-muted-foreground opacity-50 mb-4" />
-                    <p className="text-muted-foreground">
-                        {searchQuery ? 'No partners match your search' : 'No partners added yet'}
+                <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200">
+                    <Building2 className="h-20 w-20 mx-auto text-slate-100 mb-6" />
+                    <p className="text-slate-500 font-bold text-lg">
+                        {searchQuery ? 'No partners match your criteria' : 'Your consortium is empty'}
                     </p>
                     {!searchQuery && (
-                        <Button onClick={handleCreateNew} variant="outline" className="mt-4">
-                            <Plus className="h-4 w-4 mr-2" />
+                        <Button onClick={handleCreateNew} variant="outline" className="mt-6 border-slate-200 rounded-xl px-8 font-bold">
+                            <Plus className="h-5 w-5 mr-2" />
                             Add Your First Partner
                         </Button>
                     )}
                 </div>
             ) : (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                     {filteredPartners.map((partner) => (
-                        <div key={partner.id} className="flex items-center gap-4 p-4 border rounded-xl hover:border-primary/50 transition-all group bg-card/40 backdrop-blur-sm shadow-sm">
-                            {/* Logo Column */}
-                            <div className="shrink-0 w-14 h-14 flex items-center justify-center bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+                        <div key={partner.id} className="flex flex-col md:flex-row md:items-center gap-6 p-6 bg-white border border-slate-200 rounded-3xl hover:border-blue-400 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 relative group overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-50 group-hover:bg-blue-600 transition-colors"></div>
+
+                            {/* Logo Box */}
+                            <div className="shrink-0 w-20 h-20 flex items-center justify-center bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden shadow-inner group-hover:bg-white transition-colors">
                                 {partner.logoUrl ? (
-                                    <img
-                                        src={partner.logoUrl}
-                                        alt={partner.name}
-                                        className="w-full h-full object-contain p-1"
-                                    />
+                                    <img src={partner.logoUrl} alt={partner.name} className="w-full h-full object-contain p-2" />
                                 ) : (
-                                    <Building2 className="w-7 h-7 text-muted-foreground/50" />
+                                    <Building2 className="w-10 h-10 text-slate-200" />
                                 )}
                             </div>
 
-                            {/* Content Column */}
-                            <div className="flex-1 min-w-0">
-                                {/* Line 1: name | Contact Person Name | phone | email */}
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-1">
+                            {/* Info Column */}
+                            <div className="flex-1 min-w-0 space-y-3">
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                     <h3
-                                        className="font-bold text-lg group-hover:text-primary transition-colors truncate cursor-pointer"
+                                        className="font-black text-xl text-slate-900 group-hover:text-blue-600 transition-colors truncate cursor-pointer tracking-tight"
                                         onClick={() => onEditPartner && onEditPartner(partner.id)}
                                     >
                                         {partner.name}
                                     </h3>
-
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                        {partner.contactPersonName && (
-                                            <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                                <User className="w-3.5 h-3.5 text-primary/60" />
-                                                {partner.contactPersonName}
-                                            </div>
-                                        )}
-                                        {partner.contactPersonPhone && (
-                                            <div className="flex items-center gap-1.5 whitespace-nowrap">
-                                                <Phone className="w-3.5 h-3.5 text-primary/60" />
-                                                {partner.contactPersonPhone}
-                                            </div>
-                                        )}
-                                        {(partner.contactPersonEmail || partner.contactEmail) && (
-                                            <div className="flex items-center gap-1.5 whitespace-nowrap truncate max-w-[200px]">
-                                                <Mail className="w-3.5 h-3.5 text-primary/60" />
-                                                {partner.contactPersonEmail || partner.contactEmail}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Line 2: country | Organization Type */}
-                                <div className="flex items-center gap-3">
-                                    {partner.country && (
-                                        <div className="flex items-center text-xs font-medium text-foreground/80">
-                                            <Globe className="w-3.5 h-3.5 mr-1.5 text-primary" />
-                                            {partner.country}
-                                        </div>
-                                    )}
                                     {partner.organizationType && (
-                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider bg-primary/10 text-primary border-none">
+                                        <Badge className="bg-blue-50 text-blue-700 border-none px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full">
                                             {partner.organizationType}
                                         </Badge>
                                     )}
-                                    {partner.acronym && (
-                                        <span className="text-[10px] text-muted-foreground font-mono bg-white/5 px-1 rounded uppercase">
-                                            {partner.acronym}
-                                        </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 gap-x-6">
+                                    {partner.contactPersonName && (
+                                        <div className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                                            <User className="w-4 h-4 text-slate-300" />
+                                            <span className="truncate">{partner.contactPersonName}</span>
+                                        </div>
+                                    )}
+                                    {partner.country && (
+                                        <div className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                                            <Globe className="w-4 h-4 text-slate-300" />
+                                            <span>{partner.country}</span>
+                                        </div>
+                                    )}
+                                    {(partner.contactPersonEmail || partner.contactEmail) && (
+                                        <div className="flex items-center gap-2 text-sm font-bold text-blue-600">
+                                            <Mail className="w-4 h-4 text-blue-200" />
+                                            <span className="truncate">{partner.contactPersonEmail || partner.contactEmail}</span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Actions Column */}
-                            <div className="flex items-center gap-2 pl-4 border-l border-white/10 ml-2">
+                            {/* Actions */}
+                            <div className="flex items-center gap-3 pt-4 md:pt-0 md:pl-6 border-t md:border-t-0 md:border-l border-slate-100">
                                 <Button
                                     onClick={() => onEditPartner && onEditPartner(partner.id)}
                                     variant="ghost"
                                     size="sm"
-                                    className="h-9 px-3 rounded-lg hover:bg-primary/20 hover:text-white transition-all text-white/60 flex items-center gap-2"
-                                    title="Edit Partner"
+                                    className="bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-600 rounded-xl px-4 py-6 font-bold flex flex-col gap-1 items-center h-auto min-w-[70px] transition-all"
                                 >
-                                    <Pencil className="h-4.5 w-4.5" />
-                                    <span className="text-xs font-medium">Edit</span>
+                                    <Pencil className="h-5 w-5" />
+                                    <span className="text-[10px] uppercase">Edit</span>
                                 </Button>
                                 <Button
                                     onClick={(e) => {
@@ -373,11 +305,10 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
                                     }}
                                     variant="ghost"
                                     size="sm"
-                                    className="h-9 px-3 rounded-lg hover:bg-destructive/10 hover:text-destructive text-white/40 transition-all flex items-center gap-2"
-                                    title="Delete Partner"
+                                    className="hover:bg-red-50 hover:text-red-600 text-slate-300 rounded-xl px-4 py-6 font-bold flex flex-col gap-1 items-center h-auto min-w-[70px] transition-all"
                                 >
-                                    <Trash2 className="h-4.5 w-4.5" />
-                                    <span className="text-xs font-medium">Delete</span>
+                                    <Trash2 className="h-5 w-5" />
+                                    <span className="text-[10px] uppercase">Delete</span>
                                 </Button>
                             </div>
                         </div>

@@ -52,7 +52,7 @@ const ProposalSummaryPageWrapper = () => {
 function App() {
     return (
         <BrowserRouter>
-            <Toaster position="top-right" theme="dark" />
+            <Toaster position="top-right" theme="light" />
             <Routes>
                 <Route element={<Layout />}>
                     <Route path="/" element={<ProposalGeneratorWrapper />} />

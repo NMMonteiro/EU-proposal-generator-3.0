@@ -99,17 +99,17 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <Card className="bg-[#323232] border-white/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-[#4472C4]" />
+      <Card className="bg-white border-slate-200 shadow-xl shadow-slate-200/50">
+        <CardHeader className="border-b border-slate-50 pb-6">
+          <CardTitle className="flex items-center gap-2 text-slate-900">
+            <Sparkles className="h-5 w-5 text-blue-600" />
             Step 1: Analyze Funding Call
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-slate-500">
             Enter a funding call URL or paste the text directly to generate project ideas
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 pt-6">
           <Tabs value={mode} onValueChange={(v) => setMode(v as 'url' | 'text')}>
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="url" className="flex items-center gap-2">
@@ -124,7 +124,7 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
 
             <TabsContent value="url" className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">
                   Funding Call URL *
                 </label>
                 <Input
@@ -132,11 +132,12 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   disabled={loading}
+                  className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium mb-2 block">
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">
                   Specific Requirements (Optional)
                 </label>
                 <Textarea
@@ -145,9 +146,10 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
                   onChange={(e) => setUserPrompt(e.target.value)}
                   disabled={loading}
                   rows={4}
+                  className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
                 />
-                <p className="text-xs text-muted-foreground mt-2">
-                  <AlertCircle className="h-3 w-3 inline mr-1" />
+                <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
                   If provided, all generated ideas will directly address these requirements
                 </p>
               </div>
@@ -175,9 +177,9 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
           </Tabs>
 
           {/* Funding Scheme Selector */}
-          <div className="pt-4 border-t border-white/10">
-            <label className="text-sm font-medium mb-2 flex items-center gap-2">
-              <Settings2 className="h-4 w-4" />
+          <div className="pt-6 border-t border-slate-100">
+            <label className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-slate-400" />
               Funding Scheme Template
             </label>
             <div className="flex gap-4">
@@ -186,7 +188,7 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
                   value={selectedSchemeId || ''}
                   onChange={(e) => setSelectedSchemeId(e.target.value || null)}
                   disabled={loading}
-                  className="w-full h-10 px-3 py-2 text-sm bg-[#2a2a2a] border border-white/10 rounded-md focus:outline-none focus:ring-2 focus:ring-[#4472C4] focus:border-transparent text-white placeholder-gray-400"
+                  className="w-full h-11 px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 transition-all appearance-none cursor-pointer hover:bg-slate-100"
                 >
                   <option value="" disabled>Select a funding scheme...</option>
                   {fundingSchemes.map((scheme) => (
@@ -195,7 +197,7 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="text-xs text-slate-400 mt-2">
                   Select the template structure for your proposal (sections, limits, etc.)
                 </p>
               </div>
@@ -205,10 +207,10 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
           <Button
             onClick={handleSubmit}
             disabled={loading || (mode === 'url' && !url.trim() && !userPrompt.trim()) || (mode === 'text' && !userPrompt.trim())}
-            className="w-full bg-gradient-to-br from-[#4472C4] to-[#5B9BD5]"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 py-6 text-base font-semibold transition-all hover:translate-y-[-1px]"
             size="lg"
           >
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {loading && <Loader2 className="h-5 w-5 mr-2 animate-spin" />}
             {loading ? 'Analyzing...' : 'Analyze & Generate Ideas'}
           </Button>
         </CardContent>

@@ -60,9 +60,9 @@ export function Layout() {
     ];
 
     const NavContent = () => (
-        <div className="flex flex-col h-full bg-[#1e1e1e] border-r border-white/10">
+        <div className="flex flex-col h-full bg-white border-r border-slate-200 shadow-sm">
             <div className="p-6">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                     AI Proposal Studio
                 </h1>
             </div>
@@ -72,19 +72,19 @@ export function Layout() {
                     <div key={group.title} className="space-y-1">
                         <button
                             onClick={() => toggleFolder(group.title)}
-                            className="flex items-center w-full px-2 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-white transition-colors group"
+                            className="flex items-center w-full px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-900 transition-colors group"
                         >
                             {expandedFolders[group.title] ? (
-                                <ChevronDown className="w-3 h-3 mr-1.5 text-gray-500 group-hover:text-white" />
+                                <ChevronDown className="w-3 h-3 mr-1.5 text-slate-400 group-hover:text-slate-900" />
                             ) : (
-                                <ChevronRight className="w-3 h-3 mr-1.5 text-gray-500 group-hover:text-white" />
+                                <ChevronRight className="w-3 h-3 mr-1.5 text-slate-400 group-hover:text-slate-900" />
                             )}
-                            <Folder className="w-3 h-3 mr-2 text-gray-500 group-hover:text-white" />
+                            <Folder className="w-3 h-3 mr-2 text-slate-400 group-hover:text-slate-900" />
                             {group.title}
                         </button>
 
                         {expandedFolders[group.title] && (
-                            <div className="space-y-1 ml-2 border-l border-white/10 pl-2">
+                            <div className="space-y-1 ml-2 border-l border-slate-200 pl-2">
                                 {group.items.map((item) => {
                                     const Icon = item.icon;
                                     return (
@@ -94,8 +94,8 @@ export function Layout() {
                                             onClick={() => setIsMobileOpen(false)}
                                             className={({ isActive }) =>
                                                 `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200 ${isActive
-                                                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/20'
-                                                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                                                    ? 'bg-blue-50 text-blue-600 font-medium border border-blue-100'
+                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
                                                 }`
                                             }
                                         >
@@ -110,14 +110,14 @@ export function Layout() {
                 ))}
             </nav>
 
-            <div className="p-4 border-t border-white/10 bg-[#18181b]">
+            <div className="p-4 border-t border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-3 px-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
                         AI
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">User Workspace</p>
-                        <p className="text-xs text-gray-500 truncate">Pro Plan</p>
+                        <p className="text-sm font-semibold text-slate-900 truncate">User Workspace</p>
+                        <p className="text-xs text-slate-500 truncate">Pro Plan</p>
                     </div>
                 </div>
             </div>
@@ -125,7 +125,7 @@ export function Layout() {
     );
 
     return (
-        <div className="min-h-screen bg-[#121212] text-white flex">
+        <div className="min-h-screen bg-slate-50 text-slate-900 flex">
             {/* Desktop Sidebar */}
             <div className="hidden md:block w-64 shrink-0">
                 <div className="fixed w-64 h-full">
@@ -134,18 +134,18 @@ export function Layout() {
             </div>
 
             {/* Mobile Header */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#1e1e1e] border-b border-white/10 flex items-center px-4 z-50">
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center px-4 z-50 shadow-sm">
                 <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-white">
+                        <Button variant="ghost" size="icon" className="text-slate-600">
                             <Menu className="w-6 h-6" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-64 border-r border-white/10 bg-[#1e1e1e]">
+                    <SheetContent side="left" className="p-0 w-64 border-r border-slate-200 bg-white">
                         <NavContent />
                     </SheetContent>
                 </Sheet>
-                <span className="ml-4 font-bold">AI Proposal Studio</span>
+                <span className="ml-4 font-bold text-slate-900">AI Proposal Studio</span>
             </div>
 
             {/* Main Content */}

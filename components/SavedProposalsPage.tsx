@@ -76,73 +76,84 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#4472C4]" />
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+        <p className="text-slate-500 font-medium animate-pulse">Loading your proposals...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-8 space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Saved Proposals</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {proposals.length} proposal{proposals.length !== 1 ? 's' : ''} saved
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Saved Proposals</h2>
+          <p className="text-sm text-slate-500 font-medium mt-1">
+            Browse and manage your AI-generated project proposals. {proposals.length} total.
           </p>
         </div>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="relative group">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-blue-500" />
         <Input
-          placeholder="Search proposals..."
+          placeholder="Search proposals by title, idea, or source..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
+          className="pl-12 py-6 bg-white border-slate-200 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-2xl shadow-sm transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
         />
       </div>
 
       {filteredProposals.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            {searchQuery ? 'No proposals match your search' : 'No proposals saved yet'}
+        <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200">
+          <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="h-8 w-8 text-slate-300" />
+          </div>
+          <p className="text-slate-500 font-medium">
+            {searchQuery ? 'No proposals match your search criteria' : 'You haven\'t saved any proposals yet'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProposals.map((proposal) => (
-            <Card key={proposal.id} className="bg-[#323232] border-white/10 hover:border-white/20 transition-colors">
-              <CardHeader>
-                <CardTitle className="text-base line-clamp-2">{proposal.title}</CardTitle>
-                <CardDescription className="line-clamp-1">
-                  {proposal.selectedIdea?.title || 'No idea selected'}
+            <Card key={proposal.id} className="bg-white border-slate-200 hover:border-blue-400 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 rounded-2xl overflow-hidden group">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-50 px-6 py-5 group-hover:bg-blue-50/30 transition-colors">
+                <CardTitle className="text-base font-bold text-slate-900 line-clamp-2 leading-snug tracking-tight">{proposal.title}</CardTitle>
+                <CardDescription className="line-clamp-1 text-slate-500 font-medium text-xs mt-1">
+                  {proposal.selectedIdea?.title || 'Standalone Proposal'}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-6 space-y-5">
                 {proposal.projectUrl && (
-                  <p className="text-xs text-muted-foreground line-clamp-1">
+                  <p className="text-[10px] text-blue-600 bg-blue-50 self-start px-2 py-1 rounded inline-block font-bold truncate max-w-full">
                     {proposal.projectUrl}
                   </p>
                 )}
-                <div className="text-xs text-muted-foreground">
-                  <p>Saved: {new Date(proposal.savedAt || proposal.generatedAt || '').toLocaleDateString()}</p>
+                <div className="flex gap-4 border-t border-slate-50 pt-4">
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Date Created</p>
+                    <p className="text-xs font-bold text-slate-700">{new Date(proposal.savedAt || proposal.generatedAt || '').toLocaleDateString()}</p>
+                  </div>
                   {proposal.updatedAt && proposal.updatedAt !== proposal.savedAt && (
-                    <p>Updated: {new Date(proposal.updatedAt).toLocaleDateString()}</p>
+                    <div className="flex-1 space-y-1 text-right">
+                      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Last Modified</p>
+                      <p className="text-xs font-bold text-slate-700">{new Date(proposal.updatedAt).toLocaleDateString()}</p>
+                    </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3 pt-2">
                   <Button
                     onClick={() => onViewProposal(proposal.id!)}
-                    className="flex-1"
+                    className="flex-[3] bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-100"
                     size="sm"
                   >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View
+                    <Eye className="h-4 w-4 mr-2" />
+                    Open Proposal
                   </Button>
                   <Button
                     onClick={() => handleDelete(proposal.id!)}
-                    variant="destructive"
+                    variant="ghost"
+                    className="flex-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
                     size="sm"
                   >
                     <Trash2 className="h-4 w-4" />
