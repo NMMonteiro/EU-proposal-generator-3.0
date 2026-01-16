@@ -16,7 +16,7 @@ interface URLInputStepProps {
 }
 
 export function URLInputStep({ onSubmit }: URLInputStepProps) {
-  const [mode, setMode] = useState<'url' | 'text'>('url');
+  const [mode, setMode] = useState<'url' | 'text'>('text');
   const [url, setUrl] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -166,7 +166,7 @@ export function URLInputStep({ onSubmit }: URLInputStepProps) {
                   onChange={(e) => setUserPrompt(e.target.value)}
                   disabled={loading}
                   rows={12}
-                  className="font-mono text-sm"
+                  className="bg-slate-50 border-slate-200 focus:bg-white transition-colors font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-2">
                   <AlertCircle className="h-3 w-3 inline mr-1" />

@@ -20,7 +20,7 @@ Always ensure the origin remote is set to the correct repository before pushing:
 
 ## Vercel Deployment
 Deploy to the production environment using the Vercel CLI.
-- **Project URL**: `https://vercel.com/nunos-projects-d60951f9/eu-projects-generator-v4-0`
+- **Project URL**: `https://vercel.com/nunos-projects-d60951f9/eu-projects-generator-v4`
 
 ### Steps to deploy:
 1. Run deployment: `vercel --prod`
