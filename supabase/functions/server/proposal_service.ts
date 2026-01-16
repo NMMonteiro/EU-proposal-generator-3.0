@@ -68,16 +68,39 @@ export const saveToSupabase = async (proposal: any) => {
         // 3. Relational Partners
         const partners = proposal.partners || [];
         if (partners.length > 0) {
-            const partnersToInsert = partners.map((p: any, idx: number) => ({
-                proposal_id: pid,
-                partner_id: (p.id && p.id.length > 30) ? p.id : null,
-                name: p.name,
-                role: p.role || 'Partner',
-                is_coordinator: !!p.isCoordinator,
-                description: p.description,
-                order_index: idx
-            }));
-            await supabase.from('proposal_partners').upsert(partnersToInsert, { onConflict: 'proposal_id,partner_id' });
+            const { upsertPartner } = await import('./partner_service.ts');
+            const partnersToInsert = [];
+
+            for (const [idx, p] of partners.entries()) {
+                let partnerId = (p.id && isUUID(p.id)) ? p.id : null;
+
+                // Ensure partner exists in global table (Source of Truth)
+                if (!partnerId && p.name) {
+                    try {
+                        const globalPartner = await upsertPartner(p);
+                        partnerId = globalPartner.id;
+                    } catch (e: any) {
+                        console.warn(`[WARN] Could not promote partner ${p.name} to global table:`, e.message);
+                    }
+                }
+
+                partnersToInsert.push({
+                    proposal_id: pid,
+                    partner_id: partnerId,
+                    name: p.name,
+                    role: p.role || 'Partner',
+                    is_coordinator: !!p.isCoordinator || !!p.is_coordinator,
+                    description: p.description,
+                    order_index: idx
+                });
+            }
+
+            // Delete existing links and re-insert for total consistency
+            await supabase.from('proposal_partners').delete().eq('proposal_id', pid);
+            if (partnersToInsert.length > 0) {
+                const { error: partErr } = await supabase.from('proposal_partners').insert(partnersToInsert);
+                if (partErr) console.error('Error inserting proposal partners:', partErr.message);
+            }
         }
 
         // 4. Relational Work Packages

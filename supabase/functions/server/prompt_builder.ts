@@ -17,11 +17,16 @@ export const extractNumericBudget = (text: string): number | null => {
     return parseRobustNumber(rawVal);
   }
 
-  // Fallback to simple pattern
+  // Fallback to simple pattern - Avoid 4-digit numbers starting with 20 (likely years)
   let clean = text.replace(/&nbsp;/g, ' ').replace(/\s/g, '');
-  const match = clean.match(/(?:€|EUR|budgetof|totalof|amountof)?(\d{4,9})/i); // Look for at least 4 digits to avoid dates/years
-  if (!match) return null;
-  return parseInt(match[1]) || null;
+  const match = clean.match(/(?:€|EUR|budgetof|totalof|amountof)?(\d{4,9})/i);
+  if (match) {
+    const val = parseInt(match[1]);
+    // Safety check: if it's strictly 4 digits and looks like a current year, ignore it
+    const looksLikeYear = val >= 2020 && val <= 2030;
+    if (!looksLikeYear) return val;
+  }
+  return null;
 };
 
 // Helper for complex number parsing

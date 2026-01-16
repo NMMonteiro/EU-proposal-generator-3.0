@@ -89,6 +89,7 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
     };
 
     const filteredPartners = partners
+        .filter(partner => !!partner && !!partner.name)
         .filter(partner =>
             partner.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             partner.acronym?.toLowerCase().includes(searchQuery.toLowerCase()) ||

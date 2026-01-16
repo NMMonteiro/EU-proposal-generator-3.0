@@ -21,6 +21,9 @@ export const analyzeUrl = async (targetUrl: string, userPrompt?: string, funding
     const cleanContent = stripHtml(rawContent).substring(0, 15000);
     const isPotentiallyEmpty = cleanContent.length < 500 && rawContent.length > 5000;
 
+    // Fallback: If clean text is sparse, provide raw HTML (up to 25k) so Gemini can scan for scripts/metadata
+    const analysisContext = isPotentiallyEmpty ? rawContent.substring(0, 25000) : cleanContent;
+
     // 2. Load funding scheme
     let fundingScheme = null;
     if (fundingSchemeId) {
@@ -44,7 +47,7 @@ export const analyzeUrl = async (targetUrl: string, userPrompt?: string, funding
 ${userPrompt ? `\nUSER CONTEXT/INSTRUCTIONS: ${userPrompt}\n` : ''}
 URL: ${targetUrl}
 EXTRACTED WEBSITE CONTENT: 
-${cleanContent}
+${analysisContext}
 
 ${isPotentiallyEmpty ? `NOTE: The website seems to be a Javascript-rendered application. Look for data in embedded JSON, script variables, or meta tags if available in the raw snippets above.` : ''}
 
@@ -70,6 +73,9 @@ OUTPUT FORMAT: Strict JSON
 
     const phase1Result = await model.generateContent(phase1Prompt);
     const phase1Data = extractJSON(phase1Result.response.text());
+
+    console.log(`[Analysis] URL: ${targetUrl} | Mode: ${isPotentiallyEmpty ? 'JS-Heavy (Raw Fallback)' : 'Static (Clean)'}`);
+    console.log(`[Constraints] Budget: ${phase1Data.constraints?.budget || 'None'} | Duration: ${phase1Data.constraints?.duration || 'None'}`);
 
     // 5. Phase 2: Idea Generation
     const ideationModel = getGeminiModel({ temperature: 0.7 });

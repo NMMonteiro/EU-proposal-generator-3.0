@@ -35,7 +35,7 @@ export class KnowledgeRetriever {
                     .from('global_knowledge')
                     .select('source_name, content, metadata')
                     .ilike('content', `%${kw}%`)
-                    .limit(2);
+                    .limit(3);
 
                 if (data) results.push(...data);
                 if (error) console.warn(`[RAG] Keyword ${kw} failed:`, error.message);
@@ -104,7 +104,20 @@ ${chunk.content}
         // 3. Extract technical-looking capitalized words (min 5 chars)
         const techTerms = text.match(/[A-Z][a-z]{4,}/g);
         if (techTerms) {
-            techTerms.slice(0, 5).forEach(term => keywords.add(term));
+            techTerms.slice(0, 10).forEach(term => keywords.add(term));
+        }
+
+        // 4. URL Segment Extraction (e.g., civic-innovation-fund -> Civic Innovation Fund)
+        const urlMatch = text.match(/https?:\/\/[^\s]+/gi);
+        if (urlMatch) {
+            urlMatch.forEach(url => {
+                const segments = url.split('/').pop()?.split(/[?#]/)[0].split(/[-_]/);
+                segments?.forEach(seg => {
+                    if (seg.length > 3) {
+                        keywords.add(seg.charAt(0).toUpperCase() + seg.slice(1));
+                    }
+                });
+            });
         }
 
         return Array.from(keywords);

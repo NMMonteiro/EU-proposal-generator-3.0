@@ -171,7 +171,7 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
-                        {workPackages.map((wp, idx) => {
+                        {workPackages.filter(wp => !!wp && !!wp.name).map((wp, idx) => {
                             const wpBudget = (wp.activities || []).reduce((sum: number, act: any) => sum + (act.estimatedBudget || 0), 0);
                             return (
                                 <tr key={idx} className="bg-white/50 hover:bg-white transition-colors">
@@ -195,7 +195,7 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
 
     return (
         <div className="space-y-6">
-            {displayWPs.map((wp, i) => {
+            {displayWPs.filter(wp => !!wp && !!wp.name).map((wp, i) => {
                 const actualIndex = limitToIndex !== undefined ? limitToIndex : i;
                 const wpBudget = (wp.activities || []).reduce((sum: number, act: any) => sum + (act.estimatedBudget || 0), 0);
 
@@ -298,7 +298,7 @@ export const DynamicBudgetSection = ({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/20">
-                        {budget.map((item, i) => (
+                        {budget.filter(item => !!item && !!item.item).map((item, i) => (
                             <tr key={i} className="hover:bg-white/5 transition-colors">
                                 <td className="py-3 px-4">
                                     <div className="font-medium text-foreground/90">{item.item}</div>
@@ -328,7 +328,7 @@ export const DynamicRiskSection = ({ risks }: { risks: any[] }) => {
     if (!risks || risks.length === 0) return null;
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {risks.map((risk, i) => (
+            {risks.filter(risk => !!risk && !!risk.risk).map((risk, i) => (
                 <Card key={i} className="bg-card/30 border-border/40 hover:border-primary/20 transition-all">
                     <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
@@ -382,7 +382,7 @@ export const DynamicPartnerSection = ({
     }
     return (
         <div className="space-y-6">
-            {partners.map((p, i) => (
+            {partners.filter(p => !!p && !!p.name).map((p, i) => (
                 <Card key={i} className="bg-card/50 border-border/60">
                     <CardHeader className="pb-2">
                         <CardTitle className="text-lg text-primary flex items-center justify-between">

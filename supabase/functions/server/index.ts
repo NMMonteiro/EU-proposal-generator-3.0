@@ -107,20 +107,30 @@ Deno.serve(async (req) => {
                 return new Response(JSON.stringify(partner), { headers: corsHeaders });
             }
 
+            if (id && req.method === 'DELETE') {
+                const { deletePartner } = await import('./partner_service.ts');
+                await deletePartner(id);
+                return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+            }
+
             if (req.method === 'POST') {
-                if (path.includes('/import-partner-pdf')) {
-                    const formData = await req.formData();
-                    const file = formData.get('file') as File;
-                    const data = await importPartnerPdf(file);
-                    return new Response(JSON.stringify(data), { headers: corsHeaders });
-                }
                 const body = await req.json();
+                const { upsertPartner } = await import('./partner_service.ts');
                 const partner = await upsertPartner(body);
                 return new Response(JSON.stringify(partner), { headers: corsHeaders });
             }
         }
 
-        // --- 5. FUNDING SCHEMES ENRICHMENT ---
+        // --- 5. PARTNER PDF IMPORT ---
+        if (path.includes('/import-partner-pdf') && req.method === 'POST') {
+            const { importPartnerPdf } = await import('./pdf_parser_service.ts');
+            const formData = await req.formData();
+            const file = formData.get('file') as File;
+            const data = await importPartnerPdf(file);
+            return new Response(JSON.stringify(data), { headers: corsHeaders });
+        }
+
+        // --- 6. FUNDING SCHEMES ENRICHMENT ---
         if (path.includes('/enrich-scheme') && req.method === 'POST') {
             const { schemeId } = await req.json();
             const { enrichFundingScheme } = await import('./funding_scheme_service.ts');
@@ -129,7 +139,6 @@ Deno.serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ error: 'Route not found', path }), { status: 404, headers: corsHeaders });
-
     } catch (error: any) {
         console.error(`[ERROR] ${path}:`, error);
         return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

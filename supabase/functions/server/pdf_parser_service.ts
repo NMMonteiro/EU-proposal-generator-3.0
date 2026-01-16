@@ -15,12 +15,25 @@ export const importPartnerPdf = async (file: File) => {
 
     const model = getGeminiModel();
     const prompt = `Extract partner organization info from this PIF PDF. 
-    Return ONLY valid JSON including: name, acronym, organisationId, pic, vatNumber, businessId, organizationType, country, legalAddress, city, postcode, description, experience, staffSkills, relevantProjects.`;
+    Return ONLY valid JSON including: name, acronym, organisationId, pic, vatNumber, businessId, organizationType, isPublicBody, isNonProfit, country, legalAddress, city, postcode, region, contactEmail, website, description, experience, staffSkills, relevantProjects.
+    
+    IMPORTANT: Ensure all field names use camelCase exactly as specified above.`;
 
     const result = await model.generateContent([
         { fileData: { mimeType: uploadResponse.file.mimeType, fileUri: uploadResponse.file.uri } },
         { text: prompt }
     ]);
 
-    return extractJSON(result.response.text());
+    const extractedData = extractJSON(result.response.text());
+
+    // Immediately save to database
+    const { upsertPartner } = await import('./partner_service.ts');
+    const savedPartner = await upsertPartner(extractedData);
+
+    console.log(`✅ Partner imported from PDF: ${savedPartner.name} (ID: ${savedPartner.id})`);
+
+    return {
+        ...savedPartner,
+        partnerId: savedPartner.id
+    };
 };

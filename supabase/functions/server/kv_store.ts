@@ -60,5 +60,5 @@ export async function getByPrefix(prefix: string): Promise<any[]> {
     throw new Error(`KV getByPrefix error: ${error.message}`);
   }
 
-  return data?.map(row => row.value) || [];
+  return data?.map(row => row.value).filter(v => v !== null && v !== undefined) || [];
 }
