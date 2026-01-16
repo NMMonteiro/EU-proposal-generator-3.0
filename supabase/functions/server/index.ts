@@ -36,7 +36,10 @@ Deno.serve(async (req) => {
         }
 
         if (path.includes('/proposals')) {
-            const id = segments[segments.length - 1] === 'proposals' ? null : segments[segments.length - 1];
+            let id = segments[segments.length - 1] === 'proposals' ? null : segments[segments.length - 1];
+            // Normalize ID: remove 'proposal-' prefix if present for DB queries
+            const dbId = id ? (id.startsWith('proposal-') ? id.replace('proposal-', '') : id) : null;
+            const kvKey = id ? (id.startsWith('proposal-') ? id : `proposal-${id}`) : null;
 
             // GET /proposals
             if (!id && req.method === 'GET') {
@@ -46,7 +49,7 @@ Deno.serve(async (req) => {
 
             // GET /proposals/:id (OPTIMIZED HYDRATION)
             if (id && req.method === 'GET') {
-                const proposal = await loadFullProposal(id);
+                const proposal = await loadFullProposal(dbId!);
                 if (!proposal) return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: corsHeaders });
                 return new Response(JSON.stringify(proposal), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
@@ -54,8 +57,12 @@ Deno.serve(async (req) => {
             // POST /proposals/:id (Save/Create)
             if (!id && req.method === 'POST') {
                 const body = await req.json();
-                await KV.set(body.id, body);
-                await saveToSupabase(body);
+                if (!body.id) body.id = crypto.randomUUID();
+                const saveKvKey = body.id.startsWith('proposal-') ? body.id : `proposal-${body.id}`;
+                const saveDbId = body.id.startsWith('proposal-') ? body.id.replace('proposal-', '') : body.id;
+
+                await KV.set(saveKvKey, body);
+                await saveToSupabase({ ...body, id: saveDbId });
                 return new Response(JSON.stringify(body), { headers: corsHeaders });
             }
 
@@ -64,17 +71,25 @@ Deno.serve(async (req) => {
                 const { targetBudget, proposal: bodyProp } = await req.json();
                 const { rebalanceBudget } = await import('./proposal_service.ts');
                 rebalanceBudget(bodyProp, targetBudget);
-                await KV.set(id, bodyProp);
-                await saveToSupabase(bodyProp);
+                await KV.set(kvKey!, bodyProp);
+                await saveToSupabase({ ...bodyProp, id: dbId });
                 return new Response(JSON.stringify(bodyProp), { headers: corsHeaders });
             }
 
             // PUT /proposals/:id (Update)
             if (id && req.method === 'PUT') {
                 const body = await req.json();
-                await KV.set(id, body);
-                await saveToSupabase(body);
+                await KV.set(kvKey!, body);
+                await saveToSupabase({ ...body, id: dbId });
                 return new Response(JSON.stringify(body), { headers: corsHeaders });
+            }
+
+            // DELETE /proposals/:id
+            if (id && req.method === 'DELETE') {
+                await KV.del(kvKey!);
+                const supabase = getSupabaseClient();
+                await supabase.from('proposals').delete().eq('id', dbId!);
+                return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
             }
         }
 

@@ -53,7 +53,7 @@ export const generateProposalFull = async (params: any) => {
     const text = result.response.text();
     const proposal = extractJSON(text);
 
-    proposal.id = `proposal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    proposal.id = crypto.randomUUID();
     proposal.generatedAt = new Date().toISOString();
 
     // Finalization logic - use the same hierarchical extraction
@@ -76,7 +76,7 @@ export const generateProposalFull = async (params: any) => {
 
     rebalanceBudget(proposal, targetBudget);
 
-    await KV.set(proposal.id, proposal);
+    await KV.set(`proposal-${proposal.id}`, proposal);
     await saveToSupabase(proposal);
 
     return proposal;

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from './supabase_client.ts';
+import { isUUID } from './utils.ts';
 
 export const saveToSupabase = async (proposal: any) => {
     try {
@@ -104,23 +105,32 @@ export const loadFullProposal = async (id: string) => {
     const supabase = getSupabaseClient();
 
     // Deep query to get EVERYTHING in one go
-    const { data: dbProp, error: dbError } = await supabase.from('proposals').select(`
-        *,
-        sections:proposal_sections(*),
-        rel_partners:proposal_partners(
+    const { data: dbProp, error: dbError } = isUUID(id)
+        ? await supabase.from('proposals').select(`
             *,
-            profile:partners(*)
-        ),
-        rel_work_packages:proposal_work_packages(*),
-        rel_budget:proposal_budget_items(*),
-        rel_risks:proposal_risks(*),
-        fundingScheme:funding_schemes(
-            *,
-            layouts:funding_scheme_layouts(*)
-        )
-    `).eq('id', id).single();
+            sections:proposal_sections(*),
+            rel_partners:proposal_partners(
+                *,
+                profile:partners(*)
+            ),
+            rel_work_packages:proposal_work_packages(*),
+            rel_budget:proposal_budget_items(*),
+            rel_risks:proposal_risks(*),
+            fundingScheme:funding_schemes(
+                *,
+                layouts:funding_scheme_layouts(*)
+            )
+        `).eq('id', id).single()
+        : { data: null, error: null };
 
-    if (dbError || !dbProp) return null;
+    if (!dbProp) {
+        // Fallback to KV
+        const kvKey = id.startsWith('proposal-') ? id : `proposal-${id}`;
+        const { get: getKV } = await import('./kv_store.ts');
+        const kvData = await getKV(kvKey);
+        if (kvData) return kvData;
+        return null;
+    }
 
     // Reconstruct the proposal object with hydration
     const dynamic_sections: any = {};
