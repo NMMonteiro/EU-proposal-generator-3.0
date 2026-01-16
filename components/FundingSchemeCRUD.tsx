@@ -485,6 +485,12 @@ export function FundingSchemeCRUD() {
                                                     Inactive
                                                 </span>
                                             )}
+                                            {scheme.expert_playbook && (
+                                                <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full border border-blue-100 animate-in fade-in zoom-in duration-500">
+                                                    <Sparkles className="h-3 w-3 fill-blue-600/20" />
+                                                    AI Enriched
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     {scheme.description && (
