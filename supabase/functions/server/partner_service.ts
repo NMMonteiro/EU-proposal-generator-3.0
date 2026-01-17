@@ -26,6 +26,19 @@ function mapPartner(p: any) {
         contactEmail: p.contact_email,
         website: p.website,
         description: p.description,
+        department: p.department,
+        // Legal Representative
+        legalRepName: p.legal_rep_name,
+        legalRepPosition: p.legal_rep_position,
+        legalRepEmail: p.legal_rep_email,
+        legalRepPhone: p.legal_rep_phone,
+        // Contact Person
+        contactPersonName: p.contact_person_name,
+        contactPersonPosition: p.contact_person_position,
+        contactPersonEmail: p.contact_person_email,
+        contactPersonPhone: p.contact_person_phone,
+        contactPersonRole: p.contact_person_role,
+        // Expertise & Experience
         experience: p.experience,
         staffSkills: p.staff_skills,
         relevantProjects: p.relevant_projects,
@@ -68,6 +81,19 @@ export const upsertPartner = async (body: any) => {
         contact_email: body.contactEmail,
         website: body.website,
         description: body.description,
+        department: body.department,
+        // Legal Representative
+        legal_rep_name: body.legalRepName,
+        legal_rep_position: body.legalRepPosition,
+        legal_rep_email: body.legalRepEmail,
+        legal_rep_phone: body.legalRepPhone,
+        // Contact Person
+        contact_person_name: body.contactPersonName,
+        contact_person_position: body.contactPersonPosition,
+        contact_person_email: body.contactPersonEmail,
+        contact_person_phone: body.contactPersonPhone,
+        contact_person_role: body.contactPersonRole,
+        // Expertise & Experience
         experience: body.experience,
         staff_skills: body.staffSkills,
         relevant_projects: body.relevantProjects
