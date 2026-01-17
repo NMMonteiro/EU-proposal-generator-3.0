@@ -82,6 +82,23 @@ export interface TechnicalLayer {
   description: string;
 }
 
+export interface Annex {
+  id?: string;
+  proposalId?: string;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string; // 'pdf', 'docx', 'xlsx', 'image', etc.
+  fileSize?: number; // Size in bytes
+  category?: 'technical' | 'financial' | 'legal' | 'supporting' | 'other';
+  annexNumber?: number; // For ordering: Annex 1, Annex 2, etc.
+  isMandatory?: boolean; // Required by funding scheme
+  isTemplate?: boolean; // Is this a template to be filled?
+  uploadedAt?: string;
+  uploadedBy?: string;
+}
+
 export interface FullProposal {
   // Core Fields
   id?: string;
@@ -116,6 +133,7 @@ export interface FullProposal {
   budget: BudgetItem[];
   timeline: TimelinePhase[];
   technicalOverview?: TechnicalLayer[] | string;
+  annexes?: Annex[]; // NEW: Proposal attachments
 
   // Metadata
   layoutId?: string;

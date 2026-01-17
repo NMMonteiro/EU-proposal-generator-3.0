@@ -9,6 +9,7 @@ import {
     DynamicRiskSection,
     DynamicPartnerSection
 } from '../ProposalSections';
+import { AnnexesManager } from '../AnnexesManager';
 import type { FullProposal } from '../../types/proposal';
 import type { DisplaySection } from '../../utils/proposal-assembly';
 
@@ -21,6 +22,7 @@ interface ViewerTabsProps {
     onAddPartner: () => void;
     budgetLimit: number;
     onRebalance: (limit: number) => void;
+    onAnnexesUpdate?: () => void;
 }
 
 export function ViewerTabs({
@@ -31,7 +33,8 @@ export function ViewerTabs({
     onEdit,
     onAddPartner,
     budgetLimit,
-    onRebalance
+    onRebalance,
+    onAnnexesUpdate
 }: ViewerTabsProps) {
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -84,6 +87,16 @@ export function ViewerTabs({
                 <div className="max-w-4xl mx-auto space-y-8">
                     <DynamicRiskSection
                         risks={proposal.risks || []}
+                    />
+                </div>
+            </TabsContent>
+
+            <TabsContent value="annexes" className="mt-0">
+                <div className="max-w-5xl mx-auto space-y-8 pb-24">
+                    <AnnexesManager
+                        proposalId={proposal.id || ''}
+                        annexes={proposal.annexes || []}
+                        onUpdate={onAnnexesUpdate || (() => { })}
                     />
                 </div>
             </TabsContent>

@@ -689,6 +689,152 @@ export async function generateDocx(proposal: FullProposal): Promise<{ blob: Blob
       docChildren.push(new Paragraph({ text: "", spacing: { after: 200 } }));
     });
 
+    // 3.5. ANNEXES SECTION (if any)
+    if (p.annexes && p.annexes.length > 0) {
+      docChildren.push(new Paragraph({ children: [new PageBreak()] }));
+      docChildren.push(new Paragraph({
+        text: "Annexes",
+        heading: HeadingLevel.HEADING_1,
+        spacing: { before: 400, after: 300 }
+      }));
+
+      docChildren.push(new Paragraph({
+        children: [new TextRun({
+          text: "The following supporting documents are attached to this proposal:",
+          font: FONT,
+          size: BODY_SIZE
+        })],
+        spacing: { after: 200 }
+      }));
+
+      // Create annexes table
+      const annexRows: TableRow[] = [
+        // Header row
+        new TableRow({
+          tableHeader: true,
+          children: [
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: "Annex", bold: true, font: FONT, size: 20 })],
+                alignment: AlignmentType.CENTER
+              })],
+              shading: { fill: COLOR_TABLE_HEADER },
+              width: { size: 10, type: WidthType.PERCENTAGE }
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: "Title", bold: true, font: FONT, size: 20 })],
+                alignment: AlignmentType.LEFT
+              })],
+              shading: { fill: COLOR_TABLE_HEADER },
+              width: { size: 40, type: WidthType.PERCENTAGE }
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: "Description", bold: true, font: FONT, size: 20 })],
+                alignment: AlignmentType.LEFT
+              })],
+              shading: { fill: COLOR_TABLE_HEADER },
+              width: { size: 35, type: WidthType.PERCENTAGE }
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({ text: "Type", bold: true, font: FONT, size: 20 })],
+                alignment: AlignmentType.CENTER
+              })],
+              shading: { fill: COLOR_TABLE_HEADER },
+              width: { size: 15, type: WidthType.PERCENTAGE }
+            }),
+          ]
+        })
+      ];
+
+      // Data rows
+      p.annexes.forEach((annex, idx) => {
+        annexRows.push(new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({
+                  text: `${annex.annexNumber || idx + 1}`,
+                  font: FONT,
+                  size: 18,
+                  bold: annex.isMandatory
+                })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [
+                  new TextRun({
+                    text: annex.title,
+                    font: FONT,
+                    size: 18,
+                    bold: annex.isMandatory
+                  }),
+                  ...(annex.isMandatory ? [new TextRun({ text: " *", color: "FF0000", bold: true })] : [])
+                ]
+              })]
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({
+                  text: annex.description || "-",
+                  font: FONT,
+                  size: 18,
+                  color: annex.description ? COLOR_SECONDARY : "999999"
+                })]
+              })]
+            }),
+            new TableCell({
+              children: [new Paragraph({
+                children: [new TextRun({
+                  text: annex.fileType.toUpperCase(),
+                  font: FONT,
+                  size: 16,
+                  color: COLOR_SECONDARY
+                })],
+                alignment: AlignmentType.CENTER
+              })],
+              verticalAlign: VerticalAlign.CENTER
+            }),
+          ]
+        }));
+      });
+
+      docChildren.push(new Table({
+        rows: annexRows,
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+          left: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+          right: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+          insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "EEEEEE" },
+          insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "EEEEEE" }
+        }
+      }));
+
+      // Add note about mandatory annexes if any
+      const mandatoryCount = p.annexes.filter(a => a.isMandatory).length;
+      if (mandatoryCount > 0) {
+        docChildren.push(new Paragraph({
+          children: [new TextRun({
+            text: `* Indicates mandatory annex required by funding scheme (${mandatoryCount} total)`,
+            font: FONT,
+            size: 16,
+            italics: true,
+            color: "666666"
+          })],
+          spacing: { before: 200 }
+        }));
+      }
+
+      docChildren.push(new Paragraph({ text: "", spacing: { after: 400 } }));
+    }
+
     // 4. GENERATE FINAL DOCUMENT
     const doc = new Document({
       styles: { default: { document: { run: { font: FONT, size: BODY_SIZE } } } },

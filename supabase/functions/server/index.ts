@@ -221,6 +221,92 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify(data), { headers: corsHeaders });
         }
 
+        // --- 5.5. ANNEXES MANAGEMENT ---
+        if (path.includes('/annexes')) {
+            const { listAnnexes, getAnnex, createAnnex, updateAnnex, deleteAnnex } = await import('./annex_service.ts');
+
+            // POST /proposals/:proposalId/annexes/upload - Upload file and create annex
+            if (path.includes('/upload') && req.method === 'POST') {
+                const proposalId = segments[segments.indexOf('proposals') + 1];
+                const formData = await req.formData();
+                const file = formData.get('file') as File;
+                const title = formData.get('title') as string || file.name;
+                const description = formData.get('description') as string || '';
+                const category = formData.get('category') as string || 'other';
+                const isMandatory = formData.get('isMandatory') === 'true';
+
+                if (!file) {
+                    return new Response(JSON.stringify({ error: 'No file provided' }), {
+                        status: 400,
+                        headers: corsHeaders
+                    });
+                }
+
+                const supabase = getSupabaseClient();
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${proposalId}_${Date.now()}.${fileExt}`;
+                const filePath = `annexes/${fileName}`;
+
+                // Upload to partner-assets bucket
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('partner-assets')
+                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+                if (uploadError) {
+                    return new Response(JSON.stringify({ error: uploadError.message }), {
+                        status: 500,
+                        headers: corsHeaders
+                    });
+                }
+
+                const { data: urlData } = supabase.storage
+                    .from('partner-assets')
+                    .getPublicUrl(filePath);
+
+                // Create annex record
+                const annex = await createAnnex({
+                    proposalId,
+                    title,
+                    description,
+                    fileUrl: urlData.publicUrl,
+                    fileName: file.name,
+                    fileType: fileExt || 'unknown',
+                    fileSize: file.size,
+                    category,
+                    isMandatory
+                });
+
+                return new Response(JSON.stringify(annex), { headers: corsHeaders });
+            }
+
+            // GET /proposals/:proposalId/annexes - List all annexes for a proposal
+            if (req.method === 'GET' && !segments[segments.length - 1].match(/^[0-9a-f-]{36}$/i)) {
+                const proposalId = segments[segments.indexOf('proposals') + 1];
+                const annexes = await listAnnexes(proposalId);
+                return new Response(JSON.stringify({ annexes }), { headers: corsHeaders });
+            }
+
+            // GET /annexes/:id - Get single annex
+            const annexId = segments[segments.length - 1];
+            if (req.method === 'GET' && isUUID(annexId)) {
+                const annex = await getAnnex(annexId);
+                return new Response(JSON.stringify(annex), { headers: corsHeaders });
+            }
+
+            // PUT /annexes/:id - Update annex metadata
+            if (req.method === 'PUT' && isUUID(annexId)) {
+                const body = await req.json();
+                const annex = await updateAnnex(annexId, body);
+                return new Response(JSON.stringify(annex), { headers: corsHeaders });
+            }
+
+            // DELETE /annexes/:id - Delete annex
+            if (req.method === 'DELETE' && isUUID(annexId)) {
+                await deleteAnnex(annexId);
+                return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+            }
+        }
+
         // --- 6. FUNDING SCHEMES ENRICHMENT ---
         if (path.includes('/enrich-scheme') && req.method === 'POST') {
             const { schemeId } = await req.json();
