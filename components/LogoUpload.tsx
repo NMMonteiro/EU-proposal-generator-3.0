@@ -40,7 +40,7 @@ export function LogoUpload({ currentLogoUrl, onLogoChange, label = 'Logo' }: Log
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
             const filePath = `logos/${fileName}`;
 
-            // Upload to Supabase Storage
+            // Try to upload to Supabase Storage
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('funding-scheme-logos')
                 .upload(filePath, file, {
@@ -48,7 +48,16 @@ export function LogoUpload({ currentLogoUrl, onLogoChange, label = 'Logo' }: Log
                     upsert: false
                 });
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                // If bucket doesn't exist, provide helpful error message
+                if (uploadError.message.includes('not found') || uploadError.message.includes('does not exist')) {
+                    console.error('Storage bucket error:', uploadError);
+                    toast.error('Storage bucket not configured. Please use URL method instead.');
+                    setUploadMethod('url');
+                    return;
+                }
+                throw uploadError;
+            }
 
             // Get public URL
             const { data: urlData } = supabase.storage
@@ -62,7 +71,7 @@ export function LogoUpload({ currentLogoUrl, onLogoChange, label = 'Logo' }: Log
 
         } catch (error: any) {
             console.error('Upload error:', error);
-            toast.error(`Failed to upload logo: ${error.message}`);
+            toast.error(`Failed to upload logo: ${error.message || 'Unknown error'}`);
         } finally {
             setUploading(false);
         }

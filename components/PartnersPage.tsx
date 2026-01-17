@@ -174,7 +174,7 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
                         <Button
                             variant="outline"
                             onClick={() => document.getElementById('partners-page-pdf-upload')?.click()}
-                            className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl px-6 font-bold"
+                            className="border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-primary rounded-xl px-6 font-bold"
                         >
                             <Upload className="h-4 w-4 mr-2" />
                             Import PDF
