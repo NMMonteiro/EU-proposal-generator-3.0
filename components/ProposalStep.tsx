@@ -162,15 +162,15 @@ export function ProposalStep({
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" onClick={() => setShowPrompt(true)} title="View AI Prompt" className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl">
+                    <Button variant="outline" onClick={() => setShowPrompt(true)} title="View AI Prompt" className="border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-primary rounded-xl">
                         <Terminal className="h-4 w-4 mr-2" />
                         Prompt
                     </Button>
-                    <Button variant="outline" onClick={onBack} className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl">
+                    <Button variant="outline" onClick={onBack} className="border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-primary rounded-xl">
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Back
                     </Button>
-                    <Button variant="outline" onClick={handleSave} disabled={saving} className="border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl">
+                    <Button variant="outline" onClick={handleSave} disabled={saving} className="border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-primary rounded-xl">
                         {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                         Save
                     </Button>

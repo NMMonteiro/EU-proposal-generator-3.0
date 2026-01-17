@@ -204,7 +204,7 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
 
       {/* Actions */}
       <div className="flex justify-between items-center pt-8 border-t border-slate-200">
-        <Button variant="outline" onClick={onBack} className="border-slate-200 text-slate-600 px-8 rounded-xl hover:bg-slate-50">
+        <Button variant="outline" onClick={onBack} className="border-slate-200 text-slate-600 px-8 rounded-xl hover:bg-slate-50 hover:text-primary">
           Back
         </Button>
         <Button

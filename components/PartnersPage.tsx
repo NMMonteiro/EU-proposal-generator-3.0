@@ -229,7 +229,7 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
                         {searchQuery ? 'No partners match your criteria' : 'Your consortium is empty'}
                     </p>
                     {!searchQuery && (
-                        <Button onClick={handleCreateNew} variant="outline" className="mt-6 border-slate-200 rounded-xl px-8 font-bold">
+                        <Button onClick={handleCreateNew} variant="outline" className="mt-6 border-slate-200 rounded-xl px-8 font-bold hover:text-primary">
                             <Plus className="h-5 w-5 mr-2" />
                             Add Your First Partner
                         </Button>

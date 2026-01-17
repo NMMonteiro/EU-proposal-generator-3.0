@@ -139,7 +139,7 @@ export const ProposalSummaryPage: React.FC<ProposalSummaryPageProps> = ({ propos
                     Back to Viewer
                 </Button>
                 <div className="flex gap-2">
-                    <Button onClick={handlePrint} variant="outline" className="border-slate-200 bg-white shadow-sm hover:bg-slate-50">
+                    <Button onClick={handlePrint} variant="outline" className="border-slate-200 bg-white shadow-sm hover:bg-slate-50 hover:text-primary">
                         <Printer className="h-4 w-4 mr-2" />
                         Print / PDF
                     </Button>
