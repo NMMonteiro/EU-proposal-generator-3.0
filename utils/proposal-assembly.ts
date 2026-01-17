@@ -56,12 +56,12 @@ function cleanTitle(title: string): string {
 }
 
 /**
- * Standardized Naming: Always format as "WPX: Title"
+ * Standardized Naming: Always format as "WPX: Title" or "Activity X: Title"
  */
-function formatWPTitle(idx: number, rawTitle: string): string {
+function formatWPTitle(idx: number, rawTitle: string, isMobility = false): string {
     const clean = cleanTitle(rawTitle);
-    const prefix = `WP${idx + 1}`;
-    if (!clean || clean.toLowerCase() === 'activities' || clean.toLowerCase() === 'loading') {
+    const prefix = isMobility ? `Activity ${idx + 1}` : `WP${idx + 1}`;
+    if (!clean || ['activities', 'loading', 'activity'].includes(clean.toLowerCase())) {
         return prefix;
     }
     return `${prefix}: ${clean}`;
@@ -79,6 +79,8 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
     const sectionPool = new Map<string, DisplaySection>();
     const wpIdxToPoolKey = new Map<number, string>();
     const normTitleToPoolKey = new Map<string, string>();
+    const logicMode = fundingScheme?.logic_mode || 'standard';
+    const isMobilityMode = logicMode === 'mobility';
 
     const MASTER_ORDER: Record<string, number> = {
         'summary': 0, 'abstract': 0, 'projectsummary': 0,
@@ -131,7 +133,7 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
 
                 sectionPool.set(pk, {
                     id: pk,
-                    title: isWPHeader ? formatWPTitle(wpIdx!, s.label) : (cleanTitle(s.label) || s.label),
+                    title: isWPHeader ? formatWPTitle(wpIdx!, s.label, isMobilityMode) : (cleanTitle(s.label) || s.label),
                     description: s.description,
                     level: (isWPHeader || MASTER_ORDER[nl]) ? 1 : level,
                     wpIdx: wpIdx,
@@ -150,7 +152,7 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
         if (!wpIdxToPoolKey.has(idx)) {
             const id = `extra_wp_${idx}`;
             sectionPool.set(id, {
-                id, title: `WP${idx + 1}`, level: 1, wpIdx: idx, type: 'work_package',
+                id, title: isMobilityMode ? `Activity ${idx + 1}` : `WP${idx + 1}`, level: 1, wpIdx: idx, type: 'work_package',
                 order: 1101 + idx
             });
             wpIdxToPoolKey.set(idx, id);
@@ -217,7 +219,7 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
             if (key.length > 3 && !key.startsWith('_')) {
                 sectionPool.set(`custom_${key}`, {
                     id: `custom_${key}`,
-                    title: wpIdx !== undefined ? formatWPTitle(wpIdx, key) : (cleanTitle(key) || key),
+                    title: wpIdx !== undefined ? formatWPTitle(wpIdx, key, isMobilityMode) : (cleanTitle(key) || key),
                     content: val, level: 1, wpIdx: wpIdx, order: getPriority(key)
                 });
             }
@@ -253,7 +255,7 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
             // Always overwrite with DB name if it's more descriptive, but format it carefully
             const dbNameClean = wp.name ? cleanTitle(wp.name) : "";
             if (dbNameClean) {
-                s.title = formatWPTitle(idx, dbNameClean);
+                s.title = formatWPTitle(idx, dbNameClean, isMobilityMode);
             }
             if (wp.description && (!s.content || wp.description.length > s.content.length)) {
                 s.content = wp.description;
@@ -342,9 +344,9 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
 
     if (!hasOverview) {
         const firstWPIdx = items.findIndex(s => s.wpIdx !== undefined && s.type === 'work_package');
-        if (firstWPIdx !== -1) items.splice(firstWPIdx, 0, { id: 'wp_list_final', title: 'Work packages overview', level: 1, type: 'wp_list', order: 1000 });
+        if (firstWPIdx !== -1) items.splice(firstWPIdx, 0, { id: 'wp_list_final', title: isMobilityMode ? 'Activities overview' : 'Work packages overview', level: 1, type: 'wp_list', order: 1000 });
     } else {
-        const ov = items.find(s => { const n = normalize(s.title); return n.includes('workpackagesoverview') || n.includes('wplist') || n.includes('listofworkpackages'); });
+        const ov = items.find(s => { const n = normalize(s.title); return n.includes('workpackagesoverview') || n.includes('wplist') || n.includes('listofworkpackages') || n.includes('activitiesoverview'); });
         if (ov) ov.type = 'wp_list';
     }
 

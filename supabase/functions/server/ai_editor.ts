@@ -64,17 +64,26 @@ export async function handleCopilotChat(params: any) {
 
     const model = getGeminiModel({ temperature: 0.7 });
 
+    const logicMode = proposal.fundingScheme?.logic_mode || 'standard';
+    const mobilityRules = proposal.fundingScheme?.template_json?.mobilityRules;
+
     // Build context-aware system prompt
     const systemPrompt = `You are the "Proposal Copilot", an elite AI assistant specialized in European funding (Erasmus+, Horizon Europe, etc.).
     You have full access to the current project context below.
     
+    LOGIC MODE: "${logicMode}" 
+    ${logicMode === 'mobility' ? 'This is a MOBILITY project (like KA121/KA122). Focus on participant flows, individual support, and learning outcomes instead of complex work packages.' : 'This is a STANDARD project (like KA220/Horizon). Focus on structured Work Packages, tasks, and actual cost breakdowns.'}
+
     PROJECT CONTEXT:
     - Title: ${proposal.title}
     - Summary: ${proposal.summary}
     - Settings: ${JSON.stringify(proposal.settings || {})}
     - Partners: ${JSON.stringify(proposal.partners?.map((p: any) => p.name))}
     - Budget: ${JSON.stringify(proposal.budget)}
+    ${logicMode === 'mobility' ? `- Mobility Activities: ${JSON.stringify(proposal.workPackages || [])}` : `- Work Packages: ${JSON.stringify(proposal.workPackages || [])}`}
     
+    ${logicMode === 'mobility' && mobilityRules ? `Erasmus Mobility Rules: ${JSON.stringify(mobilityRules)}` : ''}
+
     YOUR CAPABILITIES:
     1. Answer questions concisely and professionally.
     2. Analyze sections and suggest deep improvements.
@@ -98,18 +107,27 @@ export async function handleCopilotChat(params: any) {
              "settings": { 
                 "startDate": "YYYY-MM-DD", 
                 "currency": "EUR/USD",
-                "sourceUrl": "...",
                 "duration": 24 
              }
           }
+        },
+        {
+          "type": "update_work_package", // Use for Standard mode
+          "index": 0,
+          "data": { "name": "...", "description": "...", "activities": [] }
+        },
+        {
+          "type": "update_mobility_activity", // Use for Mobility mode
+          "index": 0,
+          "data": { "name": "...", "description": "...", "participants": 5, "days": 10, "type": "job_shadowing" }
         }
       ]
     }
     
     CRITICAL INSTRUCTIONS: 
-    1. For date changes (e.g. project start date), use "update_metadata" -> "settings" -> "startDate" in YYYY-MM-DD format.
-    2. Always confirm the action in your "response".
-    3. SYNC: If you change metadata (like project start date or title) that is also displayed in a text section (like "Context" or "Project Summary"), you MUST ALSO include an "update_section" action for that section to keep the text consistent with the metadata.
+    1. SYNC: If you change metadata or budget, update the corresponding text sections (like "Context" or "Project Objectives") to match.
+    2. PROACTIVITY: If the user asks for a project in a specific country, suggest partner profiles or local context.
+    ${logicMode === 'mobility' ? '3. MOBILITY LOGIC: When adding a mobility, calculate the budget impact based on rules (e.g. org support = 100 per person).' : '3. WP LOGIC: Ensure work packages are coherent and sequential.'}
     
     Available section keys: ${JSON.stringify(Object.keys(proposal.dynamic_sections || proposal.dynamicSections || {}))}
     
@@ -153,6 +171,58 @@ export async function handleCopilotChat(params: any) {
                         ...(proposal.settings || {}),
                         ...updates.settings
                     };
+                }
+            } else if (action.type === 'update_work_package') {
+                const { index, data: wpData } = action;
+                const wps = proposal.workPackages || [];
+                if (index === -1) {
+                    wps.push(wpData);
+                } else if (wps[index]) {
+                    wps[index] = { ...wps[index], ...wpData };
+                }
+                proposal.workPackages = wps;
+            } else if (action.type === 'update_mobility_activity') {
+                const { index, data: mobData } = action;
+                const wps = proposal.workPackages || [];
+
+                // Mobility activities are stored in the same place as WPs for now
+                // but with specific metadata
+                const activityObj = {
+                    name: mobData.name || mobData.title,
+                    description: mobData.description,
+                    duration: mobData.days || mobData.duration,
+                    participants: mobData.participants,
+                    activityType: mobData.type,
+                    isMobility: true
+                };
+
+                if (index === -1) {
+                    wps.push(activityObj);
+                } else if (wps[index]) {
+                    wps[index] = { ...wps[index], ...activityObj };
+                }
+                proposal.workPackages = wps;
+
+                // AUTO-UPDATE BUDGET for Mobility (Basic implementation)
+                if (logicMode === 'mobility' && mobilityRules) {
+                    const totalParticipants = wps.reduce((sum, wp) => sum + (Number(wp.participants) || 0), 0);
+                    const orgSupportTotal = totalParticipants * (mobilityRules.unitCosts?.organizational_support || 100);
+
+                    // Update specific budget item
+                    const budget = proposal.budget || [];
+                    const osIdx = budget.findIndex((b: any) => b.category === 'Organizational Support' || b.item === 'Organizational Support');
+
+                    const newItem = {
+                        item: 'Organizational Support',
+                        category: 'Organizational Support',
+                        description: `Support for ${totalParticipants} participants.`,
+                        cost: orgSupportTotal
+                    };
+
+                    if (osIdx > -1) budget[osIdx] = newItem;
+                    else budget.push(newItem);
+
+                    proposal.budget = budget;
                 }
             }
         }

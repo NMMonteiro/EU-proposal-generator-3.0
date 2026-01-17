@@ -24,6 +24,7 @@ interface ViewerTabsProps {
     onRebalance: (limit: number) => void;
     onAiEdit: (section: DisplaySection) => void;
     onAnnexesUpdate?: () => void;
+    logicMode?: 'standard' | 'mobility' | 'lumpsum' | string;
 }
 
 export function ViewerTabs({
@@ -36,7 +37,8 @@ export function ViewerTabs({
     budgetLimit,
     onRebalance,
     onAiEdit,
-    onAnnexesUpdate
+    onAnnexesUpdate,
+    logicMode = 'standard'
 }: ViewerTabsProps) {
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

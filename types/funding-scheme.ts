@@ -35,6 +35,8 @@ export interface FundingScheme {
     description?: string;
     logo_url?: string; // URL to funding scheme logo
     template_json: FundingSchemeTemplate;
+    logic_mode?: 'standard' | 'mobility' | 'lumpsum' | string;
+    mobility_rules?: any;
     is_default: boolean; // If true, used as fallback template
     is_active: boolean; // If false, hidden from UI
     expert_playbook?: any;

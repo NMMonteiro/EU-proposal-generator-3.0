@@ -32,6 +32,9 @@ export interface WorkPackage {
   name: string;
   description: string;
   duration?: string;
+  participants?: number; // Mobility specific
+  activityType?: string; // Mobility specific (e.g. job_shadowing)
+  isMobility?: boolean;  // Flag to switch UI logic
   activities: {
     name: string;
     description: string;

@@ -218,9 +218,9 @@ export const ResponsiveSectionContent = ({
     );
 };
 
-export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency, overrideWP, onlyOverview }: { workPackages: any[], limitToIndex?: number, currency: string, overrideWP?: any, onlyOverview?: boolean }) => {
+export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency, overrideWP, onlyOverview, logicMode = 'standard' }: { workPackages: any[], limitToIndex?: number, currency: string, overrideWP?: any, onlyOverview?: boolean, logicMode?: string }) => {
     if ((!workPackages || workPackages.length === 0) && !overrideWP) {
-        return <div className="p-4 text-center text-muted-foreground italic border border-dashed rounded-lg">No work packages defined yet.</div>;
+        return <div className="p-4 text-center text-muted-foreground italic border border-dashed rounded-lg">No {logicMode === 'mobility' ? 'activities' : 'work packages'} defined yet.</div>;
     }
 
     const formatCurrency = (amount: number) => {
@@ -240,7 +240,7 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                     <thead className="bg-slate-100/80 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
                         <tr>
                             <th className="py-2 px-4 w-16">ID</th>
-                            <th className="py-2 px-4">Work Package Title</th>
+                            <th className="py-2 px-4">{logicMode === 'mobility' ? 'Activity' : 'Work Package'} Title</th>
                             <th className="py-2 px-4 text-right">Budget</th>
                         </tr>
                     </thead>
@@ -249,7 +249,7 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                             const wpBudget = (wp.activities || []).reduce((sum: number, act: any) => sum + (act.estimatedBudget || 0), 0);
                             return (
                                 <tr key={idx} className="bg-white/50 hover:bg-white transition-colors">
-                                    <td className="py-2 px-4 font-bold text-primary">WP {idx + 1}</td>
+                                    <td className="py-2 px-4 font-bold text-primary">{logicMode === 'mobility' ? 'A' : 'WP'}{idx + 1}</td>
                                     <td className="py-2 px-4 font-medium text-slate-700">{wp.name}</td>
                                     <td className="py-2 px-4 text-right font-mono text-slate-500">{formatCurrency(wpBudget)}</td>
                                 </tr>
@@ -278,23 +278,41 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                         <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <Badge variant="outline" className="mb-2 border-primary/30 text-primary">WP {actualIndex + 1}</Badge>
-                                    <CardTitle className="text-lg">{wp.name}</CardTitle>
-                                </div>
-                                {wpBudget > 0 && (
-                                    <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                                        {formatCurrency(wpBudget)}
+                                    <Badge variant="outline" className="mb-2 border-primary/30 text-primary">
+                                        {logicMode === 'mobility' ? 'Activity' : 'WP'} {actualIndex + 1}
                                     </Badge>
+                                    <CardTitle className="text-lg">{wp.name}</CardTitle>
+                                    {logicMode === 'mobility' && wp.activityType && (
+                                        <Badge variant="secondary" className="mt-1 text-[10px] uppercase">
+                                            {wp.activityType.replace(/_/g, ' ')}
+                                        </Badge>
+                                    )}
+                                </div>
+                                {(wpBudget > 0 || wp.participants > 0) && (
+                                    <div className="flex flex-col items-end gap-1">
+                                        {wpBudget > 0 && (
+                                            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                                                {formatCurrency(wpBudget)}
+                                            </Badge>
+                                        )}
+                                        {logicMode === 'mobility' && wp.participants > 0 && (
+                                            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
+                                                <Users className="w-3 h-3" /> {wp.participants} Pax | {wp.duration} Days
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="prose prose-invert prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: wp.description }} />
-                            {wp.activities && wp.activities.length > 0 && (
+
+                            {/* Standard Sub-Activities Grid */}
+                            {logicMode === 'standard' && wp.activities && wp.activities.length > 0 && (
                                 <div className="mt-6 space-y-4">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                                         <span className="text-primary"><LayoutDashboard className="w-4 h-4" /></span>
-                                        Structure
+                                        Tasks
                                     </h3>
                                     <div className="grid gap-3">
                                         {wp.activities.map((act: any, aIdx: number) => (
@@ -318,7 +336,7 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
 
                             {wp.deliverables && wp.deliverables.length > 0 && (
                                 <div className="bg-secondary/20 rounded-lg p-4 mt-6">
-                                    <h5 className="text-[10px] font-bold uppercase tracking-widest text-primary/70 mb-3">Expected Deliverables</h5>
+                                    <h5 className="text-[10px] font-bold uppercase tracking-widest text-primary/70 mb-3">Expected Deliverables / Outcomes</h5>
                                     <ul className="space-y-2">
                                         {wp.deliverables.map((del: string, dIdx: number) => (
                                             <li key={dIdx} className="flex items-start gap-2 text-xs">

@@ -90,6 +90,7 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                     sections={sections}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
+                    logicMode={proposal.fundingScheme?.logic_mode || 'standard'}
                     onSectionClick={(id) => {
                         setActiveTab('narrative');
                         const el = document.getElementById(id);
@@ -103,6 +104,7 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                         setActiveTab={setActiveTab}
                         proposal={proposal}
                         sections={sections}
+                        logicMode={proposal.fundingScheme?.logic_mode || 'standard'}
                         onEdit={(s) => {
                             setEditingSectionId(s.id);
                             setEditingSectionTitle(s.title);

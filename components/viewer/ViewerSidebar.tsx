@@ -9,6 +9,7 @@ interface ViewerSidebarProps {
     onTabChange: (tab: string) => void;
     currentSectionId?: string;
     onSectionClick: (id: string) => void;
+    logicMode?: 'standard' | 'mobility' | 'lumpsum' | string;
 }
 
 export function ViewerSidebar({
@@ -16,13 +17,14 @@ export function ViewerSidebar({
     activeTab,
     onTabChange,
     currentSectionId,
-    onSectionClick
+    onSectionClick,
+    logicMode = 'standard'
 }: ViewerSidebarProps) {
     const mainTabs = [
         { id: 'narrative', label: 'Proposal Narrative', icon: FileText },
         { id: 'partners', label: 'Partnership', icon: Users },
         { id: 'budget', label: 'Financial Plan', icon: Euro },
-        { id: 'timeline', label: 'Work Plan', icon: Calendar },
+        { id: 'timeline', label: logicMode === 'mobility' ? 'Mobility Activities' : 'Work Plan', icon: Calendar },
         { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
         { id: 'annexes', label: 'Annexes', icon: Paperclip },
     ];
