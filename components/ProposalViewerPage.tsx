@@ -107,11 +107,58 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                         onAddPartner={() => setIsPartnerModalOpen(true)}
                         budgetLimit={budgetLimit}
                         onRebalance={handleRebalance}
+                        onAnnexesUpdate={async () => {
+                            // Refetch proposal to get updated annexes
+                            try {
+                                const response = await fetch(`${serverUrl}/proposals/${proposalId}`, {
+                                    headers: {
+                                        'Authorization': `Bearer ${publicAnonKey}`,
+                                        'apikey': publicAnonKey,
+                                    },
+                                });
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    setProposal(data);
+                                }
+                            } catch (error) {
+                                console.error('Failed to refetch proposal:', error);
+                            }
+                        }}
                     />
                 </main>
             </div>
 
             {/* Modals & Assistants */}
+            <PartnerSelectionModal
+                isOpen={isPartnerModalOpen}
+                onClose={() => setIsPartnerModalOpen(false)}
+                onSelect={async (selectedPartners) => {
+                    // Update proposal with new partners
+                    const updatedProposal = {
+                        ...proposal,
+                        partners: selectedPartners
+                    };
+                    setProposal(updatedProposal);
+
+                    // Save to backend
+                    try {
+                        await saveProposal(updatedProposal);
+                        toast.success('Partners updated successfully');
+                    } catch (error) {
+                        console.error('Failed to save partners:', error);
+                        toast.error('Failed to save partners');
+                    }
+
+                    setIsPartnerModalOpen(false);
+                }}
+                proposalContext={{
+                    title: proposal.title,
+                    summary: proposal.summary,
+                    objectives: proposal.objectives || '',
+                }}
+                currentPartners={proposal.partners || []}
+            />
+
             <ProposalCopilot
                 isOpen={isCopilotOpen}
                 onClose={() => setIsCopilotOpen(false)}

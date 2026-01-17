@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Users, Calendar, DollarSign, AlertTriangle, Layers, ChevronDown } from 'lucide-react';
+import { FileText, Users, Calendar, DollarSign, AlertTriangle, Layers, ChevronDown, Paperclip } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import type { DisplaySection } from '../../utils/proposal-assembly';
@@ -25,6 +25,7 @@ export function ViewerSidebar({
         { id: 'budget', label: 'Financial Plan', icon: DollarSign },
         { id: 'timeline', label: 'Work Plan', icon: Calendar },
         { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
+        { id: 'annexes', label: 'Annexes', icon: Paperclip },
     ];
 
     return (
@@ -45,8 +46,8 @@ export function ViewerSidebar({
                                 key={tab.id}
                                 onClick={() => onTabChange(tab.id)}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${activeTab === tab.id
-                                        ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20'
-                                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+                                    ? 'bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20'
+                                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                                     }`}
                             >
                                 <tab.icon className={`w-4 h-4 transition-colors ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
@@ -66,8 +67,8 @@ export function ViewerSidebar({
                                         key={section.id}
                                         onClick={() => onSectionClick(section.id)}
                                         className={`w-full text-left px-3 py-1.5 rounded-md text-xs transition-all flex items-start gap-2 group ${currentSectionId === section.id
-                                                ? 'bg-accent text-accent-foreground font-semibold border-l-2 border-primary pl-2.5'
-                                                : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
+                                            ? 'bg-accent text-accent-foreground font-semibold border-l-2 border-primary pl-2.5'
+                                            : 'text-muted-foreground hover:bg-accent/30 hover:text-foreground'
                                             } ${section.level > 1 ? 'ml-4 opacity-80' : ''}`}
                                     >
                                         <div className="mt-1 w-1 h-1 rounded-full bg-border group-hover:bg-primary/50 shrink-0" />

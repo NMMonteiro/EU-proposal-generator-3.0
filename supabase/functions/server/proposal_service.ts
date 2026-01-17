@@ -139,6 +139,7 @@ export const loadFullProposal = async (id: string) => {
             rel_work_packages:proposal_work_packages(*),
             rel_budget:proposal_budget_items(*),
             rel_risks:proposal_risks(*),
+            rel_annexes:proposal_annexes(*),
             fundingScheme:funding_schemes(
                 *,
                 layouts:funding_scheme_layouts(*)
@@ -227,6 +228,22 @@ export const loadFullProposal = async (id: string) => {
             impact: r.impact,
             mitigation: r.mitigation_strategy
         })) || dbProp.risks,
+        annexes: dbProp.rel_annexes?.map((a: any) => ({
+            id: a.id,
+            proposalId: a.proposal_id,
+            title: a.title,
+            description: a.description,
+            fileUrl: a.file_url,
+            fileName: a.file_name,
+            fileType: a.file_type,
+            fileSize: a.file_size,
+            category: a.category,
+            annexNumber: a.annex_number,
+            isMandatory: a.is_mandatory,
+            isTemplate: a.is_template,
+            uploadedAt: a.uploaded_at,
+            uploadedBy: a.uploaded_by
+        })) || [],
         fundingScheme,
         layout,
         layout_id: layout?.id || dbProp.layout_id
