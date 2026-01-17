@@ -42,6 +42,10 @@ function mapPartner(p: any) {
         experience: p.experience,
         staffSkills: p.staff_skills,
         relevantProjects: p.relevant_projects,
+        // Assets
+        logoUrl: p.logo_url,
+        pdfUrl: p.pdf_url,
+        keywords: p.keywords,
         createdAt: p.created_at
     };
 }
@@ -96,7 +100,11 @@ export const upsertPartner = async (body: any) => {
         // Expertise & Experience
         experience: body.experience,
         staff_skills: body.staffSkills,
-        relevant_projects: body.relevantProjects
+        relevant_projects: body.relevantProjects,
+        // Assets
+        logo_url: body.logoUrl,
+        pdf_url: body.pdfUrl,
+        keywords: body.keywords
     };
 
     // If updating an existing partner (has valid UUID), include the ID

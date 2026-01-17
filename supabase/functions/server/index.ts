@@ -95,6 +95,90 @@ Deno.serve(async (req) => {
 
         // --- 4. PARTNERS CORE ---
         if (path.includes('/partners')) {
+            // Handle file uploads first (more specific routes)
+            if (path.includes('/upload-logo') && req.method === 'POST') {
+                const partnerId = segments[segments.indexOf('partners') + 1];
+                const formData = await req.formData();
+                const file = formData.get('file') as File;
+
+                if (!file) {
+                    return new Response(JSON.stringify({ error: 'No file provided' }), {
+                        status: 400,
+                        headers: corsHeaders
+                    });
+                }
+
+                const supabase = getSupabaseClient();
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${partnerId}_${Date.now()}.${fileExt}`;
+                const filePath = `logos/${fileName}`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('funding-scheme-logos')
+                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+                if (uploadError) {
+                    return new Response(JSON.stringify({ error: uploadError.message }), {
+                        status: 500,
+                        headers: corsHeaders
+                    });
+                }
+
+                const { data: urlData } = supabase.storage
+                    .from('funding-scheme-logos')
+                    .getPublicUrl(filePath);
+
+                // Update partner with logo URL
+                const { upsertPartner, getPartner } = await import('./partner_service.ts');
+                const partner = await getPartner(partnerId);
+                if (partner) {
+                    await upsertPartner({ ...partner, id: partnerId, logoUrl: urlData.publicUrl });
+                }
+
+                return new Response(JSON.stringify({ url: urlData.publicUrl }), { headers: corsHeaders });
+            }
+
+            if (path.includes('/upload-pdf') && req.method === 'POST') {
+                const partnerId = segments[segments.indexOf('partners') + 1];
+                const formData = await req.formData();
+                const file = formData.get('file') as File;
+
+                if (!file) {
+                    return new Response(JSON.stringify({ error: 'No file provided' }), {
+                        status: 400,
+                        headers: corsHeaders
+                    });
+                }
+
+                const supabase = getSupabaseClient();
+                const fileName = `${partnerId}_${Date.now()}.pdf`;
+                const filePath = `pdfs/${fileName}`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('funding-scheme-logos')
+                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+                if (uploadError) {
+                    return new Response(JSON.stringify({ error: uploadError.message }), {
+                        status: 500,
+                        headers: corsHeaders
+                    });
+                }
+
+                const { data: urlData } = supabase.storage
+                    .from('funding-scheme-logos')
+                    .getPublicUrl(filePath);
+
+                // Update partner with PDF URL
+                const { upsertPartner, getPartner } = await import('./partner_service.ts');
+                const partner = await getPartner(partnerId);
+                if (partner) {
+                    await upsertPartner({ ...partner, id: partnerId, pdfUrl: urlData.publicUrl });
+                }
+
+                return new Response(JSON.stringify({ url: urlData.publicUrl }), { headers: corsHeaders });
+            }
+
             const id = segments[segments.length - 1] === 'partners' ? null : segments[segments.length - 1];
 
             if (!id && req.method === 'GET') {
