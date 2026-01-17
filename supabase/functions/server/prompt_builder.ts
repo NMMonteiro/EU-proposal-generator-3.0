@@ -279,12 +279,26 @@ export function buildProposalPrompt(
   MANDATORY: You MUST subtly weave this specific terminology and address these objectives throughout the proposal narrative to ensure maximum scoring.
   ` : '';
 
+  // Determine the best instruction for the project_summary section
+  const summarySection = allSections.find(s => s.key === 'project_summary' || s.label.toLowerCase().includes('project summary'));
+  const rawInstruction = summarySection?.aiPrompt || summarySection?.description || '';
+  const isQA = rawInstruction.includes('Objectives:') || rawInstruction.includes('Implementation:') || rawInstruction.includes('Results:');
+
+  const summaryInstruction = summarySection
+    ? `CRITICAL: ${summarySection.label}. ${rawInstruction}. 
+       MANDATORY FORMAT: You MUST structure this section as a series of specific sub-sections using HTML <h3> tags for each question/heading provided in the template (e.g., Objectives, Implementation, Results).
+       For each sub-section, use the following format:
+       <h3>[The Question/Heading]</h3>
+       <p>[Detailed, professional answer of at least 150-200 words]</p>
+       Do NOT just write a single block of text or simple bullet points. This must be ready for the official application form.`
+    : `CRITICAL: Write a comprehensive, detailed HTML-formatted summary covering: (1) Project context and background, (2) Main objectives, (3) Expected outcomes and impact. Use <h3> for each sub-header.`;
+
   return `You are an elite European Grant Writing Consultant with a 100% success rate in Erasmus+ and Horizon Europe funding. 
 Your writing style is highly professional, technical, persuasive, and data-driven. 
 
 ${playbookInstructions}
 
-MANDATORY INSTRUCTION: You MUST provide an EXTREMELY DETAILED and EXHAUSTIVE output for the following sections in this EXACT SEQUENCE:
+MANDATORY INSTRUCTION: You MUST provide a DETAILED and EXHAUSTIVE output for the following sections in this EXACT SEQUENCE. Be technically profound but concise enough to stay within the output limit (approx. 40,000 characters).
 1. Relevance of the project: Deep context, policy alignment, and urgent need.
 2. Project description: Comprehensive overview of the solution.
 3. Needs analysis: Evidence-based analysis of target group gaps.
@@ -358,7 +372,7 @@ STRICT JSON OUTPUT FORMAT (FOLLOW EXACTLY):
   ],
   "risks": [{ "risk": "Technical delay", "likelihood": "Low", "impact": "High", "mitigation": "Proper planning and alternative resource allocation." }],
   "dynamicSections": {
-    "project_summary": "CRITICAL: This is the MAIN Project Summary section that will be displayed prominently. Write a comprehensive, detailed HTML-formatted summary (4-6 paragraphs) covering: (1) Project context and background, (2) Main objectives, (3) Target groups and beneficiaries, (4) Methodology and approach, (5) Expected outcomes and impact, (6) Innovation and added value. Use <p>, <ul>, <li>, <strong> tags for formatting. This should be 800-1200 words.",
+    "project_summary": "${summaryInstruction.replace(/"/g, '\\"')}",
     "key_from_structure_above": "HTML technical narrative for each section...",
     "work_package_1": "Narrative for WP1...",
     "work_package_2": "Narrative for WP2..."

@@ -67,9 +67,13 @@ export const saveToSupabase = async (proposal: any) => {
 
         // 3. Relational Partners
         const partners = proposal.partners || [];
+        const partnersToInsert = [];
+
+        // Always delete existing links to allow for empty consortiums or full replacements
+        await supabase.from('proposal_partners').delete().eq('proposal_id', pid);
+
         if (partners.length > 0) {
             const { upsertPartner } = await import('./partner_service.ts');
-            const partnersToInsert = [];
 
             for (const [idx, p] of partners.entries()) {
                 let partnerId = (p.id && isUUID(p.id)) ? p.id : null;
@@ -95,8 +99,6 @@ export const saveToSupabase = async (proposal: any) => {
                 });
             }
 
-            // Delete existing links and re-insert for total consistency
-            await supabase.from('proposal_partners').delete().eq('proposal_id', pid);
             if (partnersToInsert.length > 0) {
                 const { error: partErr } = await supabase.from('proposal_partners').insert(partnersToInsert);
                 if (partErr) console.error('Error inserting proposal partners:', partErr.message);
@@ -165,21 +167,23 @@ export const loadFullProposal = async (id: string) => {
     const hydratedPartners = dbProp.rel_partners?.map((p: any) => {
         const profile = p.profile || {};
         return {
-            ...profile, // Full profile from partners table
+            ...profile, // Preserve raw fields for fallback
             id: p.partner_id || p.id,
             name: p.name || profile.name,
-            role: p.role,
-            isCoordinator: p.is_coordinator,
+            role: p.role || 'Partner',
+            isCoordinator: !!p.is_coordinator,
             description: p.description || profile.description,
-            // Map table names to camelCase for frontend
-            legalNameNational: profile.legal_name_national,
-            organisationId: profile.organisation_id,
+            // Explicit camelCase mapping for frontend & DOCX tool
+            legalNameNational: profile.legal_name_national || profile.name,
+            organisationId: profile.organisation_id || profile.pic || profile.oid,
+            acronym: profile.acronym,
             pic: profile.pic,
             vatNumber: profile.vat_number,
             businessId: profile.business_id,
             organizationType: profile.organization_type,
-            isPublicBody: profile.is_public_body,
-            isNonProfit: profile.is_non_profit,
+            isPublicBody: !!profile.is_public_body,
+            isNonProfit: !!profile.is_non_profit,
+            country: profile.country,
             legalAddress: profile.legal_address,
             city: profile.city,
             postcode: profile.postcode,
@@ -197,7 +201,8 @@ export const loadFullProposal = async (id: string) => {
             contactPersonRole: profile.contact_person_role,
             experience: profile.experience,
             staffSkills: profile.staff_skills,
-            relevantProjects: profile.relevant_projects
+            relevantProjects: profile.relevant_projects,
+            logoUrl: profile.logo_url
         };
     });
 
@@ -206,6 +211,10 @@ export const loadFullProposal = async (id: string) => {
 
     return {
         ...dbProp,
+        selectedIdea: dbProp.selected_idea,
+        projectUrl: dbProp.project_url,
+        generatedAt: dbProp.generated_at,
+        savedAt: dbProp.saved_at,
         dynamic_sections,
         dynamicSections: dynamic_sections,
         partners: hydratedPartners || dbProp.partners,

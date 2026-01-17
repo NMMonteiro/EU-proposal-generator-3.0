@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Download, Share2, Settings, Edit, Sparkles } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Settings, Edit, Sparkles, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -11,6 +11,7 @@ interface ViewerHeaderProps {
     isExporting: boolean;
     onSettingsOpen: () => void;
     onAiEditOpen: () => void;
+    onCopilotOpen: () => void;
 }
 
 export function ViewerHeader({
@@ -20,7 +21,8 @@ export function ViewerHeader({
     onExport,
     isExporting,
     onSettingsOpen,
-    onAiEditOpen
+    onAiEditOpen,
+    onCopilotOpen
 }: ViewerHeaderProps) {
     return (
         <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b">
@@ -44,7 +46,11 @@ export function ViewerHeader({
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={onAiEditOpen} className="hidden sm:flex gap-2 border-primary/20 hover:bg-primary/5 transition-all text-primary font-semibold">
+                    <Button variant="outline" size="sm" onClick={onCopilotOpen} className="hidden sm:flex gap-2 border-primary/20 hover:bg-primary/5 transition-all text-primary font-semibold">
+                        <MessageSquare className="w-4 h-4" />
+                        Copilot
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={onAiEditOpen} className="hidden sm:flex gap-2 hover:bg-amber-500/5 hover:border-amber-500/20 transition-all text-amber-600 font-semibold border-amber-500/20">
                         <Sparkles className="w-4 h-4" />
                         AI Editor
                     </Button>

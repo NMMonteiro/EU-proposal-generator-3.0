@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
-import { functionsUrl, publicAnonKey } from '../utils/supabase/info';
+import { serverUrl, publicAnonKey } from '../utils/supabase/info.tsx';
 
 // Simple utility for conditional classnames
 const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
@@ -64,7 +64,7 @@ export function ProposalCopilot({ proposalId, isOpen, onClose, onProposalUpdate 
                 content: m.content
             }));
 
-            const response = await fetch(`${functionsUrl}/proposal-copilot`, {
+            const response = await fetch(`${serverUrl}/proposal-copilot`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -94,8 +94,8 @@ export function ProposalCopilot({ proposalId, isOpen, onClose, onProposalUpdate 
 
             setMessages(prev => [...prev, aiMsg]);
 
-            // Check if the backend performed an action (e.g., updated a section)
-            if (data.action && data.action.type === 'update_section') {
+            // Check if the backend performed an action
+            if (data.action) {
                 if (onProposalUpdate) {
                     onProposalUpdate();
                 }
@@ -118,26 +118,28 @@ export function ProposalCopilot({ proposalId, isOpen, onClose, onProposalUpdate 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed right-0 top-0 bottom-0 w-[400px] bg-background border-l border-border shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="fixed right-6 bottom-24 w-[420px] h-[650px] bg-background border border-border shadow-2xl z-50 flex flex-col rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
             {/* Header */}
-            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
-                <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Sparkles className="h-4 w-4 text-primary" />
+            <div className="p-4 border-b border-border flex items-center justify-between bg-primary/5">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shadow-inner">
+                        <Sparkles className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-sm">Proposal Copilot</h3>
-                        <p className="text-xs text-muted-foreground">AI Assistant (Beta)</p>
+                        <h3 className="font-bold text-sm text-foreground">Proposal Copilot</h3>
+                        <div className="flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <p className="text-[10px] font-medium text-emerald-600 uppercase tracking-wider">Online Assistant</p>
+                        </div>
                     </div>
                 </div>
                 <Button
                     variant="ghost"
                     size="icon"
                     onClick={onClose}
-                    className="h-10 w-10 hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    title="Close Copilot"
+                    className="h-9 w-9 hover:bg-red-100 hover:text-red-600 transition-all rounded-xl border border-border bg-background group"
                 >
-                    <X className="h-5 w-5" />
+                    <X className="h-5 w-5 text-slate-600 group-hover:text-red-600 transition-colors" />
                 </Button>
             </div>
 

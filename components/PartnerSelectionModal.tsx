@@ -16,6 +16,7 @@ interface PartnerSelectionModalProps {
     onConfirm: (selectedPartners: Partner[]) => void;
     selectedIdeaTitle?: string;
     proposalContext?: string;
+    currentPartners?: Partner[];
 }
 
 interface ScoredPartner extends Partner {
@@ -23,7 +24,7 @@ interface ScoredPartner extends Partner {
     matchReasons: string[];
 }
 
-export function PartnerSelectionModal({ isOpen, onClose, onConfirm, selectedIdeaTitle, proposalContext }: PartnerSelectionModalProps) {
+export function PartnerSelectionModal({ isOpen, onClose, onConfirm, selectedIdeaTitle, proposalContext, currentPartners }: PartnerSelectionModalProps) {
     const [partners, setPartners] = useState<ScoredPartner[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -35,10 +36,18 @@ export function PartnerSelectionModal({ isOpen, onClose, onConfirm, selectedIdea
     useEffect(() => {
         if (isOpen) {
             fetchPartners();
-            setSelectedIds(new Set()); // Reset selection on open
-            setCoordinatorId(null);
+            // Initialize from currentPartners
+            if (currentPartners && currentPartners.length > 0) {
+                const initialSelected = new Set(currentPartners.map(p => p.id));
+                const initialCoord = currentPartners.find(p => p.isCoordinator || (p as any).role === 'Coordinator')?.id || null;
+                setSelectedIds(initialSelected);
+                setCoordinatorId(initialCoord);
+            } else {
+                setSelectedIds(new Set());
+                setCoordinatorId(null);
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, currentPartners]);
 
     const fetchPartners = async () => {
         setLoading(true);
@@ -305,8 +314,8 @@ export function PartnerSelectionModal({ isOpen, onClose, onConfirm, selectedIdea
                         {selectedIds.size} partner{selectedIds.size !== 1 ? 's' : ''} selected
                     </div>
                     <Button variant="outline" onClick={onClose} className="mr-2">Cancel</Button>
-                    <Button onClick={handleConfirm} disabled={selectedIds.size === 0}>
-                        Add Selected Partners
+                    <Button onClick={handleConfirm}>
+                        {currentPartners && currentPartners.length > 0 ? 'Update Partners' : 'Add Selected Partners'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

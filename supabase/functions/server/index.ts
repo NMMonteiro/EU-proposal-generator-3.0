@@ -13,30 +13,42 @@ Deno.serve(async (req) => {
 
     const url = new URL(req.url);
     const path = url.pathname;
+    const method = req.method;
     const segments = path.split('/').filter(Boolean);
+
+    console.log(`[DEBUG] Incoming Request: ${method} ${path}`);
+    console.log(`[DEBUG] Segments: ${JSON.stringify(segments)}`);
 
     try {
         // --- 1. HEALTH & DIAGNOSTICS ---
-        if (path.includes('/health')) {
+        if (segments.includes('health')) {
             return new Response(JSON.stringify({ status: 'ok', time: new Date().toISOString() }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
         // --- 2. IDEATION FLOW ---
-        if (path.includes('/analyze-url') && req.method === 'POST') {
+        if (segments.includes('analyze-url') && method === 'POST') {
             const body = await req.json();
             const data = await analyzeUrl(body.url, body.userPrompt, body.fundingSchemeId);
             return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
         // --- 3. PROPOSAL CORE ---
-        if (path.includes('/generate-proposal') && req.method === 'POST') {
+        if (segments.includes('generate-proposal') && method === 'POST') {
+            console.log('[DEBUG] Entering generate-proposal handler');
             const body = await req.json();
             const proposal = await generateProposalFull(body);
             return new Response(JSON.stringify(proposal), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        if (path.includes('/proposals')) {
+        if (segments.includes('proposals')) {
             let id = segments[segments.length - 1] === 'proposals' ? null : segments[segments.length - 1];
+            // If the last segment is 'annexes' or 'rebalance', the ID might be the previous one
+            if (segments.includes('annexes') || segments.includes('rebalance') || segments.includes('upload')) {
+                const proposalsIdx = segments.indexOf('proposals');
+                if (proposalsIdx !== -1 && segments.length > proposalsIdx + 1) {
+                    id = segments[proposalsIdx + 1];
+                }
+            }
             // Normalize ID: remove 'proposal-' prefix if present for DB queries
             const dbId = id ? (id.startsWith('proposal-') ? id.replace('proposal-', '') : id) : null;
             const kvKey = id ? (id.startsWith('proposal-') ? id : `proposal-${id}`) : null;
@@ -94,9 +106,9 @@ Deno.serve(async (req) => {
         }
 
         // --- 4. PARTNERS CORE ---
-        if (path.includes('/partners')) {
+        if (segments.includes('partners')) {
             // Handle file uploads first (more specific routes)
-            if (path.includes('/upload-logo') && req.method === 'POST') {
+            if (segments.includes('upload-logo') && method === 'POST') {
                 const partnerId = segments[segments.indexOf('partners') + 1];
                 const formData = await req.formData();
                 const file = formData.get('file') as File;
@@ -213,7 +225,7 @@ Deno.serve(async (req) => {
         }
 
         // --- 5. PARTNER PDF IMPORT ---
-        if (path.includes('/import-partner-pdf') && req.method === 'POST') {
+        if (segments.includes('import-partner-pdf') && method === 'POST') {
             const { importPartnerPdf } = await import('./pdf_parser_service.ts');
             const formData = await req.formData();
             const file = formData.get('file') as File;
@@ -222,11 +234,11 @@ Deno.serve(async (req) => {
         }
 
         // --- 5.5. ANNEXES MANAGEMENT ---
-        if (path.includes('/annexes')) {
+        if (segments.includes('annexes')) {
             const { listAnnexes, getAnnex, createAnnex, updateAnnex, deleteAnnex } = await import('./annex_service.ts');
 
             // POST /proposals/:proposalId/annexes/upload - Upload file and create annex
-            if (path.includes('/upload') && req.method === 'POST') {
+            if (segments.includes('upload') && method === 'POST') {
                 const proposalId = segments[segments.indexOf('proposals') + 1];
                 const formData = await req.formData();
                 const file = formData.get('file') as File;
@@ -307,8 +319,23 @@ Deno.serve(async (req) => {
             }
         }
 
-        // --- 6. FUNDING SCHEMES ENRICHMENT ---
-        if (path.includes('/enrich-scheme') && req.method === 'POST') {
+        // --- 6. AI & COPILOT ---
+        if (segments.includes('proposal-copilot') && method === 'POST') {
+            const body = await req.json();
+            const { handleCopilotChat } = await import('./ai_editor.ts');
+            const result = await handleCopilotChat(body);
+            return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        if (segments.includes('ai-edit') && method === 'POST') {
+            const body = await req.json();
+            const { handleAiEdit } = await import('./ai_editor.ts');
+            const result = await handleAiEdit(body);
+            return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // --- 7. FUNDING SCHEMES ENRICHMENT ---
+        if (segments.includes('enrich-scheme') && method === 'POST') {
             const { schemeId } = await req.json();
             const { enrichFundingScheme } = await import('./funding_scheme_service.ts');
             const result = await enrichFundingScheme(schemeId);

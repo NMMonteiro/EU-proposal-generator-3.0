@@ -4,12 +4,13 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select } from './ui/select';
 import {
     Upload, FileText, Download, Trash2, Edit2, Check, X,
     File, FileSpreadsheet, Image as ImageIcon, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { serverUrl, publicAnonKey } from '../utils/supabase/info';
 import type { Annex } from '../types/proposal';
 
 interface AnnexesManagerProps {
@@ -42,9 +43,6 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
     const [uploading, setUploading] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<Partial<Annex>>({});
-
-    const serverUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'http://localhost:54321/functions/v1/server';
-    const publicAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -227,16 +225,12 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
                                                 <div className="flex items-center gap-3">
                                                     <Select
                                                         value={editForm.category || 'other'}
-                                                        onValueChange={(value) => setEditForm({ ...editForm, category: value as any })}
+                                                        onChange={(e) => setEditForm({ ...editForm, category: e.target.value as any })}
+                                                        className="w-48"
                                                     >
-                                                        <SelectTrigger className="w-48">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-                                                                <SelectItem key={key} value={key}>{label}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
+                                                        {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                                                            <option key={key} value={key}>{label}</option>
+                                                        ))}
                                                     </Select>
                                                     <label className="flex items-center gap-2 text-sm">
                                                         <input

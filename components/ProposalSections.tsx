@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Globe, CheckCircle2, Layers, Edit, Plus, Users } from 'lucide-react';
+import { Building2, Globe, CheckCircle2, Layers, Edit, Plus, Users, Sparkles, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,53 @@ export function transformWideTables(html: string): string {
             const rows = Array.from(table.rows);
             if (rows.length === 0) return;
 
+            const cellsPerRow = rows.map(r => r.cells.length);
+            const maxCols = Math.max(...cellsPerRow);
+
+            // PATTERN 1: Vertical Key-Value Table (1-col table where rows alternate between Question? and Answer)
+            if (maxCols === 1 && rows.length >= 2) {
+                const isKeyValue = rows.some(r => r.textContent?.trim().endsWith('?'));
+                if (isKeyValue) {
+                    modified = true;
+                    const container = doc.createElement('div');
+                    container.className = "grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 my-6 bg-secondary/10 p-4 rounded-xl border border-border/40 not-prose";
+
+                    for (let i = 0; i < rows.length; i++) {
+                        const content = rows[i].textContent?.trim() || "";
+                        if (!content) continue;
+
+                        const itemDiv = doc.createElement('div');
+                        itemDiv.className = "flex flex-col gap-1";
+
+                        // If it ends with ? or looks like a label, make it bold/small
+                        if (content.endsWith('?') || content.endsWith(':') || (i < rows.length - 1 && rows[i + 1].textContent?.length! > content.length * 2)) {
+                            const label = doc.createElement('span');
+                            label.className = "text-[10px] uppercase font-bold text-primary/70 tracking-wider";
+                            label.textContent = content;
+                            itemDiv.appendChild(label);
+
+                            // Try to peek next row for the value
+                            if (i < rows.length - 1 && !rows[i + 1].textContent?.trim().endsWith('?')) {
+                                const value = doc.createElement('span');
+                                value.className = "text-sm text-foreground/90 font-medium";
+                                value.textContent = rows[i + 1].textContent?.trim() || "---";
+                                itemDiv.appendChild(value);
+                                i++; // Skip next
+                            }
+                        } else {
+                            const value = doc.createElement('span');
+                            value.className = "text-sm text-foreground/90 font-medium";
+                            value.textContent = content;
+                            itemDiv.appendChild(value);
+                        }
+                        container.appendChild(itemDiv);
+                    }
+                    table.replaceWith(container);
+                    return;
+                }
+            }
+
+            // PATTERN 2: Standard Wide Tables
             let headers: string[] = [];
             const thead = table.querySelector('thead');
             if (thead && thead.rows.length > 0) {
@@ -28,18 +75,16 @@ export function transformWideTables(html: string): string {
                 headers = Array.from(rows[0].cells).map(c => c.textContent?.trim() || "");
             }
 
-            const colCount = headers.length;
-            if (colCount <= 4) return; // Only transform wide tables
+            if (headers.length <= 4) return; // Only transform wide tables or handled key-value
 
             modified = true;
             const container = doc.createElement('div');
-            container.className = "space-y-4 my-6 not-prose"; // not-prose to escape typography styles
+            container.className = "space-y-4 my-6 not-prose";
 
             const dataRows = Array.from(table.querySelectorAll('tr')).filter(tr =>
                 !tr.parentElement || tr.parentElement.tagName !== 'THEAD'
             );
 
-            // Check if headers matched first data row
             if (!thead && dataRows.length > 0 && headers.join('|') === Array.from(dataRows[0].cells).map(c => c.textContent?.trim() || "").join('|')) {
                 dataRows.shift();
             }
@@ -96,21 +141,26 @@ export function transformWideTables(html: string): string {
     }
 }
 
-export const ResponsiveSectionContent = ({
-    id,
-    title,
-    content,
-    description,
-    level = 1,
-    onEdit
-}: {
+interface ResponsiveSectionContentProps {
     id?: string;
     title?: string;
     content: string;
     description?: string;
     level?: number;
     onEdit?: () => void;
-}) => {
+    onAiEdit?: () => void;
+    key?: React.Key;
+}
+
+export const ResponsiveSectionContent = ({
+    id,
+    title,
+    content,
+    description,
+    level = 1,
+    onEdit,
+    onAiEdit
+}: ResponsiveSectionContentProps) => {
     const [processed, setProcessed] = useState(content);
 
     useEffect(() => {
@@ -128,16 +178,30 @@ export const ResponsiveSectionContent = ({
                     )}
                     {description && <p className="text-xs text-muted-foreground mt-1 max-w-2xl">{description}</p>}
                 </div>
-                {onEdit && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onEdit}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-primary/60 hover:text-primary hover:bg-primary/10"
-                    >
-                        <Edit className="w-4 h-4" />
-                    </Button>
-                )}
+                <div className="flex gap-1">
+                    {onAiEdit && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onAiEdit}
+                            className="h-8 w-8 text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:text-amber-700 transition-all shadow-sm"
+                            title="Edit with AI"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                        </Button>
+                    )}
+                    {onEdit && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onEdit}
+                            className="h-8 w-8 text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-all shadow-sm"
+                            title="Manual Edit"
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </Button>
+                    )}
+                </div>
             </div>
             <div className={`prose prose-slate max-w-none text-muted-foreground/90 leading-relaxed ${level > 1 ? 'pl-4 border-l border-border/40' : ''}`} dangerouslySetInnerHTML={{ __html: processed }} />
         </div>
@@ -382,6 +446,15 @@ export const DynamicPartnerSection = ({
     }
     return (
         <div className="space-y-6">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-foreground/80">Consortium Partners</h3>
+                {onAddPartner && (
+                    <Button onClick={onAddPartner} size="sm" className="gap-2" variant="outline">
+                        <Plus className="w-4 h-4" />
+                        Manage Partners
+                    </Button>
+                )}
+            </div>
             {partners.filter(p => !!p && !!p.name).map((p, i) => (
                 <Card key={i} className="bg-card/50 border-border/60">
                     <CardHeader className="pb-2">

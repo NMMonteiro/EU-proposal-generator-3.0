@@ -94,54 +94,58 @@ function sanitizeTitle(title: string): string {
 function normalizePartner(p: any): Partner {
   if (!p) return {} as Partner;
 
+  // Handle nested profile if present
+  const profile = p.profile || {};
+  const src = { ...profile, ...p };
+
   // Determine if this partner is a coordinator
   const isCoord =
-    p.isCoordinator === true ||
-    p.is_coordinator === true ||
-    (p.role && p.role.toLowerCase().includes('coord')) ||
-    (p.contactPersonRole && (p.contactPersonRole as string).toLowerCase().includes('coord'));
+    src.isCoordinator === true ||
+    src.is_coordinator === true ||
+    (src.role && String(src.role).toLowerCase().includes('coord')) ||
+    (src.contactPersonRole && String(src.contactPersonRole).toLowerCase().includes('coord'));
 
   return {
-    ...p,
-    name: p.name || p.legalShortName || p.acronym || p.legal_name || p.legal_name_national || "Unknown Partner",
-    acronym: p.acronym || p.acronym_short || "",
-    organisationId: p.organisationId || p.organisation_id || p.pic || p.oid || p.picNumber || p.pic_number || "",
-    vatNumber: p.vatNumber || p.vat_number || p.vat || "",
-    businessId: p.businessId || p.business_id || p.registration_id || p.business_registration_id || "",
-    organizationType: p.organizationType || p.organization_type || p.type || "",
-    isPublicBody: p.isPublicBody ?? p.is_public_body ?? false,
-    isNonProfit: p.isNonProfit ?? p.is_non_profit ?? false,
-    legalNameNational: p.legalNameNational || p.legal_name_national || p.legalName || p.name || "",
-    legalAddress: p.legalAddress || p.legal_address || p.office_address || p.address || "",
-    country: p.country || p.legal_country || p.legalCountry || "",
-    city: p.city || p.legal_city || p.legalCity || "",
-    postcode: p.postcode || p.post_code || p.legal_postcode || p.zipCode || "",
-    region: p.region || p.legal_region || "",
-    website: p.website || p.url || p.org_website || "",
-    contactEmail: p.contactEmail || p.contact_email || p.email || "",
-    department: p.department || p.unit || p.dept || "",
+    ...src,
+    name: src.name || src.legalShortName || src.acronym || src.legal_name || src.legal_name_national || "Unknown Partner",
+    acronym: src.acronym || src.acronym_short || "",
+    organisationId: src.organisationId || src.organisation_id || src.pic || src.oid || src.picNumber || src.pic_number || "",
+    vatNumber: src.vatNumber || src.vat_number || src.vat || "",
+    businessId: src.businessId || src.business_id || src.registration_id || src.business_registration_id || "",
+    organizationType: src.organizationType || src.organization_type || src.type || "",
+    isPublicBody: src.isPublicBody ?? src.is_public_body ?? false,
+    isNonProfit: src.isNonProfit ?? src.is_non_profit ?? false,
+    legalNameNational: src.legalNameNational || src.legal_name_national || src.legalName || src.name || "",
+    legalAddress: src.legalAddress || src.legal_address || src.office_address || src.address || "",
+    country: src.country || src.legal_country || src.legalCountry || "",
+    city: src.city || src.legal_city || src.legalCity || "",
+    postcode: src.postcode || src.post_code || src.legal_postcode || src.zipCode || "",
+    region: src.region || src.legal_region || "",
+    website: src.website || src.url || src.org_website || "",
+    contactEmail: src.contactEmail || src.contact_email || src.email || "",
+    department: src.department || src.unit || src.dept || "",
 
     // Legal Representative
-    legalRepName: p.legalRepName || p.legal_rep_name || p.rep_name || "",
-    legalRepPosition: p.legalRepPosition || p.legal_rep_position || p.rep_position || "",
-    legalRepEmail: p.legalRepEmail || p.legal_rep_email || p.rep_email || "",
-    legalRepPhone: p.legalRepPhone || p.legal_rep_phone || p.rep_phone || "",
+    legalRepName: src.legalRepName || src.legal_rep_name || src.rep_name || "",
+    legalRepPosition: src.legalRepPosition || src.legal_rep_position || src.rep_position || "",
+    legalRepEmail: src.legalRepEmail || src.legal_rep_email || src.rep_email || "",
+    legalRepPhone: src.legalRepPhone || src.legal_rep_phone || src.rep_phone || "",
 
     // Contact Person
-    contactPersonName: p.contactPersonName || p.contact_person_name || p.contact_name || "",
-    contactPersonPosition: p.contactPersonPosition || p.contact_person_position || p.contact_position || "",
-    contactPersonEmail: p.contactPersonEmail || p.contact_person_email || p.contact_person_email_address || "",
-    contactPersonPhone: p.contactPersonPhone || p.contact_person_phone || "",
-    contactPersonRole: p.contactPersonRole || p.contact_person_role || "",
+    contactPersonName: src.contactPersonName || src.contact_person_name || src.contact_name || "",
+    contactPersonPosition: src.contactPersonPosition || src.contact_person_position || src.contact_position || "",
+    contactPersonEmail: src.contactPersonEmail || src.contact_person_email || src.contact_person_email_address || src.email || "",
+    contactPersonPhone: src.contactPersonPhone || src.contact_person_phone || "",
+    contactPersonRole: src.contactPersonRole || src.contact_person_role || "",
 
     // Expertise & Experience
-    experience: p.experience || p.organisation_experience || "",
-    staffSkills: p.staffSkills || p.staff_skills || p.key_personnel || "",
-    relevantProjects: p.relevantProjects || p.relevant_projects || p.previous_projects || "",
+    experience: src.experience || src.organisation_experience || "",
+    staffSkills: src.staffSkills || src.staff_skills || src.key_personnel || "",
+    relevantProjects: src.relevantProjects || src.relevant_projects || src.previous_projects || "",
 
     isCoordinator: isCoord,
-    role: isCoord ? "Coordinator" : (p.role || "Partner"),
-    description: p.description || p.background || p.profile || "",
+    role: isCoord ? "Coordinator" : (src.role || "Partner"),
+    description: src.description || src.background || src.profile || "",
     roleLabel: isCoord ? "Applicant" : "Partner",
   };
 }
@@ -177,21 +181,74 @@ function formatContentText(text: string): string {
  */
 function cleanHtml(html: string | undefined | null): string {
   if (!html) return "";
-  // Unescape common entities first
   let decoded = html
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
 
-  // Basic tag substitution for line breaks
+  // Preservation: Keep some tags but mark them for parsing
+  // We avoid the global strip but we'll clean line-by-line later
   return decoded
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n\n")
     .replace(/<li>/gi, "\n• ")
-    .replace(/<[^>]*>/g, "")
     .trim();
+}
+
+/**
+ * Robust HTML to TextRun parser for inline styles (bold, italic).
+ */
+function parseHtmlToTextRuns(html: string): TextRun[] {
+  const runs: TextRun[] = [];
+  const tagRegex = /(<(\/?[a-z1-6]+)[^>]*>)/gi;
+  let lastIndex = 0;
+  let match;
+
+  const state = {
+    bold: false,
+    italic: false,
+    color: undefined as string | undefined
+  };
+
+  while ((match = tagRegex.exec(html)) !== null) {
+    const textBefore = html.substring(lastIndex, match.index);
+    if (textBefore) {
+      runs.push(new TextRun({
+        text: textBefore.replace(/<[^>]*>/g, ""),
+        bold: state.bold,
+        italics: state.italic,
+        color: state.color,
+        font: FONT,
+        size: BODY_SIZE
+      }));
+    }
+
+    const fullTag = match[1].toLowerCase();
+    const tagName = match[2].toLowerCase();
+
+    if (tagName === 'strong' || tagName === 'b') state.bold = !fullTag.startsWith('</');
+    if (tagName === 'em' || tagName === 'i') state.italic = !fullTag.startsWith('</');
+    if (tagName === 'h3' || tagName === 'h4') state.bold = !fullTag.startsWith('</');
+
+    lastIndex = tagRegex.lastIndex;
+  }
+
+  const remaining = html.substring(lastIndex);
+  if (remaining) {
+    runs.push(new TextRun({
+      text: remaining.replace(/<[^>]*>/g, ""),
+      bold: state.bold,
+      italics: state.italic,
+      color: state.color,
+      font: FONT,
+      size: BODY_SIZE
+    }));
+  }
+
+  return runs.length > 0 ? runs : [new TextRun({ text: html.replace(/<[^>]*>/g, ""), font: FONT, size: BODY_SIZE })];
 }
 
 /**
@@ -203,26 +260,28 @@ function createSmartParagraph(text: string, options: { bullet?: number, allowedN
   // GLOBAL FILTER: Ensure we don't mention removed partners
   if (options.allowedNames && options.allowedNames.length > 0) {
     const lowerLine = line.toLowerCase();
-
-    // Specifically target ASCOM mentions which have been a recurring issue
     if (lowerLine.includes('ascom') && !options.allowedNames.some(name => name.includes('ascom'))) {
-      // If the paragraph is JUST about ASCOM (starts with it), we skip it to be safe
-      if (lowerLine.startsWith('ascom')) {
-        console.log(`Global Filter: Stripping paragraph about removed partner ASCOM`);
-        return null;
-      }
+      if (lowerLine.startsWith('ascom')) return null;
     }
   }
 
+  // Handle markers
+  if (line.includes('[HEADER]')) {
+    const cleanLabel = line.replace('[HEADER]', '').trim();
+    return new Paragraph({
+      children: [new TextRun({ text: cleanLabel, bold: true, size: 24, font: FONT, color: COLOR_PRIMARY })],
+      spacing: { before: 240, after: 120 }
+    });
+  }
+
   const colonIndex = line.indexOf(':');
-  // Only bold if colon is not at start/end and seems like a label (limit length)
   if (colonIndex > 0 && colonIndex < 70 && colonIndex < line.length - 1) {
     const key = line.substring(0, colonIndex + 1);
     const value = line.substring(colonIndex + 1);
     return new Paragraph({
       children: [
-        new TextRun({ text: key, bold: true, font: FONT, size: BODY_SIZE }),
-        new TextRun({ text: value, font: FONT, size: BODY_SIZE }),
+        new TextRun({ text: key.replace(/<[^>]*>/g, ""), bold: true, font: FONT, size: BODY_SIZE }),
+        ...parseHtmlToTextRuns(value)
       ],
       spacing: { before: 100, after: 100 },
       bullet: options.bullet !== undefined ? { level: options.bullet } : undefined,
@@ -230,9 +289,7 @@ function createSmartParagraph(text: string, options: { bullet?: number, allowedN
   }
 
   return new Paragraph({
-    children: [
-      new TextRun({ text: line, font: FONT, size: BODY_SIZE }),
-    ],
+    children: parseHtmlToTextRuns(line),
     spacing: { before: 80, after: 80 },
     bullet: options.bullet !== undefined ? { level: options.bullet } : undefined,
   });
@@ -240,39 +297,68 @@ function createSmartParagraph(text: string, options: { bullet?: number, allowedN
 
 function createKeyValueTable(lines: string[]): Table {
   const rows: TableRow[] = [];
+  const processedLines = lines.map(line => formatContentText(line).trim()).filter(Boolean);
 
-  lines.forEach(line => {
-    const formattedLine = formatContentText(line);
-    const colonIndex = formattedLine.indexOf(':');
-    if (colonIndex > 0 && colonIndex < 70) {
-      const key = formattedLine.substring(0, colonIndex).trim();
-      const value = formattedLine.substring(colonIndex + 1).trim();
+  for (let i = 0; i < processedLines.length; i++) {
+    const line = processedLines[i];
+    const colonIndex = line.indexOf(':');
+
+    // Check if current line is a Question/Key and next is an Answer/Value
+    const isQuestion = line.endsWith('?') || (colonIndex > 0 && colonIndex < 40 && colonIndex === line.length - 1);
+
+    if (isQuestion && i < processedLines.length - 1 && !processedLines[i + 1].endsWith('?')) {
+      const key = line;
+      const value = processedLines[i + 1];
       rows.push(new TableRow({
         children: [
           new TableCell({
             children: [new Paragraph({
-              children: [new TextRun({ text: key, bold: true, font: FONT, size: BODY_SIZE })],
+              children: [new TextRun({ text: key.replace(/<[^>]*>/g, ""), bold: true, font: FONT, size: BODY_SIZE })],
               spacing: { before: 80, after: 80 }
             })],
-            width: { size: 35, type: WidthType.PERCENTAGE },
+            width: { size: 40, type: WidthType.PERCENTAGE },
             shading: { fill: "F9F9F9" }
           }),
           new TableCell({
             children: [new Paragraph({
-              children: [new TextRun({ text: value, font: FONT, size: BODY_SIZE })],
+              children: parseHtmlToTextRuns(value),
               spacing: { before: 80, after: 80 }
             })],
-            width: { size: 65, type: WidthType.PERCENTAGE }
+            width: { size: 60, type: WidthType.PERCENTAGE }
           })
         ]
       }));
-    } else if (formattedLine.length > 0) {
-      // Header row or notes
+      i++; // Skip next
+    } else if (colonIndex > 0 && colonIndex < 70) {
+      // Standard Key: Value on same line
+      const key = line.substring(0, colonIndex).trim();
+      const value = line.substring(colonIndex + 1).trim();
       rows.push(new TableRow({
         children: [
           new TableCell({
             children: [new Paragraph({
-              children: [new TextRun({ text: formattedLine, bold: true, font: FONT, size: BODY_SIZE, color: COLOR_PRIMARY })],
+              children: [new TextRun({ text: key.replace(/<[^>]*>/g, ""), bold: true, font: FONT, size: BODY_SIZE })],
+              spacing: { before: 80, after: 80 }
+            })],
+            width: { size: 40, type: WidthType.PERCENTAGE },
+            shading: { fill: "F9F9F9" }
+          }),
+          new TableCell({
+            children: [new Paragraph({
+              children: parseHtmlToTextRuns(value),
+              spacing: { before: 80, after: 80 }
+            })],
+            width: { size: 60, type: WidthType.PERCENTAGE }
+          })
+        ]
+      }));
+    } else {
+      // Header/Standalone row
+      rows.push(new TableRow({
+        children: [
+          new TableCell({
+            children: [new Paragraph({
+              children: [new TextRun({ text: line.replace(/<[^>]*>/g, ""), bold: true, font: FONT, size: BODY_SIZE, color: COLOR_PRIMARY })],
               spacing: { before: 100, after: 100 }
             })],
             columnSpan: 2,
@@ -281,7 +367,7 @@ function createKeyValueTable(lines: string[]): Table {
         ]
       }));
     }
-  });
+  }
 
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -353,7 +439,16 @@ function createWorkPackageTable(wps: WorkPackage[], currency: string = "EUR"): T
 }
 
 function convertHtmlToParagraphs(html: string | undefined | null, sectionTitle?: string, currentPartners?: any[]): (Paragraph | Table)[] {
-  // 0. Preparation: Build a list of allowed partner names for filtering
+  if (!html) return [createParagraph("")];
+
+  // 1. Marker injection for headers before cleaning
+  let processed = html
+    .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, "\n[HEADER]$1\n")
+    .replace(/<strong>(.*?)<\/strong>:/gi, "\n[HEADER]$1:\n") // Bold labels followed by colon often act as subheaders
+    .replace(/<p[^>]*>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n");
+
+  // 2. Preparation: Build a list of allowed partner names for filtering
   const allowedNames = currentPartners?.flatMap(p => [
     (p.name || "").toLowerCase(),
     (p.acronym || "").toLowerCase(),
@@ -362,20 +457,16 @@ function convertHtmlToParagraphs(html: string | undefined | null, sectionTitle?:
     (p.legal_name_national || "").toLowerCase(),
   ]).filter(name => name && name.length > 2) || [];
 
-  // 1. Clean HTML and get structured text
-  let text = cleanHtml(html);
+  // 3. Clean HTML and get structured text
+  let text = cleanHtml(processed);
 
-  // 2. Remove any leftover date format labels
+  // 4. Remove any leftover date format labels
   text = text.replace(/\s*\(dd\/mm\/yyyy\)/g, "");
-
-  // 3. Fix squashed labels
   text = fixSquashedText(text);
 
-  // 3.5. Smart Filtering for Partner-heavy sections (EXPERIMENTAL)
+  // 5. Smart Filtering for Partner-heavy sections
   const isPartnerSection = (sectionTitle || "").toLowerCase().includes("partner") || (sectionTitle || "").toLowerCase().includes("organisation");
   if (isPartnerSection && allowedNames.length > 0) {
-    // Handle comma-separated list of partners: "Partner A (OID: ...), Partner B (OID: ...)"
-    // We try to identify these blocks and filter them
     const partnerBlocks = text.split(/,\s*(?=[^,]+?\s*\((?:OID|PIC|OID\/PIC):\s*[A-Z0-9]+)/gi);
     if (partnerBlocks.length > 1) {
       text = partnerBlocks
@@ -387,68 +478,46 @@ function convertHtmlToParagraphs(html: string | undefined | null, sectionTitle?:
     }
   }
 
-  // 4. Split into lines and join probable split labels
+  // 6. Split into lines
   const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   const lines: string[] = [];
 
   for (let i = 0; i < rawLines.length; i++) {
     let current = rawLines[i];
 
-    // Skip common AI placeholders for structured sections
     if (current.toLowerCase().includes("details of the") && current.toLowerCase().includes("inserted here")) continue;
     if (current.toLowerCase().includes("placeholder for") && current.toLowerCase().includes("table")) continue;
     if (current.toLowerCase() === "details to be provided.") continue;
 
-    // Look ahead: if current line has no colon, but next line does, join them if short
-    // We increase window slightly to catch more AI output quirks
-    if (i < rawLines.length - 1 && !current.includes(':') && current.length < 50) {
+    // Look ahead merging logic
+    if (i < rawLines.length - 1 && !current.includes(':') && current.length < 50 && !current.startsWith('[HEADER]')) {
       const next = rawLines[i + 1];
       const nextColon = next.indexOf(':');
       if (nextColon >= 0 && nextColon < 30) {
         current = current + " " + next;
-        i++; // Skip the next line as we've merged it
+        i++;
       }
     }
-
-    // Filtering Logic: If we have allowedNames and this line looks like a partner header
-    if (allowedNames && allowedNames.length > 0 && isPartnerSection) {
-      const colonIdx = current.indexOf(':');
-      if (colonIdx > 0 && colonIdx < 60) {
-        const potentialName = current.substring(0, colonIdx).toLowerCase();
-
-        // Remove "Undefined" prefixes or common trash labels
-        if (potentialName.includes('undefined') || potentialName.includes('applicant organisation')) {
-          console.log(`Filtering out trash header: ${potentialName}`);
-          continue;
-        }
-
-        // Check if any allowed name is found in the header portion
-        const isMatch = allowedNames.some(name => {
-          const n = name.toLowerCase();
-          return potentialName.includes(n) || n.includes(potentialName);
-        });
-
-        // If it looks like a partner entry but doesn't match any of our partners, skip it!
-        if (!isMatch && (potentialName.length > 4)) {
-          console.log(`Filtering out hallucinated partner: ${potentialName}`);
-          continue;
-        }
-      }
-    }
-
     lines.push(current);
   }
 
   if (lines.length === 0) return [createParagraph("")];
 
-  // 5. Special table-style for data-heavy sections
+  // 7. Table style for specific sections
   const lowerTitle = (sectionTitle || "").toLowerCase();
   if (lowerTitle.includes("annex") || lowerTitle.includes("context") || lowerTitle.includes("budget items")) {
-    return [createKeyValueTable(lines)];
+    return [createKeyValueTable(lines.map(l => l.replace('[HEADER]', '')))];
   }
 
-  // 6. Default: List of paragraphs with bold labels
+  // 8. Default: List of paragraphs
   return lines.map(line => {
+    if (line.startsWith("[HEADER]")) {
+      const cleanLabel = line.replace("[HEADER]", "").trim();
+      return new Paragraph({
+        children: [new TextRun({ text: cleanLabel, bold: true, size: 24, font: FONT, color: COLOR_PRIMARY })],
+        spacing: { before: 240, after: 120 }
+      });
+    }
     if (line.startsWith("• ")) {
       return createSmartParagraph(line.substring(2), { bullet: 0, allowedNames });
     }
@@ -575,10 +644,13 @@ export async function generateDocx(proposal: FullProposal): Promise<{ blob: Blob
 
     docChildren.push(new Paragraph({ children: [new PageBreak()] }));
 
-    // 2. EXECUTIVE SUMMARY (Always first as Part A)
+    // 2. EXECUTIVE SUMMARY (Always first as Part B head)
+    const dynSections = p.dynamicSections || (p as any).dynamic_sections || {};
+    const bestSummary = dynSections['project_summary'] || dynSections['summary'] || p.summary || (p as any).abstract || "";
+
     docChildren.push(createSectionHeader("Part B: Technical Narrative", 1));
     docChildren.push(createSectionHeader("0. Executive Summary", 2));
-    docChildren.push(...convertHtmlToParagraphs(p.summary, "Executive Summary", p.partners));
+    docChildren.push(...convertHtmlToParagraphs(bestSummary, "Executive Summary", p.partners));
 
     // 3. ASSEMBLED SECTIONS (STRICT ORDER)
     const finalDocument = assembleDocument(p).filter(s => s.id !== 'summary');
@@ -1080,7 +1152,7 @@ function createDetailedPartnerProfile(rawPartner: Partner): Table {
       children: [
         new TableCell({
           children: [new Paragraph({
-            children: [new TextRun({ text: line.label, bold: true, font: FONT, size: 18 })],
+            children: [new TextRun({ text: line.label, bold: true, font: FONT, size: BODY_SIZE - 2 })],
             spacing: { before: 40, after: 40 }
           })],
           width: { size: 35, type: WidthType.PERCENTAGE },
@@ -1088,7 +1160,7 @@ function createDetailedPartnerProfile(rawPartner: Partner): Table {
         }),
         new TableCell({
           children: [new Paragraph({
-            children: [new TextRun({ text: line.value || "-", font: FONT, size: 18 })],
+            children: [new TextRun({ text: (line.value && String(line.value).trim() !== "") ? String(line.value) : "-", font: FONT, size: BODY_SIZE - 2 })],
             spacing: { before: 40, after: 40 }
           })],
           width: { size: 65, type: WidthType.PERCENTAGE }

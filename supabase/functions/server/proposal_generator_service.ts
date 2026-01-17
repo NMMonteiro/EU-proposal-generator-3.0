@@ -55,6 +55,12 @@ export const generateProposalFull = async (params: any) => {
 
     proposal.id = crypto.randomUUID();
     proposal.generatedAt = new Date().toISOString();
+    proposal.selectedIdea = idea;
+    proposal.summary = summary;
+    proposal.constraints = constraints;
+    proposal.funding_scheme_id = fundingSchemeId;
+    proposal.fundingScheme = fundingScheme;
+    proposal.partners = partners;
 
     // Finalization logic - use the same hierarchical extraction
     let targetBudget = PromptBuilder.extractNumericBudget(userPrompt || '');

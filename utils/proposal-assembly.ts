@@ -176,7 +176,11 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
     Object.entries(allContentSource).forEach(([key, val]) => {
         const nk = normalize(key);
         // Skip keys that are handled by structured tables
-        if (['summary', 'budget', 'partners', 'risks', 'layout', 'settings', 'workpackages', 'work_packages'].some(x => nk.includes(x))) return;
+        // 'summary' is tricky: we want to skip the top-level 'summary' field if it's identical to what we already processed,
+        // but we DON'T want to skip 'project_summary' which might be the main content.
+        if (['budget', 'partners', 'risks', 'layout', 'settings', 'workpackages', 'work_packages'].some(x => nk.includes(x))) return;
+        // Only skip EXACT 'summary' to avoid skipping 'project_summary'
+        if (nk === 'summary' && key === 'summary') return;
 
         const wpIdx = extractWPIndex(key);
         let target = wpIdx !== undefined ? wpIdxToPoolKey.get(wpIdx) : normTitleToPoolKey.get(nk);
@@ -258,7 +262,7 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
         }
     });
 
-    // 5. Structural Anchors
+    // 5. Structural Anchors & Heavy Summary Enforcement
     const ensureHeader = (id: string, searchTitle: string, type: string) => {
         let found = '';
         const nt = normalize(searchTitle);
@@ -269,8 +273,10 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
         if (found) {
             const s = sectionPool.get(found)!;
             s.type = type; s.level = 1; s.order = MASTER_ORDER[nt] || s.order;
+            return found;
         } else {
             sectionPool.set(id, { id, title: searchTitle, level: 1, type, order: MASTER_ORDER[nt] || 5000 });
+            return id;
         }
     };
 
@@ -278,8 +284,57 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
     if ((proposal.budget || []).length > 0) ensureHeader('bm', 'Budget', 'budget');
     if ((proposal.risks || []).length > 0) ensureHeader('rm', 'Risk Management', 'risk');
 
-    const sumVal = proposal.summary || (proposal as any).abstract || dynamicSections['summary'];
-    if (sumVal) sectionPool.set('summary', { id: 'summary', title: 'Executive Summary', content: sumVal, level: 1, order: 0 });
+    // HEAVY SUMMARY ENFORCEMENT (De-duplication & Consolidation)
+    // 1. Get the best available summary content
+    const bestSummary = dynamicSections['project_summary'] || dynamicSections['summary'] || proposal.summary || (proposal as any).abstract;
+
+    // 2. Scan pool for ANY existing summary-like sections
+    const sumPatterns = ['projectsummary', 'executivesummary', 'summary', 'abstract'];
+    const summaryKeysFound: string[] = [];
+
+    for (const [pk, s] of sectionPool.entries()) {
+        const nt = normalize(s.title);
+        const pkNorm = normalize(pk);
+        if (sumPatterns.some(p => nt.includes(p) || pkNorm.includes(p))) {
+            summaryKeysFound.push(pk);
+        }
+    }
+
+    // 3. Consolidate into the best key (prefer template 't_' > 'summary' > 'custom_')
+    let primaryKey = summaryKeysFound.find(k => k.startsWith('t_')) ||
+        summaryKeysFound.find(k => k === 'summary') ||
+        summaryKeysFound[0];
+
+    if (bestSummary) {
+        if (!primaryKey) {
+            // Create fallback if none found at all
+            primaryKey = 'summary';
+            sectionPool.set(primaryKey, { id: 'summary', title: 'Executive Summary', level: 1, order: 0 });
+        }
+
+        const mainSection = sectionPool.get(primaryKey)!;
+
+        // Ensure ID is normalized for DOCX filtering
+        mainSection.id = 'summary';
+        mainSection.content = bestSummary;
+        mainSection.order = 0;
+
+        // If the title was generic, make it nice
+        if (normalize(mainSection.title) === 'summary') {
+            mainSection.title = 'Executive Summary';
+        }
+
+        // REMOVE all other duplicate summary-like sections from the pool
+        summaryKeysFound.forEach(k => {
+            if (k !== primaryKey) {
+                sectionPool.delete(k);
+            }
+        });
+
+        // Finalize primary section in the pool with normalized ID
+        sectionPool.delete(primaryKey);
+        sectionPool.set('summary', mainSection);
+    }
 
     // 6. Injection
     let items = Array.from(sectionPool.values()).sort((a, b) => (a.order ?? 5000) - (b.order ?? 5000));

@@ -22,6 +22,7 @@ interface ViewerTabsProps {
     onAddPartner: () => void;
     budgetLimit: number;
     onRebalance: (limit: number) => void;
+    onAiEdit: (section: DisplaySection) => void;
     onAnnexesUpdate?: () => void;
 }
 
@@ -34,6 +35,7 @@ export function ViewerTabs({
     onAddPartner,
     budgetLimit,
     onRebalance,
+    onAiEdit,
     onAnnexesUpdate
 }: ViewerTabsProps) {
     return (
@@ -49,6 +51,7 @@ export function ViewerTabs({
                             description={section.description}
                             level={section.level}
                             onEdit={() => onEdit(section)}
+                            onAiEdit={() => onAiEdit(section)}
                         />
                     ))}
                 </div>

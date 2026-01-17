@@ -1,24 +1,20 @@
 import React, { useState } from 'react';
+import { MessageSquare, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { serverUrl, publicAnonKey } from '../utils/supabase/info';
+import { serverUrl, publicAnonKey } from '../utils/supabase/info.tsx';
 import { PartnerSelectionModal } from './PartnerSelectionModal';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { ProposalCopilot } from './ProposalCopilot';
+import { AiSectionDialog } from './AiSectionDialog';
 import { useNavigate } from 'react-router-dom';
-import { assembleDocument } from '../utils/proposal-assembly';
+import { assembleDocument, DisplaySection } from '../utils/proposal-assembly';
 
 // Sub-components
 import { ViewerHeader } from './viewer/ViewerHeader';
 import { ViewerSidebar } from './viewer/ViewerSidebar';
 import { ViewerTabs } from './viewer/ViewerTabs';
-import {
-    ResponsiveSectionContent,
-    DynamicWorkPackageSection,
-    DynamicBudgetSection,
-    DynamicRiskSection,
-    DynamicPartnerSection
-} from './ProposalSections';
 
 // Hooks
 import { useProposalViewer as useProposalData } from './hooks/useProposalData';
@@ -46,11 +42,17 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
     const { budgetLimit, setBudgetLimit, handleRebalance } = useBudgetEditor(proposal, setProposal);
 
     const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isCopilotOpen, setIsCopilotOpen] = useState(false);
     const [isAiSectionDialogOpen, setIsAiSectionDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+    const [aiEditTarget, setAiEditTarget] = useState<{
+        id: string;
+        title: string;
+        content: string;
+    } | null>(null);
+
     const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
     const [editingSectionTitle, setEditingSectionTitle] = useState('');
     const [editingContent, setEditingContent] = useState('');
@@ -77,7 +79,10 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                 onExport={handleExport}
                 isExporting={isExporting}
                 onSettingsOpen={() => setIsSettingsOpen(true)}
-                onAiEditOpen={() => setIsAiSectionDialogOpen(true)}
+                onAiEditOpen={() => {
+                    toast.info("Select a section's sparkle icon to edit it with AI, or use the Copilot.");
+                }}
+                onCopilotOpen={() => setIsCopilotOpen(true)}
             />
 
             <div className="flex flex-1 overflow-hidden max-w-[1600px] mx-auto w-full">
@@ -92,7 +97,7 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                     }}
                 />
 
-                <main className="flex-1 overflow-y-auto bg-background/50 backdrop-blur-sm p-4 sm:p-8 lg:p-12">
+                <main className="flex-1 overflow-y-auto bg-background/50 backdrop-blur-sm p-4 sm:p-8 lg:p-12 border-l border-border/40">
                     <ViewerTabs
                         activeTab={activeTab}
                         setActiveTab={setActiveTab}
@@ -104,11 +109,18 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                             setEditingContent(s.content || '');
                             setIsEditDialogOpen(true);
                         }}
+                        onAiEdit={(s) => {
+                            setAiEditTarget({
+                                id: s.id,
+                                title: s.title,
+                                content: s.content || ''
+                            });
+                            setIsAiSectionDialogOpen(true);
+                        }}
                         onAddPartner={() => setIsPartnerModalOpen(true)}
                         budgetLimit={budgetLimit}
                         onRebalance={handleRebalance}
                         onAnnexesUpdate={async () => {
-                            // Refetch proposal to get updated annexes
                             try {
                                 const response = await fetch(`${serverUrl}/proposals/${proposalId}`, {
                                     headers: {
@@ -132,15 +144,13 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
             <PartnerSelectionModal
                 isOpen={isPartnerModalOpen}
                 onClose={() => setIsPartnerModalOpen(false)}
-                onSelect={async (selectedPartners) => {
-                    // Update proposal with new partners
+                onConfirm={async (selectedPartners) => {
                     const updatedProposal = {
                         ...proposal,
                         partners: selectedPartners
                     };
                     setProposal(updatedProposal);
 
-                    // Save to backend
                     try {
                         await saveProposal(updatedProposal);
                         toast.success('Partners updated successfully');
@@ -151,11 +161,7 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
 
                     setIsPartnerModalOpen(false);
                 }}
-                proposalContext={{
-                    title: proposal.title,
-                    summary: proposal.summary,
-                    objectives: proposal.objectives || '',
-                }}
+                proposalContext={`${proposal.title} ${proposal.summary}`}
                 currentPartners={proposal.partners || []}
             />
 
@@ -163,10 +169,39 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                 isOpen={isCopilotOpen}
                 onClose={() => setIsCopilotOpen(false)}
                 proposalId={proposalId}
+                onProposalUpdate={() => {
+                    // Refetch proposal data
+                    window.location.reload();
+                }}
             />
 
-            {/* Other dialogs... I'll keep them here for now for simplicity of props passing */}
-            {/* But I could also extract them */}
+            {aiEditTarget && (
+                <AiSectionDialog
+                    isOpen={isAiSectionDialogOpen}
+                    onClose={() => setIsAiSectionDialogOpen(false)}
+                    proposalId={proposalId}
+                    sectionKey={aiEditTarget.id}
+                    sectionTitle={aiEditTarget.title}
+                    currentContent={aiEditTarget.content}
+                    onUpdate={(newContent) => {
+                        const updatedProposal = { ...proposal };
+                        const dynSections = updatedProposal.dynamic_sections || updatedProposal.dynamicSections || {};
+                        dynSections[aiEditTarget.id] = newContent;
+                        updatedProposal.dynamicSections = dynSections;
+                        setProposal(updatedProposal);
+                    }}
+                />
+            )}
+
+            {/* Floating Chat Button */}
+            {!isCopilotOpen && (
+                <Button
+                    onClick={() => setIsCopilotOpen(true)}
+                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-tr from-primary to-primary/80 hover:scale-110 active:scale-95 transition-all z-50 p-0 border-4 border-background"
+                >
+                    <MessageSquare className="w-6 h-6 text-primary-foreground" />
+                </Button>
+            )}
         </div>
     );
 }
