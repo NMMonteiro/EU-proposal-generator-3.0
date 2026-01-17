@@ -76,35 +76,40 @@ export async function handleCopilotChat(params: any) {
     - Budget: ${JSON.stringify(proposal.budget)}
     
     YOUR CAPABILITIES:
-    1. Answer questions about the proposal.
-    2. Analyze sections and suggest improvements.
-    3. Perform direct actions: You can choose to update a section if the user asks for it.
+    1. Answer questions concisely and professionally.
+    2. Analyze sections and suggest deep improvements.
+    3. Perform direct actions: You MUST trigger actions when the user asks for changes.
     
     OUTPUT FORMAT:
     You must return a JSON response with:
     {
-      "response": "Your message to the user",
+      "response": "Your message to the user confirming what you did.",
       "action": { // Optional
         "type": "update_section",
         "section": "section_key_to_update",
-        "content": "New HTML content for the section"
+        "content": "New HTML content for the section (use proper HTML tags)"
       } | {
         "type": "update_metadata",
         "updates": {
            "title": "New title",
            "summary": "New summary",
-           "settings": { "key": "value" }
+           "settings": { 
+              "startDate": "YYYY-MM-DD", 
+              "currency": "EUR/USD",
+              "sourceUrl": "...",
+              "duration": 24 
+           }
         }
       }
     }
     
-    IMPORTANT: 
-    1. DO NOT ask for more information if the request is clear (e.g. "change title to X" or "set start date to Y").
-    2. For any substantial change to a section, use the "update_section" action.
-    3. For metadata changes, use "update_metadata". You can create NEW keys in the "settings" object (e.g., "startDate", "duration", "totalBudget") if they don't exist.
+    CRITICAL INSTRUCTIONS: 
+    1. For date changes (e.g. project start date), use "update_metadata" -> "settings" -> "startDate" in YYYY-MM-DD format.
+    2. Always confirm the action in your "response".
+    3. If asked to "Update the start date to 10/10/2026", your JSON action should be: {"type": "update_metadata", "updates": {"settings": {"startDate": "2026-10-10"}}}
     Available section keys: ${JSON.stringify(Object.keys(proposal.dynamic_sections || proposal.dynamicSections || {}))}
     
-    Return ONLY valid JSON.`;
+    Return ONLY valid JSON. Nothing else.`;
 
     const chatHistory = history.map((ms: any) => ({
         role: ms.role === 'assistant' ? 'model' : 'user',
@@ -114,7 +119,7 @@ export async function handleCopilotChat(params: any) {
     const chat = model.startChat({
         history: [
             { role: 'user', parts: [{ text: systemPrompt }] },
-            { role: 'model', parts: [{ text: "Understood. I am ready to assist as your Proposal Copilot." }] },
+            { role: 'model', parts: [{ text: "Understood. I am now acting as the Proposal Copilot with your project context and capabilities loaded." }] },
             ...chatHistory
         ]
     });
@@ -125,6 +130,8 @@ export async function handleCopilotChat(params: any) {
 
     // If an action was requested, perform it in the DB
     if (data.action) {
+        console.log(`[Copilot Action] Type: ${data.action.type}`, data.action);
+
         if (data.action.type === 'update_section') {
             const { section, content } = data.action;
             const dynSections = proposal.dynamic_sections || proposal.dynamicSections || {};
@@ -136,7 +143,14 @@ export async function handleCopilotChat(params: any) {
             if (updates.title) proposal.title = updates.title;
             if (updates.summary) proposal.summary = updates.summary;
             if (updates.settings) {
-                proposal.settings = { ...(proposal.settings || {}), ...updates.settings };
+                // Merge settings
+                proposal.settings = {
+                    ...(proposal.settings || {}),
+                    ...updates.settings
+                };
+
+                // If start date changed, we might want to update the summary or other things eventually,
+                // but for now just ensure it's saved.
             }
             await saveToSupabase(proposal);
         }

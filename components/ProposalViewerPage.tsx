@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HiChatBubbleLeftEllipsis, HiSparkles } from 'react-icons/hi2';
+import { MessageSquareText } from 'lucide-react';
 import { toast } from 'sonner';
 import { serverUrl, publicAnonKey } from '../utils/supabase/info.tsx';
 import { PartnerSelectionModal } from './PartnerSelectionModal';
@@ -216,7 +216,7 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                     onClick={() => setIsCopilotOpen(true)}
                     className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-tr from-primary to-primary/80 hover:scale-110 active:scale-95 transition-all z-50 p-0 border-4 border-background flex items-center justify-center"
                 >
-                    <span className="text-primary-foreground"><HiChatBubbleLeftEllipsis size={24} /></span>
+                    <span className="text-primary-foreground"><MessageSquareText size={24} /></span>
                 </Button>
             )}
         </div>

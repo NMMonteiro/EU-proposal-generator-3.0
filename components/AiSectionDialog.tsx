@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HiSparkles, HiOutlineArrowPath, HiPaperAirplane } from 'react-icons/hi2';
+import { Sparkles, Loader2, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -74,7 +74,7 @@ export function AiSectionDialog({
                 <DialogHeader>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="p-2 rounded-full bg-amber-500/10">
-                            <span className="text-amber-500"><HiSparkles size={20} /></span>
+                            <span className="text-amber-500"><Sparkles size={20} /></span>
                         </div>
                         <DialogTitle className="text-xl font-bold">AI Section Editor</DialogTitle>
                     </div>
@@ -107,9 +107,9 @@ export function AiSectionDialog({
                         className="gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20 border-none"
                     >
                         {isGenerating ? (
-                            <HiOutlineArrowPath size={16} className="animate-spin" />
+                            <Loader2 size={16} className="animate-spin" />
                         ) : (
-                            <HiPaperAirplane size={16} />
+                            <Send size={16} />
                         )}
                         {isGenerating ? 'Generating...' : 'Apply AI Edit'}
                     </Button>

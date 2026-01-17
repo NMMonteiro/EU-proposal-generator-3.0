@@ -1,4 +1,4 @@
-import { HiOutlineDocumentText, HiOutlineUsers, HiOutlineCalendarDays, HiOutlineCurrencyEuro, HiOutlineExclamationTriangle, HiOutlineSquares2X2, HiChevronDown, HiOutlinePaperClip } from 'react-icons/hi2';
+import { FileText, Users, Calendar, Euro, AlertTriangle, LayoutGrid, ChevronDown, Paperclip } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import type { DisplaySection } from '../../utils/proposal-assembly';
@@ -19,19 +19,19 @@ export function ViewerSidebar({
     onSectionClick
 }: ViewerSidebarProps) {
     const mainTabs = [
-        { id: 'narrative', label: 'Proposal Narrative', icon: HiOutlineDocumentText },
-        { id: 'partners', label: 'Partnership', icon: HiOutlineUsers },
-        { id: 'budget', label: 'Financial Plan', icon: HiOutlineCurrencyEuro },
-        { id: 'timeline', label: 'Work Plan', icon: HiOutlineCalendarDays },
-        { id: 'risks', label: 'Risk Analysis', icon: HiOutlineExclamationTriangle },
-        { id: 'annexes', label: 'Annexes', icon: HiOutlinePaperClip },
+        { id: 'narrative', label: 'Proposal Narrative', icon: FileText },
+        { id: 'partners', label: 'Partnership', icon: Users },
+        { id: 'budget', label: 'Financial Plan', icon: Euro },
+        { id: 'timeline', label: 'Work Plan', icon: Calendar },
+        { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
+        { id: 'annexes', label: 'Annexes', icon: Paperclip },
     ];
 
     return (
         <aside className="w-80 border-r bg-muted/30 hidden lg:flex flex-col sticky top-16 h-[calc(100vh-64px)] overflow-hidden">
             <div className="p-4 border-b bg-background/50">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <span className="text-primary"><HiOutlineSquares2X2 size={14} /></span>
+                    <span className="text-primary"><LayoutGrid size={14} /></span>
                     Structure
                 </h3>
             </div>

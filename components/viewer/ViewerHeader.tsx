@@ -1,4 +1,4 @@
-import { HiArrowLeft, HiArrowDownTray, HiShare, HiCog6Tooth, HiSparkles, HiChatBubbleLeftEllipsis } from 'react-icons/hi2';
+import { ArrowLeft, Download, Share2, Settings, Sparkles, MessageSquareText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
@@ -28,7 +28,7 @@ export function ViewerHeader({
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={onBack} className="hover:bg-accent transition-colors">
-                        <HiArrowLeft size={20} />
+                        <ArrowLeft size={20} />
                     </Button>
                     <div>
                         <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent truncate max-w-[400px]">
@@ -46,25 +46,25 @@ export function ViewerHeader({
 
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={onCopilotOpen} className="hidden sm:flex gap-2 border-primary/20 hover:bg-primary/5 transition-all text-primary font-semibold">
-                        <HiChatBubbleLeftEllipsis size={16} />
+                        <MessageSquareText size={16} />
                         Copilot
                     </Button>
                     <Button variant="outline" size="sm" onClick={onAiEditOpen} className="hidden sm:flex gap-2 hover:bg-amber-500/5 hover:border-amber-500/20 transition-all text-amber-600 font-semibold border-amber-500/20">
-                        <HiSparkles size={16} />
+                        <Sparkles size={16} />
                         AI Editor
                     </Button>
                     <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
                     <Button variant="outline" size="sm" onClick={onSettingsOpen} className="hidden sm:flex gap-2 bg-background/50 backdrop-blur-sm border-white/10 hover:border-primary/50 transition-all font-medium">
-                        <HiCog6Tooth size={16} />
+                        <Settings size={16} />
                         Settings
                     </Button>
                     <Button variant="outline" size="sm" className="hidden sm:flex gap-2">
-                        <HiShare size={16} />
+                        <Share2 size={16} />
                         Share
                     </Button>
                     <Button size="sm" onClick={onExport} disabled={isExporting} className="gap-2 bg-primary hover:shadow-lg hover:shadow-primary/20 transition-all font-semibold">
                         <span className={isExporting ? 'animate-bounce' : ''}>
-                            <HiArrowDownTray size={16} />
+                            <Download size={16} />
                         </span>
                         {isExporting ? 'Exporting...' : 'Export DOCX'}
                     </Button>

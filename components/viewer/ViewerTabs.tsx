@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { HiSparkles, HiOutlineCurrencyEuro, HiOutlineCalendarDays, HiOutlineUsers, HiOutlineExclamationTriangle, HiOutlineDocumentText } from 'react-icons/hi2';
+
 import {
     ResponsiveSectionContent,
     DynamicWorkPackageSection,

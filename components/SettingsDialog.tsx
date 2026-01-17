@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { HiOutlineCalendarDays, HiOutlineCurrencyEuro, HiLink } from 'react-icons/hi2';
+import { CalendarDays, Euro, Link as LinkIcon } from 'lucide-react';
 
 interface SettingsDialogProps {
     isOpen: boolean;
@@ -34,7 +34,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
                 <div className="grid gap-6 py-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
-                            <span className="text-primary"><HiOutlineCalendarDays size={16} /></span>
+                            <span className="text-primary"><CalendarDays size={16} /></span>
                             Project Start Date
                         </label>
                         <Input
@@ -47,7 +47,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
-                            <span className="text-primary"><HiOutlineCurrencyEuro size={16} /></span>
+                            <span className="text-primary"><Euro size={16} /></span>
                             Default Currency
                         </label>
                         <Input
@@ -59,7 +59,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
-                            <span className="text-primary"><HiLink size={16} /></span>
+                            <span className="text-primary"><LinkIcon size={16} /></span>
                             Source Reference URL
                         </label>
                         <Input

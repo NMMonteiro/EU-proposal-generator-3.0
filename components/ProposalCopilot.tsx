@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { HiPaperAirplane, HiCpuChip, HiXMark, HiSparkles, HiOutlineArrowPath, HiUser } from 'react-icons/hi2';
+import { Send, Bot, X, Sparkles, Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -59,7 +59,8 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
             if (!res.ok) throw new Error('Failed to get response');
             const data = await res.json();
 
-            setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+            // The backend returns { response: "...", action: { ... } }
+            setMessages(prev => [...prev, { role: 'assistant', content: data.response || "I have processed your request." }]);
 
             if (data.action) {
                 onProposalUpdate();
@@ -79,13 +80,13 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
             <div className="p-4 border-b bg-gradient-to-r from-primary to-primary/80 text-primary-foreground flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <HiSparkles size={18} />
+                        <Sparkles size={18} className="text-white" />
                     </div>
                     <div>
                         <h3 className="text-sm font-bold">Proposal Copilot</h3>
                         <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            <span className="text-[10px] opacity-80 font-medium">Active Intelligence</span>
+                            <span className="text-[10px] opacity-80 font-medium text-white">Active Intelligence</span>
                         </div>
                     </div>
                 </div>
@@ -95,7 +96,7 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
                     onClick={onClose}
                     className="h-8 w-8 text-primary-foreground hover:bg-white/20 rounded-full"
                 >
-                    <HiXMark size={20} />
+                    <X size={20} />
                 </Button>
             </div>
 
@@ -108,7 +109,7 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
                                 "h-8 w-8 rounded-full flex items-center justify-center shrink-0 border",
                                 m.role === 'user' ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border"
                             )}>
-                                {m.role === 'user' ? <HiUser size={16} /> : <HiCpuChip size={16} />}
+                                {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                             </div>
                             <div className={cn(
                                 "p-3 rounded-2xl text-sm max-w-[85%] shadow-sm",
@@ -123,10 +124,10 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
                     {isLoading && (
                         <div className="flex gap-3">
                             <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">
-                                <HiCpuChip size={16} />
+                                <Bot size={16} />
                             </div>
                             <div className="bg-muted/50 border border-border rounded-2xl p-3 flex items-center gap-2">
-                                <HiOutlineArrowPath size={16} className="animate-spin text-primary" />
+                                <Loader2 size={16} className="animate-spin text-primary" />
                                 <span className="text-xs text-muted-foreground font-medium">Synthesizing...</span>
                             </div>
                         </div>
@@ -154,7 +155,7 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
                         disabled={isLoading || !input.trim()}
                         className="bg-primary hover:shadow-lg hover:shadow-primary/20 transition-all"
                     >
-                        <HiPaperAirplane size={18} />
+                        <Send size={18} className="text-white" />
                     </Button>
                 </form>
             </div>

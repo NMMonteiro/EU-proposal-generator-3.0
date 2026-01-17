@@ -11,10 +11,9 @@ export function useProposalViewer(proposalId: string) {
     const [isExporting, setIsExporting] = useState(false);
     const [settings, setSettings] = useState<ProposalSettings>({ currency: 'EUR', sourceUrl: '' });
 
-    const loadProposal = useCallback(async () => {
-        setLoading(true);
+    const loadProposal = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
         try {
-            // The backend now handles deep hydration (partners, funding scheme, layouts)
             const response = await fetch(`${serverUrl}/proposals/${proposalId}`, {
                 headers: { 'Authorization': `Bearer ${publicAnonKey}` },
             });
@@ -31,7 +30,7 @@ export function useProposalViewer(proposalId: string) {
             console.error('Load error:', error);
             toast.error(error.message || 'Failed to load proposal');
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, [proposalId]);
 
@@ -87,6 +86,6 @@ export function useProposalViewer(proposalId: string) {
         setSettings,
         saveProposal,
         handleExport,
-        refresh: loadProposal
+        refresh: () => loadProposal(true)
     };
 }
