@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
                 const filePath = `logos/${fileName}`;
 
                 const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('funding-scheme-logos')
+                    .from('partner-assets')
                     .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
                 if (uploadError) {
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
                 }
 
                 const { data: urlData } = supabase.storage
-                    .from('funding-scheme-logos')
+                    .from('partner-assets')
                     .getPublicUrl(filePath);
 
                 // Update partner with logo URL
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
                 const filePath = `pdfs/${fileName}`;
 
                 const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('funding-scheme-logos')
+                    .from('partner-assets')
                     .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
                 if (uploadError) {
@@ -166,7 +166,7 @@ Deno.serve(async (req) => {
                 }
 
                 const { data: urlData } = supabase.storage
-                    .from('funding-scheme-logos')
+                    .from('partner-assets')
                     .getPublicUrl(filePath);
 
                 // Update partner with PDF URL

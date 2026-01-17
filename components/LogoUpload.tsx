@@ -42,7 +42,7 @@ export function LogoUpload({ currentLogoUrl, onLogoChange, label = 'Logo' }: Log
 
             // Try to upload to Supabase Storage
             const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('funding-scheme-logos')
+                .from('partner-assets')
                 .upload(filePath, file, {
                     cacheControl: '3600',
                     upsert: false
@@ -61,7 +61,7 @@ export function LogoUpload({ currentLogoUrl, onLogoChange, label = 'Logo' }: Log
 
             // Get public URL
             const { data: urlData } = supabase.storage
-                .from('funding-scheme-logos')
+                .from('partner-assets')
                 .getPublicUrl(filePath);
 
             const publicUrl = urlData.publicUrl;
