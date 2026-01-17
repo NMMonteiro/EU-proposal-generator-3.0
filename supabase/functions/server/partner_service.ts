@@ -62,7 +62,7 @@ export const getPartner = async (id: string) => {
 
 export const upsertPartner = async (body: any) => {
     const supabase = getSupabaseClient();
-    const dbPartner = {
+    const dbPartner: any = {
         name: body.name,
         legal_name_national: body.legalNameNational,
         acronym: body.acronym,
@@ -99,7 +99,12 @@ export const upsertPartner = async (body: any) => {
         relevant_projects: body.relevantProjects
     };
 
-    const { data, error } = await supabase.from('partners').upsert(dbPartner, { onConflict: 'name' }).select().single();
+    // If updating an existing partner (has valid UUID), include the ID
+    if (body.id && isUUID(body.id)) {
+        dbPartner.id = body.id;
+    }
+
+    const { data, error } = await supabase.from('partners').upsert(dbPartner).select().single();
     if (error) throw error;
     return mapPartner(data);
 };

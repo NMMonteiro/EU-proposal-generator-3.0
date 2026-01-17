@@ -119,6 +119,13 @@ Deno.serve(async (req) => {
                 const partner = await upsertPartner(body);
                 return new Response(JSON.stringify(partner), { headers: corsHeaders });
             }
+
+            if (id && req.method === 'PUT') {
+                const body = await req.json();
+                const { upsertPartner } = await import('./partner_service.ts');
+                const partner = await upsertPartner({ ...body, id });
+                return new Response(JSON.stringify(partner), { headers: corsHeaders });
+            }
         }
 
         // --- 5. PARTNER PDF IMPORT ---
