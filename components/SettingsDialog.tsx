@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Input } from '@/components/ui/input';
 import { HiOutlineCalendarDays, HiOutlineCurrencyEuro, HiLink } from 'react-icons/hi2';
 
 interface SettingsDialogProps {
@@ -37,7 +36,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
                             <span className="text-primary"><HiOutlineCalendarDays size={16} /></span>
                             Project Start Date
-                        </Label>
+                        </label>
                         <Input
                             type="date"
                             value={settings.startDate || ''}
@@ -50,7 +49,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
                             <span className="text-primary"><HiOutlineCurrencyEuro size={16} /></span>
                             Default Currency
-                        </Label>
+                        </label>
                         <Input
                             value={settings.currency || 'EUR'}
                             onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
@@ -62,7 +61,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
                             <span className="text-primary"><HiLink size={16} /></span>
                             Source Reference URL
-                        </Label>
+                        </label>
                         <Input
                             value={settings.sourceUrl || ''}
                             onChange={(e) => setSettings({ ...settings, sourceUrl: e.target.value })}
