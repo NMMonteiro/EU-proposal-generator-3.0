@@ -330,6 +330,7 @@ ${sectionInstructions}
 STRICT JSON OUTPUT FORMAT (FOLLOW EXACTLY):
 {
   "title": "${idea.title}",
+  "summary": "Brief 2-3 sentence overview of the project (this is metadata, NOT the full Project Summary section)",
   "partners": [
     ${partners.map((p: any) => `{ "name": "${p.name}", "role": "${p.isCoordinator ? 'Lead Coordinator' : 'Partner'}", "country": "${p.country || ''}", "isCoordinator": ${p.isCoordinator || false}, "description": "Professional technical profile based on expertise." }`).join(',\n    ')}
   ],
@@ -356,13 +357,15 @@ STRICT JSON OUTPUT FORMAT (FOLLOW EXACTLY):
     }
   ],
   "risks": [{ "risk": "Technical delay", "likelihood": "Low", "impact": "High", "mitigation": "Proper planning and alternative resource allocation." }],
-  "summary": "Full project summary (HTML formatted with <p>, <ul>, <strong>)...",
   "dynamicSections": {
-    "key_from_structure_above": "HTML technical narrative...",
+    "project_summary": "CRITICAL: This is the MAIN Project Summary section that will be displayed prominently. Write a comprehensive, detailed HTML-formatted summary (4-6 paragraphs) covering: (1) Project context and background, (2) Main objectives, (3) Target groups and beneficiaries, (4) Methodology and approach, (5) Expected outcomes and impact, (6) Innovation and added value. Use <p>, <ul>, <li>, <strong> tags for formatting. This should be 800-1200 words.",
+    "key_from_structure_above": "HTML technical narrative for each section...",
     "work_package_1": "Narrative for WP1...",
     "work_package_2": "Narrative for WP2..."
   }
 }
+
+CRITICAL REMINDER: The "project_summary" key in dynamicSections is THE MOST IMPORTANT section. It must be comprehensive, detailed, and professionally written. This is what evaluators read first!
 
 Return ONLY valid JSON.`;
 }
