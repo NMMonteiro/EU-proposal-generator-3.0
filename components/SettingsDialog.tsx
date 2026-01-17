@@ -34,7 +34,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
                 <div className="grid gap-6 py-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
-                            <span className="text-primary"><CalendarDays size={16} /></span>
+                            <span className="text-primary"><CalendarDays className="w-4 h-4" /></span>
                             Project Start Date
                         </label>
                         <Input
@@ -47,7 +47,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
-                            <span className="text-primary"><Euro size={16} /></span>
+                            <span className="text-primary"><Euro className="w-4 h-4" /></span>
                             Default Currency
                         </label>
                         <Input
@@ -59,7 +59,7 @@ export function SettingsDialog({ isOpen, onClose, currentSettings, onSave }: Set
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2">
-                            <span className="text-primary"><LinkIcon size={16} /></span>
+                            <span className="text-primary"><LinkIcon className="w-4 h-4" /></span>
                             Source Reference URL
                         </label>
                         <Input

@@ -31,7 +31,7 @@ export function ViewerSidebar({
         <aside className="w-80 border-r bg-muted/30 hidden lg:flex flex-col sticky top-16 h-[calc(100vh-64px)] overflow-hidden">
             <div className="p-4 border-b bg-background/50">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <span className="text-primary"><LayoutGrid size={14} /></span>
+                    <span className="text-primary"><LayoutGrid className="w-3.5 h-3.5" /></span>
                     Structure
                 </h3>
             </div>
@@ -50,7 +50,7 @@ export function ViewerSidebar({
                                     }`}
                             >
                                 <span className={`shrink-0 transition-colors ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
-                                    <tab.icon size={18} />
+                                    <tab.icon className="w-4.5 h-4.5" />
                                 </span>
                                 {tab.label}
                                 {activeTab === tab.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}

@@ -197,7 +197,7 @@ export const ResponsiveSectionContent = ({
                             className="h-8 w-8 text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:text-amber-700 transition-all shadow-sm"
                             title="Edit with AI"
                         >
-                            <Sparkles size={16} />
+                            <Sparkles className="w-4 h-4 shrink-0" />
                         </Button>
                     )}
                     {onEdit && (
@@ -208,7 +208,7 @@ export const ResponsiveSectionContent = ({
                             className="h-8 w-8 text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-all shadow-sm"
                             title="Manual Edit"
                         >
-                            <Pencil size={16} />
+                            <Pencil className="w-4 h-4 shrink-0" />
                         </Button>
                     )}
                 </div>
@@ -293,7 +293,7 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                             {wp.activities && wp.activities.length > 0 && (
                                 <div className="mt-6 space-y-4">
                                     <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                        <span className="text-primary"><LayoutDashboard size={16} /></span>
+                                        <span className="text-primary"><LayoutDashboard className="w-4 h-4" /></span>
                                         Structure
                                     </h3>
                                     <div className="grid gap-3">
@@ -322,7 +322,7 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                                     <ul className="space-y-2">
                                         {wp.deliverables.map((del: string, dIdx: number) => (
                                             <li key={dIdx} className="flex items-start gap-2 text-xs">
-                                                <span className="text-emerald-500 mt-0.5 shrink-0"><CheckCircle2 size={14} /></span>
+                                                <span className="text-emerald-500 mt-0.5 shrink-0"><CheckCircle2 className="w-3.5 h-3.5" /></span>
                                                 <span className="text-slate-600">{del}</span>
                                             </li>
                                         ))}
@@ -440,14 +440,14 @@ export const DynamicPartnerSection = ({
         return (
             <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-muted/20 flex flex-col items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary"><Users size={24} /></span>
+                    <span className="text-primary"><Users className="w-6 h-6" /></span>
                 </div>
                 <div>
                     <p className="text-muted-foreground font-medium italic">No partners added to this consortium yet.</p>
                 </div>
                 {onAddPartner && (
                     <Button onClick={onAddPartner} size="sm" className="gap-2">
-                        <Plus size={16} />
+                        <Plus className="w-4 h-4" />
                         Add Partner
                     </Button>
                 )}
@@ -458,12 +458,12 @@ export const DynamicPartnerSection = ({
         <div className="space-y-6">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <CardTitle className="text-xl font-bold flex items-center gap-2">
-                    <span className="text-primary"><Users size={20} /></span>
+                    <span className="text-primary"><Users className="w-5 h-5" /></span>
                     Partnership Consortium
                 </CardTitle>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={onAddPartner} className="gap-2">
-                        <Plus size={16} />
+                        <Plus className="w-4 h-4" />
                         Manage Partners
                     </Button>
                 </div>
@@ -478,7 +478,7 @@ export const DynamicPartnerSection = ({
                                         <img src={p.logoUrl} alt={p.name} className="w-full h-full object-contain" />
                                     </div>
                                 ) : (
-                                    <span className="opacity-70"><Building2 size={20} /></span>
+                                    <span className="opacity-70"><Building2 className="w-5 h-5" /></span>
                                 )}
                                 <span className="truncate">{p.name}</span>
                             </div>
@@ -486,7 +486,7 @@ export const DynamicPartnerSection = ({
                         </CardTitle>
                         {p.country && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <span className="opacity-70"><Globe size={12} /></span>
+                                <span className="opacity-70"><Globe className="w-3 h-3" /></span>
                                 {p.country} {p.city ? `(${p.city})` : ''}
                             </div>
                         )}

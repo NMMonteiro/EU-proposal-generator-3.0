@@ -84,29 +84,33 @@ export async function handleCopilotChat(params: any) {
     You must return a JSON response with:
     {
       "response": "Your message to the user confirming what you did.",
-      "action": { // Optional
-        "type": "update_section",
-        "section": "section_key_to_update",
-        "content": "New HTML content for the section (use proper HTML tags)"
-      } | {
-        "type": "update_metadata",
-        "updates": {
-           "title": "New title",
-           "summary": "New summary",
-           "settings": { 
-              "startDate": "YYYY-MM-DD", 
-              "currency": "EUR/USD",
-              "sourceUrl": "...",
-              "duration": 24 
-           }
+      "actions": [ // MUST be an array of actions
+        {
+          "type": "update_section",
+          "section": "section_key_to_update",
+          "content": "New HTML content for the section (use proper HTML tags)"
+        },
+        {
+          "type": "update_metadata",
+          "updates": {
+             "title": "New title",
+             "summary": "New summary",
+             "settings": { 
+                "startDate": "YYYY-MM-DD", 
+                "currency": "EUR/USD",
+                "sourceUrl": "...",
+                "duration": 24 
+             }
+          }
         }
-      }
+      ]
     }
     
     CRITICAL INSTRUCTIONS: 
     1. For date changes (e.g. project start date), use "update_metadata" -> "settings" -> "startDate" in YYYY-MM-DD format.
     2. Always confirm the action in your "response".
-    3. If asked to "Update the start date to 10/10/2026", your JSON action should be: {"type": "update_metadata", "updates": {"settings": {"startDate": "2026-10-10"}}}
+    3. SYNC: If you change metadata (like project start date or title) that is also displayed in a text section (like "Context" or "Project Summary"), you MUST ALSO include an "update_section" action for that section to keep the text consistent with the metadata.
+    
     Available section keys: ${JSON.stringify(Object.keys(proposal.dynamic_sections || proposal.dynamicSections || {}))}
     
     Return ONLY valid JSON. Nothing else.`;
@@ -119,7 +123,7 @@ export async function handleCopilotChat(params: any) {
     const chat = model.startChat({
         history: [
             { role: 'user', parts: [{ text: systemPrompt }] },
-            { role: 'model', parts: [{ text: "Understood. I am now acting as the Proposal Copilot with your project context and capabilities loaded." }] },
+            { role: 'model', parts: [{ text: "Understood. I am now acting as the Proposal Copilot. I will trigger actions via the 'actions' array and ensure metadata/section consistency." }] },
             ...chatHistory
         ]
     });
@@ -128,33 +132,35 @@ export async function handleCopilotChat(params: any) {
     const responseText = result.response.text();
     const data = extractJSON(responseText);
 
-    // If an action was requested, perform it in the DB
-    if (data.action) {
-        console.log(`[Copilot Action] Type: ${data.action.type}`, data.action);
+    // If actions were requested, perform them in the DB
+    const actions = data.actions || (data.action ? [data.action] : []);
 
-        if (data.action.type === 'update_section') {
-            const { section, content } = data.action;
-            const dynSections = proposal.dynamic_sections || proposal.dynamicSections || {};
-            dynSections[section] = content;
-            proposal.dynamicSections = dynSections;
-            await saveToSupabase(proposal);
-        } else if (data.action.type === 'update_metadata') {
-            const { updates } = data.action;
-            if (updates.title) proposal.title = updates.title;
-            if (updates.summary) proposal.summary = updates.summary;
-            if (updates.settings) {
-                // Merge settings
-                proposal.settings = {
-                    ...(proposal.settings || {}),
-                    ...updates.settings
-                };
+    if (actions.length > 0) {
+        console.log(`[Copilot Actions] Count: ${actions.length}`, actions);
 
-                // If start date changed, we might want to update the summary or other things eventually,
-                // but for now just ensure it's saved.
+        for (const action of actions) {
+            if (action.type === 'update_section') {
+                const { section, content } = action;
+                const dynSections = proposal.dynamic_sections || proposal.dynamicSections || {};
+                dynSections[section] = content;
+                proposal.dynamicSections = dynSections;
+            } else if (action.type === 'update_metadata') {
+                const { updates } = action;
+                if (updates.title) proposal.title = updates.title;
+                if (updates.summary) proposal.summary = updates.summary;
+                if (updates.settings) {
+                    proposal.settings = {
+                        ...(proposal.settings || {}),
+                        ...updates.settings
+                    };
+                }
             }
-            await saveToSupabase(proposal);
         }
+        await saveToSupabase(proposal);
     }
 
-    return data;
+    return {
+        ...data,
+        actions // Ensure we return normalized actions
+    };
 }

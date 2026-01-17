@@ -74,7 +74,7 @@ export function AiSectionDialog({
                 <DialogHeader>
                     <div className="flex items-center gap-2 mb-2">
                         <div className="p-2 rounded-full bg-amber-500/10">
-                            <span className="text-amber-500"><Sparkles size={20} /></span>
+                            <span className="text-amber-500"><Sparkles className="w-5 h-5" /></span>
                         </div>
                         <DialogTitle className="text-xl font-bold">AI Section Editor</DialogTitle>
                     </div>
@@ -107,9 +107,9 @@ export function AiSectionDialog({
                         className="gap-2 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20 border-none"
                     >
                         {isGenerating ? (
-                            <Loader2 size={16} className="animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                            <Send size={16} />
+                            <Send className="w-4 h-4" />
                         )}
                         {isGenerating ? 'Generating...' : 'Apply AI Edit'}
                     </Button>

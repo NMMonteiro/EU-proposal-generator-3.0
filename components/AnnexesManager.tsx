@@ -179,7 +179,7 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
                             disabled={uploading}
                             className="bg-primary hover:bg-primary/90"
                         >
-                            <Upload className="h-4 w-4 mr-2" />
+                            <Upload className="h-4 w-4 mr-2 shrink-0" />
                             {uploading ? 'Uploading...' : 'Upload Annex'}
                         </Button>
                     </div>
@@ -189,7 +189,7 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
             {/* Annexes List */}
             {annexes.length === 0 ? (
                 <Card className="p-12 text-center">
-                    <File className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                    <File className="h-12 w-12 text-slate-300 mx-auto mb-4 shrink-0" />
                     <p className="text-slate-600 font-medium">No annexes yet</p>
                     <p className="text-sm text-slate-500 mt-1">
                         Upload supporting documents to strengthen your proposal
@@ -243,10 +243,10 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
                                                     </label>
                                                     <div className="flex-1" />
                                                     <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
-                                                        <X className="h-4 w-4" />
+                                                        <X className="h-4 w-4 shrink-0" />
                                                     </Button>
                                                     <Button size="sm" onClick={saveEdit}>
-                                                        <Check className="h-4 w-4" />
+                                                        <Check className="h-4 w-4 shrink-0" />
                                                     </Button>
                                                 </div>
                                             </div>
@@ -263,7 +263,7 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
                                                         </h4>
                                                         {annex.isMandatory && (
                                                             <Badge variant="destructive" className="text-xs shrink-0">
-                                                                <AlertCircle className="h-3 w-3 mr-1" />
+                                                                <AlertCircle className="h-3 w-3 mr-1 shrink-0" />
                                                                 Required
                                                             </Badge>
                                                         )}
@@ -286,7 +286,7 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
                                                         variant="outline"
                                                         onClick={() => window.open(annex.fileUrl, '_blank')}
                                                     >
-                                                        <Download className="h-4 w-4" />
+                                                        <Download className="h-4 w-4 shrink-0" />
                                                     </Button>
                                                     {!readonly && (
                                                         <>
@@ -295,7 +295,7 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
                                                                 variant="outline"
                                                                 onClick={() => startEdit(annex)}
                                                             >
-                                                                <Edit2 className="h-4 w-4" />
+                                                                <Edit2 className="h-4 w-4 shrink-0" />
                                                             </Button>
                                                             <Button
                                                                 size="sm"
@@ -303,7 +303,7 @@ export function AnnexesManager({ proposalId, annexes, onUpdate, readonly = false
                                                                 onClick={() => handleDelete(annex.id!)}
                                                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                                             >
-                                                                <Trash2 className="h-4 w-4" />
+                                                                <Trash2 className="h-4 w-4 shrink-0" />
                                                             </Button>
                                                         </>
                                                     )}

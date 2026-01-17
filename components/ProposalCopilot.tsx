@@ -59,10 +59,12 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
             if (!res.ok) throw new Error('Failed to get response');
             const data = await res.json();
 
-            // The backend returns { response: "...", action: { ... } }
+            // The backend returns { response: "...", action: { ... }, actions: [...] }
             setMessages(prev => [...prev, { role: 'assistant', content: data.response || "I have processed your request." }]);
 
-            if (data.action) {
+            if (data.actions && data.actions.length > 0) {
+                onProposalUpdate();
+            } else if (data.action) {
                 onProposalUpdate();
             }
         } catch (error) {
@@ -80,7 +82,7 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
             <div className="p-4 border-b bg-gradient-to-r from-primary to-primary/80 text-primary-foreground flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <Sparkles size={18} className="text-white" />
+                        <Sparkles className="w-4.5 h-4.5 text-white" />
                     </div>
                     <div>
                         <h3 className="text-sm font-bold">Proposal Copilot</h3>
@@ -96,7 +98,7 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
                     onClick={onClose}
                     className="h-8 w-8 text-primary-foreground hover:bg-white/20 rounded-full"
                 >
-                    <X size={20} />
+                    <X className="w-5 h-5" />
                 </Button>
             </div>
 
@@ -109,7 +111,7 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
                                 "h-8 w-8 rounded-full flex items-center justify-center shrink-0 border",
                                 m.role === 'user' ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border"
                             )}>
-                                {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+                                {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                             </div>
                             <div className={cn(
                                 "p-3 rounded-2xl text-sm max-w-[85%] shadow-sm",
@@ -124,10 +126,10 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
                     {isLoading && (
                         <div className="flex gap-3">
                             <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">
-                                <Bot size={16} />
+                                <Bot className="w-4 h-4" />
                             </div>
                             <div className="bg-muted/50 border border-border rounded-2xl p-3 flex items-center gap-2">
-                                <Loader2 size={16} className="animate-spin text-primary" />
+                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
                                 <span className="text-xs text-muted-foreground font-medium">Synthesizing...</span>
                             </div>
                         </div>
@@ -155,7 +157,7 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
                         disabled={isLoading || !input.trim()}
                         className="bg-primary hover:shadow-lg hover:shadow-primary/20 transition-all"
                     >
-                        <Send size={18} className="text-white" />
+                        <Send className="w-4.5 h-4.5 text-white" />
                     </Button>
                 </form>
             </div>
