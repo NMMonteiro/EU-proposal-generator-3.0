@@ -20,7 +20,7 @@ export const getFileManager = () => {
 export const getGeminiModel = (config?: any) => {
     const ai = getAI();
     return ai.getGenerativeModel({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3-flash-preview',
         ...config
     });
 };

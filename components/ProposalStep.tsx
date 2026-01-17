@@ -31,6 +31,7 @@ export function ProposalStep({
     const [proposal, setProposal] = useState<FullProposal | null>(null);
     const [generating, setGenerating] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [proposalError, setProposalError] = useState<string | null>(null);
     const [showPrompt, setShowPrompt] = useState(false);
     const hasStartedGeneration = React.useRef(false);
 
@@ -75,10 +76,12 @@ export function ProposalStep({
 
             const data: FullProposal = await response.json();
             setProposal(data);
+            setProposalError(null);
             onProposalGenerated(data);
             toast.success('Proposal generated and auto-saved!');
         } catch (error: any) {
             console.error('Generation error:', error);
+            setProposalError(error.message);
             toast.error(error.message || 'Failed to generate proposal');
         } finally {
             setGenerating(false);
@@ -141,9 +144,15 @@ export function ProposalStep({
 
     if (!proposal) {
         return (
-            <div className="text-center py-12">
-                <p className="text-muted-foreground">Failed to generate proposal. Please try again.</p>
-                <Button onClick={onBack} variant="outline" className="mt-4">
+            <div className="text-center py-12 flex flex-col items-center justify-center min-h-[400px] space-y-6">
+                <div className="bg-red-50 p-4 rounded-2xl border border-red-100 max-w-md">
+                    <p className="text-red-800 font-bold mb-2">Generation Failed</p>
+                    <p className="text-red-600 text-sm leading-relaxed">
+                        {generating ? "The request is taking longer than expected..." : (proposalError || "Failed to generate proposal. Please try again.")}
+                    </p>
+                </div>
+                <Button onClick={onBack} variant="outline" className="rounded-xl border-slate-200">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
                     Back to Ideas
                 </Button>
             </div>

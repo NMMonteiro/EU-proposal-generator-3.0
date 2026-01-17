@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Building2, Globe, CheckCircle2, Layers, Edit, Plus, Users, Sparkles, Pencil } from 'lucide-react';
+import {
+    HiOutlineBuildingOffice2,
+    HiOutlineGlobeAlt,
+    HiOutlineCheckCircle,
+    HiOutlineSquares2X2,
+    HiOutlinePencilSquare,
+    HiPlus,
+    HiUsers,
+    HiSparkles,
+    HiPencil
+} from 'react-icons/hi2';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -187,7 +197,7 @@ export const ResponsiveSectionContent = ({
                             className="h-8 w-8 text-amber-600 bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:text-amber-700 transition-all shadow-sm"
                             title="Edit with AI"
                         >
-                            <Sparkles className="w-4 h-4" />
+                            <HiSparkles size={16} />
                         </Button>
                     )}
                     {onEdit && (
@@ -198,7 +208,7 @@ export const ResponsiveSectionContent = ({
                             className="h-8 w-8 text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-all shadow-sm"
                             title="Manual Edit"
                         >
-                            <Pencil className="w-4 h-4" />
+                            <HiPencil size={16} />
                         </Button>
                     )}
                 </div>
@@ -282,9 +292,10 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                             <div className="prose prose-invert prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: wp.description }} />
                             {wp.activities && wp.activities.length > 0 && (
                                 <div className="mt-6 space-y-4">
-                                    <h5 className="text-[10px] font-bold uppercase tracking-widest text-primary/70 mb-3 flex items-center gap-2">
-                                        <Layers className="w-3 h-3" /> Activities & Tasks
-                                    </h5>
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                        <span className="text-primary"><HiOutlineSquares2X2 size={16} /></span>
+                                        Structure
+                                    </h3>
                                     <div className="grid gap-3">
                                         {wp.activities.map((act: any, aIdx: number) => (
                                             <div key={aIdx} className="bg-slate-50/80 border border-slate-100 rounded-lg p-4 text-sm">
@@ -311,7 +322,7 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                                     <ul className="space-y-2">
                                         {wp.deliverables.map((del: string, dIdx: number) => (
                                             <li key={dIdx} className="flex items-start gap-2 text-xs">
-                                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                                                <span className="text-emerald-500 mt-0.5 shrink-0"><HiOutlineCheckCircle size={14} /></span>
                                                 <span className="text-slate-600">{del}</span>
                                             </li>
                                         ))}
@@ -429,15 +440,14 @@ export const DynamicPartnerSection = ({
         return (
             <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-muted/20 flex flex-col items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Users className="w-6 h-6 text-primary" />
+                    <span className="text-primary"><HiUsers size={24} /></span>
                 </div>
                 <div>
                     <p className="text-muted-foreground font-medium italic">No partners added to this consortium yet.</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">Add partners to build your project's institutional framework.</p>
                 </div>
                 {onAddPartner && (
                     <Button onClick={onAddPartner} size="sm" className="gap-2">
-                        <Plus className="w-4 h-4" />
+                        <HiPlus size={16} />
                         Add Partner
                     </Button>
                 )}
@@ -446,15 +456,18 @@ export const DynamicPartnerSection = ({
     }
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-foreground/80">Consortium Partners</h3>
-                {onAddPartner && (
-                    <Button onClick={onAddPartner} size="sm" className="gap-2" variant="outline">
-                        <Plus className="w-4 h-4" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                    <span className="text-primary"><HiUsers size={20} /></span>
+                    Partnership Consortium
+                </CardTitle>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={onAddPartner} className="gap-2">
+                        <HiPlus size={16} />
                         Manage Partners
                     </Button>
-                )}
-            </div>
+                </div>
+            </CardHeader>
             {partners.filter(p => !!p && !!p.name).map((p, i) => (
                 <Card key={i} className="bg-card/50 border-border/60">
                     <CardHeader className="pb-2">
@@ -465,7 +478,7 @@ export const DynamicPartnerSection = ({
                                         <img src={p.logoUrl} alt={p.name} className="w-full h-full object-contain" />
                                     </div>
                                 ) : (
-                                    <Building2 className="h-5 w-5 opacity-70" />
+                                    <span className="opacity-70"><HiOutlineBuildingOffice2 size={20} /></span>
                                 )}
                                 <span className="truncate">{p.name}</span>
                             </div>
@@ -473,7 +486,7 @@ export const DynamicPartnerSection = ({
                         </CardTitle>
                         {p.country && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Globe className="h-3 w-3" />
+                                <span className="opacity-70"><HiOutlineGlobeAlt size={12} /></span>
                                 {p.country} {p.city ? `(${p.city})` : ''}
                             </div>
                         )}

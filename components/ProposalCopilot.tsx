@@ -1,115 +1,71 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, X, Sparkles, Loader2, User } from 'lucide-react';
+import { HiPaperAirplane, HiCpuChip, HiXMark, HiSparkles, HiOutlineArrowPath, HiUser } from 'react-icons/hi2';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { serverUrl, publicAnonKey } from '../utils/supabase/info.tsx';
 
-// Simple utility for conditional classnames
 const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
 
 interface Message {
-    id: string;
     role: 'user' | 'assistant';
     content: string;
-    timestamp: number;
 }
 
 interface ProposalCopilotProps {
-    proposalId: string;
     isOpen: boolean;
     onClose: () => void;
-    onProposalUpdate?: () => void;
+    proposalId: string;
+    onProposalUpdate: () => void;
 }
 
-export function ProposalCopilot({ proposalId, isOpen, onClose, onProposalUpdate }: ProposalCopilotProps) {
+export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate }: ProposalCopilotProps) {
     const [messages, setMessages] = useState<Message[]>([
-        {
-            id: 'welcome',
-            role: 'assistant',
-            content: "Hello! I'm your Proposal Copilot. I have full context of your project, budget, and partners. How can I help you refine this proposal today?",
-            timestamp: Date.now()
-        }
+        { role: 'assistant', content: 'Hello! I am your EU Proposal Copilot. I can help you rewrite sections, update project metadata (like title or start date), or answer questions about your proposal. What would you like to do?' }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages, isOpen]);
+    }, [messages]);
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
 
-        const userMsg: Message = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: input,
-            timestamp: Date.now()
-        };
-
-        setMessages(prev => [...prev, userMsg]);
+        const userMsg = input.trim();
         setInput('');
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
         setIsLoading(true);
 
         try {
-            // Prepare history for API (exclude welcome message if needed, or map it)
-            const history = messages.slice(1).map(m => ({
-                role: m.role,
-                content: m.content
-            }));
-
-            const response = await fetch(`${serverUrl}/proposal-copilot`, {
+            const res = await fetch(`${serverUrl}/proposal-copilot`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${publicAnonKey}`,
+                    'Authorization': `Bearer ${publicAnonKey}`
                 },
                 body: JSON.stringify({
                     proposalId,
-                    message: userMsg.content,
-                    history
-                }),
+                    message: userMsg,
+                    history: messages
+                })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('Copilot error response:', errorData);
-                throw new Error(errorData.error || `Server error: ${response.status}`);
-            }
+            if (!res.ok) throw new Error('Failed to get response');
+            const data = await res.json();
 
-            const data = await response.json();
+            setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
 
-            const aiMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: data.response,
-                timestamp: Date.now()
-            };
-
-            setMessages(prev => [...prev, aiMsg]);
-
-            // Check if the backend performed an action
             if (data.action) {
-                if (onProposalUpdate) {
-                    onProposalUpdate();
-                }
+                onProposalUpdate();
             }
-
-        } catch (error: any) {
-            console.error('Copilot error:', error);
-            const errorMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: `Error: ${error.message || "I'm sorry, I encountered an error connecting to the server."} Please try again.`,
-                timestamp: Date.now()
-            };
-            setMessages(prev => [...prev, errorMsg]);
+        } catch (error) {
+            setMessages(prev => [...prev, { role: 'assistant', content: "I'm sorry, I encountered an error processing your request." }]);
         } finally {
             setIsLoading(false);
         }
@@ -118,18 +74,18 @@ export function ProposalCopilot({ proposalId, isOpen, onClose, onProposalUpdate 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed right-6 bottom-24 w-[420px] h-[650px] bg-background border border-border shadow-2xl z-50 flex flex-col rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-bottom-right">
+        <Card className="fixed bottom-24 right-6 w-[400px] h-[600px] shadow-2xl flex flex-col z-[100] border-primary/20 bg-background/95 backdrop-blur-xl animate-in slide-in-from-bottom-5 duration-300 rounded-2xl overflow-hidden">
             {/* Header */}
-            <div className="p-4 border-b border-border flex items-center justify-between bg-primary/5">
+            <div className="p-4 border-b bg-gradient-to-r from-primary to-primary/80 text-primary-foreground flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shadow-inner">
-                        <Sparkles className="h-5 w-5 text-primary" />
+                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <HiSparkles size={18} />
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm text-foreground">Proposal Copilot</h3>
-                        <div className="flex items-center gap-1.5">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <p className="text-[10px] font-medium text-emerald-600 uppercase tracking-wider">Online Assistant</p>
+                        <h3 className="text-sm font-bold">Proposal Copilot</h3>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="text-[10px] opacity-80 font-medium">Active Intelligence</span>
                         </div>
                     </div>
                 </div>
@@ -137,47 +93,41 @@ export function ProposalCopilot({ proposalId, isOpen, onClose, onProposalUpdate 
                     variant="ghost"
                     size="icon"
                     onClick={onClose}
-                    className="h-9 w-9 hover:bg-red-100 hover:text-red-600 transition-all rounded-xl border border-border bg-background group"
+                    className="h-8 w-8 text-primary-foreground hover:bg-white/20 rounded-full"
                 >
-                    <X className="h-5 w-5 text-slate-600 group-hover:text-red-600 transition-colors" />
+                    <HiXMark size={20} />
                 </Button>
             </div>
 
-            {/* Chat Area */}
+            {/* Messages */}
             <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
-                    {messages.map((msg) => (
-                        <div
-                            key={msg.id}
-                            className={cn(
-                                "flex gap-3 max-w-[90%]",
-                                msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
-                            )}
-                        >
+                    {messages.map((m, i) => (
+                        <div key={i} className={cn("flex gap-3", m.role === 'user' ? "flex-row-reverse" : "flex-row")}>
                             <div className={cn(
-                                "h-8 w-8 rounded-full flex items-center justify-center shrink-0",
-                                msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
+                                "h-8 w-8 rounded-full flex items-center justify-center shrink-0 border",
+                                m.role === 'user' ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border"
                             )}>
-                                {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                                {m.role === 'user' ? <HiUser size={16} /> : <HiCpuChip size={16} />}
                             </div>
                             <div className={cn(
-                                "rounded-lg p-3 text-sm",
-                                msg.role === 'user'
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted/50 border border-border"
+                                "p-3 rounded-2xl text-sm max-w-[85%] shadow-sm",
+                                m.role === 'user'
+                                    ? "bg-primary text-primary-foreground rounded-tr-none"
+                                    : "bg-muted/80 backdrop-blur-sm text-foreground rounded-tl-none border border-border/50"
                             )}>
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                                {m.content}
                             </div>
                         </div>
                     ))}
                     {isLoading && (
-                        <div className="flex gap-3 max-w-[90%]">
-                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                                <Bot className="h-4 w-4" />
+                        <div className="flex gap-3">
+                            <div className="h-8 w-8 rounded-full bg-muted border border-border flex items-center justify-center shrink-0">
+                                <HiCpuChip size={16} />
                             </div>
-                            <div className="bg-muted/50 border border-border rounded-lg p-3 flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">Thinking...</span>
+                            <div className="bg-muted/50 border border-border rounded-2xl p-3 flex items-center gap-2">
+                                <HiOutlineArrowPath size={16} className="animate-spin text-primary" />
+                                <span className="text-xs text-muted-foreground font-medium">Synthesizing...</span>
                             </div>
                         </div>
                     )}
@@ -185,27 +135,29 @@ export function ProposalCopilot({ proposalId, isOpen, onClose, onProposalUpdate 
                 </div>
             </ScrollArea>
 
-            {/* Input Area */}
-            <div className="p-4 border-t border-border bg-background">
+            {/* Input */}
+            <div className="p-4 border-t bg-muted/30">
                 <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        handleSend();
-                    }}
+                    onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                     className="flex gap-2"
                 >
                     <Input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Ask me to edit, analyze, or suggest..."
-                        className="flex-1"
+                        placeholder="Ask me to rewrite a section or update metadata..."
+                        className="flex-1 bg-background border-primary/10 focus-visible:ring-primary shadow-sm"
                         disabled={isLoading}
                     />
-                    <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-                        <Send className="h-4 w-4" />
+                    <Button
+                        type="submit"
+                        size="icon"
+                        disabled={isLoading || !input.trim()}
+                        className="bg-primary hover:shadow-lg hover:shadow-primary/20 transition-all"
+                    >
+                        <HiPaperAirplane size={18} />
                     </Button>
                 </form>
             </div>
-        </div>
+        </Card>
     );
 }

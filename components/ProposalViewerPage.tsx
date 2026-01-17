@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { MessageSquare, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { HiChatBubbleLeftEllipsis, HiSparkles } from 'react-icons/hi2';
 import { toast } from 'sonner';
 import { serverUrl, publicAnonKey } from '../utils/supabase/info.tsx';
 import { PartnerSelectionModal } from './PartnerSelectionModal';
-import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ProposalCopilot } from './ProposalCopilot';
 import { AiSectionDialog } from './AiSectionDialog';
-import { useNavigate } from 'react-router-dom';
-import { assembleDocument, DisplaySection } from '../utils/proposal-assembly';
+import { SettingsDialog } from './SettingsDialog';
+import { assembleDocument } from '../utils/proposal-assembly';
 
 // Sub-components
 import { ViewerHeader } from './viewer/ViewerHeader';
@@ -36,7 +35,8 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
         settings,
         setSettings,
         saveProposal,
-        handleExport
+        handleExport,
+        refresh
     } = useProposalData(proposalId);
 
     const { budgetLimit, setBudgetLimit, handleRebalance } = useBudgetEditor(proposal, setProposal);
@@ -170,8 +170,8 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                 onClose={() => setIsCopilotOpen(false)}
                 proposalId={proposalId}
                 onProposalUpdate={() => {
-                    // Refetch proposal data
-                    window.location.reload();
+                    // Refetch proposal data without full page reload
+                    refresh();
                 }}
             />
 
@@ -193,13 +193,30 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                 />
             )}
 
+            {/* Settings Dialog */}
+            <SettingsDialog
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+                currentSettings={settings}
+                onSave={async (newSettings) => {
+                    setSettings(newSettings);
+                    const updatedProposal = { ...proposal, settings: newSettings };
+                    try {
+                        await saveProposal(updatedProposal);
+                        toast.success('Settings updated');
+                    } catch (error) {
+                        toast.error('Failed to save settings');
+                    }
+                }}
+            />
+
             {/* Floating Chat Button */}
             {!isCopilotOpen && (
                 <Button
                     onClick={() => setIsCopilotOpen(true)}
-                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-tr from-primary to-primary/80 hover:scale-110 active:scale-95 transition-all z-50 p-0 border-4 border-background"
+                    className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-tr from-primary to-primary/80 hover:scale-110 active:scale-95 transition-all z-50 p-0 border-4 border-background flex items-center justify-center"
                 >
-                    <MessageSquare className="w-6 h-6 text-primary-foreground" />
+                    <span className="text-primary-foreground"><HiChatBubbleLeftEllipsis size={24} /></span>
                 </Button>
             )}
         </div>

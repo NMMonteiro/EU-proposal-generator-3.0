@@ -1,3 +1,4 @@
+// DEPLOY_FORCE: 2026-01-17T14:42:00Z
 import { corsHeaders, isUUID } from './utils.ts';
 import { getSupabaseClient } from './supabase_client.ts';
 import { getGeminiModel } from './ai_service.ts';
@@ -20,24 +21,30 @@ Deno.serve(async (req) => {
     console.log(`[DEBUG] Segments: ${JSON.stringify(segments)}`);
 
     try {
+        const lastSegment = segments[segments.length - 1];
+        console.log(`[DEBUG] Method: ${method}, Path: ${path}, Segments: ${JSON.stringify(segments)}`);
+
         // --- 1. HEALTH & DIAGNOSTICS ---
-        if (segments.includes('health')) {
+        if (segments.some(s => s === 'health')) {
             return new Response(JSON.stringify({ status: 'ok', time: new Date().toISOString() }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        // --- 2. IDEATION FLOW ---
-        if (segments.includes('analyze-url') && method === 'POST') {
-            const body = await req.json();
-            const data = await analyzeUrl(body.url, body.userPrompt, body.fundingSchemeId);
-            return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-
-        // --- 3. PROPOSAL CORE ---
-        if (segments.includes('generate-proposal') && method === 'POST') {
+        // --- 2. PROPOSAL CORE (TOP PRIORITY) ---
+        if (segments.includes('generate-proposal') || path.endsWith('/generate-proposal')) {
+            if (method !== 'POST') return new Response(JSON.stringify({ error: 'Must be POST', method, segments }), { status: 405, headers: corsHeaders });
             console.log('[DEBUG] Entering generate-proposal handler');
             const body = await req.json();
             const proposal = await generateProposalFull(body);
+            console.log('[DEBUG] Proposal generated successfully');
             return new Response(JSON.stringify(proposal), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // --- 3. IDEATION FLOW ---
+        if (segments.includes('analyze-url') || path.endsWith('/analyze-url')) {
+            if (method !== 'POST') return new Response(JSON.stringify({ error: 'Must be POST', method, segments }), { status: 405, headers: corsHeaders });
+            const body = await req.json();
+            const data = await analyzeUrl(body.url, body.userPrompt, body.fundingSchemeId);
+            return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
         if (segments.includes('proposals')) {
@@ -342,7 +349,7 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
-        return new Response(JSON.stringify({ error: 'Route not found', path }), { status: 404, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: 'Route not found', path, method, segments }), { status: 404, headers: corsHeaders });
     } catch (error: any) {
         console.error(`[ERROR] ${path}:`, error);
         return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

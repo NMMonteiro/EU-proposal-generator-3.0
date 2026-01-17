@@ -1,5 +1,4 @@
-import React from 'react';
-import { FileText, Users, Calendar, DollarSign, AlertTriangle, Layers, ChevronDown, Paperclip } from 'lucide-react';
+import { HiOutlineDocumentText, HiOutlineUsers, HiOutlineCalendarDays, HiOutlineCurrencyEuro, HiOutlineExclamationTriangle, HiOutlineSquares2X2, HiChevronDown, HiOutlinePaperClip } from 'react-icons/hi2';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import type { DisplaySection } from '../../utils/proposal-assembly';
@@ -20,19 +19,19 @@ export function ViewerSidebar({
     onSectionClick
 }: ViewerSidebarProps) {
     const mainTabs = [
-        { id: 'narrative', label: 'Proposal Narrative', icon: FileText },
-        { id: 'partners', label: 'Partnership', icon: Users },
-        { id: 'budget', label: 'Financial Plan', icon: DollarSign },
-        { id: 'timeline', label: 'Work Plan', icon: Calendar },
-        { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
-        { id: 'annexes', label: 'Annexes', icon: Paperclip },
+        { id: 'narrative', label: 'Proposal Narrative', icon: HiOutlineDocumentText },
+        { id: 'partners', label: 'Partnership', icon: HiOutlineUsers },
+        { id: 'budget', label: 'Financial Plan', icon: HiOutlineCurrencyEuro },
+        { id: 'timeline', label: 'Work Plan', icon: HiOutlineCalendarDays },
+        { id: 'risks', label: 'Risk Analysis', icon: HiOutlineExclamationTriangle },
+        { id: 'annexes', label: 'Annexes', icon: HiOutlinePaperClip },
     ];
 
     return (
         <aside className="w-80 border-r bg-muted/30 hidden lg:flex flex-col sticky top-16 h-[calc(100vh-64px)] overflow-hidden">
             <div className="p-4 border-b bg-background/50">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <Layers className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-primary"><HiOutlineSquares2X2 size={14} /></span>
                     Structure
                 </h3>
             </div>
@@ -50,7 +49,9 @@ export function ViewerSidebar({
                                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                                     }`}
                             >
-                                <tab.icon className={`w-4 h-4 transition-colors ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                                <span className={`shrink-0 transition-colors ${activeTab === tab.id ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                                    <tab.icon size={18} />
+                                </span>
                                 {tab.label}
                                 {activeTab === tab.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
                             </button>
