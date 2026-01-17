@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Loader2, CheckCircle2, AlertTriangle, XCircle, Lightbulb, BookOpen, Library } from 'lucide-react';
+import { Loader2, CheckCircle2, Lightbulb, BookOpen, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,40 +17,6 @@ interface IdeasStepProps {
 
 export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea, onBack }: IdeasStepProps) {
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
-  const [relevanceAnalysis, setRelevanceAnalysis] = useState<RelevanceAnalysis | null>(null);
-  const [analyzingRelevance, setAnalyzingRelevance] = useState(false);
-
-  const handleAnalyzeRelevance = async () => {
-    setAnalyzingRelevance(true);
-    try {
-      const response = await fetch(`${serverUrl}/analyze-relevance`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify({
-          url: sourceUrl,
-          constraints: analysisResult.constraints,
-          ideas: analysisResult.ideas,
-          userPrompt: userPrompt || undefined,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to analyze relevance');
-      }
-
-      const data: RelevanceAnalysis = await response.json();
-      setRelevanceAnalysis(data);
-      toast.success('Relevance analysis complete!');
-    } catch (error: any) {
-      console.error('Relevance analysis error:', error);
-      toast.error(error.message || 'Failed to analyze relevance');
-    } finally {
-      setAnalyzingRelevance(false);
-    }
-  };
 
   const handleSelectIdea = (idea: Idea) => {
     setSelectedIdea(idea);
@@ -62,31 +28,6 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
     }
   };
 
-  const getScoreColor = (score: string) => {
-    switch (score) {
-      case 'Good':
-        return 'bg-green-50 text-green-700 border-green-200 shadow-sm shadow-green-100';
-      case 'Fair':
-        return 'bg-amber-50 text-amber-700 border-amber-200 shadow-sm shadow-amber-100';
-      case 'Poor':
-        return 'bg-red-50 text-red-700 border-red-200 shadow-sm shadow-red-100';
-      default:
-        return 'bg-slate-50 text-slate-700 border-slate-200';
-    }
-  };
-
-  const getScoreIcon = (score: string) => {
-    switch (score) {
-      case 'Good':
-        return <CheckCircle2 className="h-4 w-4" />;
-      case 'Fair':
-        return <AlertTriangle className="h-4 w-4" />;
-      case 'Poor':
-        return <XCircle className="h-4 w-4" />;
-      default:
-        return null;
-    }
-  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -140,34 +81,6 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
         </CardContent>
       </Card>
 
-      {/* Relevance Analysis */}
-      {!relevanceAnalysis && (
-        <div className="flex justify-center">
-          <Button
-            onClick={handleAnalyzeRelevance}
-            disabled={analyzingRelevance}
-            variant="outline"
-          >
-            {analyzingRelevance && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {analyzingRelevance ? 'Analyzing...' : 'Analyze Relevance'}
-          </Button>
-        </div>
-      )}
-
-      {relevanceAnalysis && (
-        <Card className={`border-2 ${getScoreColor(relevanceAnalysis.score)}`}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {getScoreIcon(relevanceAnalysis.score)}
-              Relevance Score: {relevanceAnalysis.score}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm">{relevanceAnalysis.justification}</p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Ideas Grid */}
       <div>
         <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -194,7 +107,10 @@ export function IdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea,
                   {idea.description}
                 </p>
                 {selectedIdea === idea && (
-                  <Badge className="mt-5 bg-blue-600 text-white px-3 py-1 rounded-full shadow-lg shadow-blue-200 border-none">Selected</Badge>
+                  <div className="mt-5 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg shadow-blue-200 border-none w-fit flex items-center gap-2">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Selected
+                  </div>
                 )}
               </CardContent>
             </Card>
