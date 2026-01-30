@@ -21,7 +21,9 @@ export const saveToSupabase = async (proposal: any) => {
             work_packages: proposal.workPackages || proposal.work_packages || [],
             budget: proposal.budget || [],
             risks: proposal.risks || [],
-            partners: proposal.partners || []
+            partners: proposal.partners || [],
+            logic_mode: proposal.logic_mode || proposal.logicMode || 'standard',
+            mobility_metadata: proposal.mobilityMetadata || proposal.mobility_metadata || {}
         };
 
         let layoutId = proposal.layout_id;
@@ -224,13 +226,15 @@ export const loadFullProposal = async (id: string) => {
             duration: w.duration,
             activities: w.activities
         })) || dbProp.work_packages,
-        budget: dbProp.rel_budget?.map((b: any) => ({
-            item: b.item_category,
-            category: b.item_category,
-            description: b.description,
-            cost: b.cost,
-            breakdown: b.breakdown
-        })) || dbProp.budget,
+        budget: (dbProp.rel_budget && dbProp.rel_budget.length > 0)
+            ? dbProp.rel_budget.map((b: any) => ({
+                item: b.item_category || b.item,
+                category: b.item_category || b.category,
+                description: b.description,
+                cost: b.cost,
+                breakdown: b.breakdown
+            }))
+            : dbProp.budget,
         risks: dbProp.rel_risks?.map((r: any) => ({
             risk: r.risk_title,
             likelihood: r.likelihood,
@@ -255,7 +259,9 @@ export const loadFullProposal = async (id: string) => {
         })) || [],
         fundingScheme,
         layout,
-        layout_id: layout?.id || dbProp.layout_id
+        layout_id: layout?.id || dbProp.layout_id,
+        logic_mode: dbProp.logic_mode || 'standard',
+        mobilityMetadata: dbProp.mobility_metadata || {}
     };
 };
 

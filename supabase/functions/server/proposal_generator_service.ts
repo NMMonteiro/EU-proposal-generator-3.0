@@ -35,10 +35,20 @@ export const generateProposalFull = async (params: any) => {
     }
 
     let fundingScheme = null;
+    let logicMode = 'standard';
+
     if (fundingSchemeId) {
         console.log(`[PROPOSAL] Using funding scheme: ${fundingSchemeId}`);
         const { data } = await supabase.from('funding_schemes').select('*').eq('id', fundingSchemeId).single();
         fundingScheme = data;
+        logicMode = data?.logic_mode || 'standard';
+    } else {
+        // Intelligent inference if no scheme selected
+        const fullText = `${idea.title} ${idea.description} ${userPrompt} ${summary}`.toLowerCase();
+        if (fullText.includes('mobility') || fullText.includes('ka122') || fullText.includes('ka121') || fullText.includes('erasmus')) {
+            logicMode = 'mobility';
+            console.log('[PROPOSAL] Inferred mobility mode from keyword context');
+        }
     }
 
     const model = getGeminiModel({
@@ -51,7 +61,7 @@ export const generateProposalFull = async (params: any) => {
     const smartKeywords = KnowledgeRetriever.extractSmartKeywords(`${fundingScheme?.name || ''} ${idea.title} ${userPrompt || ''}`);
     const expertKnowledge = await retriever.getRelevantKnowledge(smartKeywords, 4);
 
-    const prompt = PromptBuilder.buildProposalPrompt(idea, summary, constraints, partners, userPrompt, fundingScheme);
+    const prompt = PromptBuilder.buildProposalPrompt(idea, summary, constraints, partners, userPrompt, fundingScheme, logicMode);
     const fullyInformedPrompt = expertKnowledge.content ? `${prompt}\n\n### EXPERT INTELLIGENCE:\n${expertKnowledge.content}` : prompt;
 
     console.log('[PROPOSAL] Calling Gemini model (this may take 20-40s)...');
@@ -71,26 +81,43 @@ export const generateProposalFull = async (params: any) => {
     proposal.partners = partners;
 
     // Finalization logic
+    proposal.logic_mode = logicMode; // Pass this explicitly to frontend
+
     let targetBudget = PromptBuilder.extractNumericBudget(userPrompt || '');
+    console.log(`[PROPOSAL] Budget from userPrompt: ${targetBudget}`);
+
     if (!targetBudget) {
         targetBudget = PromptBuilder.extractNumericBudget(constraints.budget || '') ||
             PromptBuilder.extractNumericBudget(constraints.budgetLimit || '');
+        console.log(`[PROPOSAL] Budget from constraints: ${targetBudget}`);
     }
+
     if (!targetBudget && fundingScheme?.template_json?.maxBudget) {
-        targetBudget = parseInt(fundingScheme.template_json.maxBudget);
+        targetBudget = Number(fundingScheme.template_json.maxBudget);
+        console.log(`[PROPOSAL] Budget from fundingScheme template: ${targetBudget}`);
     }
+
+    // Special handling for known schemes with missing maxBudget in template
+    const contextText = `${fundingScheme?.name || ''} ${summary} ${idea.description || ''} ${idea.title || ''}`;
+    if (!targetBudget && contextText.includes('KA122')) {
+        targetBudget = 60000;
+        console.log(`[PROPOSAL] Budget inferred from KA122 context: ${targetBudget}`);
+    }
+
     if (!targetBudget && expertKnowledge.content) {
         targetBudget = PromptBuilder.extractNumericBudget(expertKnowledge.content);
+        console.log(`[PROPOSAL] Budget from expertKnowledge: ${targetBudget}`);
     }
 
     if (!targetBudget || targetBudget < 1000) {
-        targetBudget = 250000;
+        targetBudget = logicMode === 'mobility' ? 60000 : 250000;
+        console.log(`[PROPOSAL] Using fallback budget (${logicMode} mode): ${targetBudget}`);
     }
 
-    console.log(`[PROPOSAL] Rebalancing budget to: ${targetBudget}`);
+    console.log(`[PROPOSAL] FINAL Rebalancing budget to: ${targetBudget}`);
     rebalanceBudget(proposal, targetBudget);
 
-    console.log(`[PROPOSAL] Persisting proposal ${proposal.id} to KV and DB...`);
+    console.log(`[PROPOSAL] Persisting proposal ${proposal.id} (Logic Mode: ${logicMode})`);
     await KV.set(`proposal-${proposal.id}`, proposal);
     await saveToSupabase(proposal);
     console.log('[PROPOSAL] Done.');

@@ -79,7 +79,17 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
     const sectionPool = new Map<string, DisplaySection>();
     const wpIdxToPoolKey = new Map<number, string>();
     const normTitleToPoolKey = new Map<string, string>();
-    const logicMode = fundingScheme?.logic_mode || 'standard';
+
+    // Support dual source for logic_mode: Proposal object (persistence) or Funding Scheme (template)
+    const schemeName = (fundingScheme?.name || (proposal as any).funding_scheme?.name || '').toUpperCase();
+    const isMobilityImplicit = !!(proposal.mobilityMetadata?.fieldOfApplication ||
+        proposal.mobilityMetadata?.nationalAgency ||
+        schemeName.includes('KA122') ||
+        schemeName.includes('KA121') ||
+        schemeName.includes('MOBILITY') ||
+        (workPackages && workPackages.some((wp: any) => wp.activityType || (wp as any).participants)));
+
+    const logicMode = proposal.logic_mode === 'mobility' || isMobilityImplicit ? 'mobility' : (proposal.logic_mode || fundingScheme?.logic_mode || 'standard');
     const isMobilityMode = logicMode === 'mobility';
 
     const MASTER_ORDER: Record<string, number> = {
@@ -91,7 +101,7 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
         'impact': 500,
         'design': 600, 'implementation': 600, 'projectdesignandimplementation': 600,
         'partnershiparrangements': 700, 'partnershipandcooperation': 700,
-        'workpackagesoverview': 1000, 'wplist': 1000, 'listofworkpackages': 1000,
+        'workpackagesoverview': 1000, 'activitiesoverview': 1000, 'wplist': 1000, 'listofworkpackages': 1000,
         'budget': 3000,
         'risks': 4000,
         'declaration': 9000,
@@ -255,7 +265,9 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
             // Always overwrite with DB name if it's more descriptive, but format it carefully
             const dbNameClean = wp.name ? cleanTitle(wp.name) : "";
             if (dbNameClean) {
-                s.title = formatWPTitle(idx, dbNameClean, isMobilityMode);
+                // Remove ANY WP style prefixes before applying standardized naming
+                const pureName = dbNameClean.replace(/^(?:WP|Work[\s_-]*Packages?|Work[\s_-]*Plan)[\s_-]*\d+\s*[:\.-]*/i, '').trim();
+                s.title = formatWPTitle(idx, pureName || dbNameClean, isMobilityMode);
             }
             if (wp.description && (!s.content || wp.description.length > s.content.length)) {
                 s.content = wp.description;
@@ -283,8 +295,8 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
     };
 
     if (proposal.partners?.length > 0) { ensureHeader('pm', 'Participating Organisations', 'partners'); ensureHeader('pp', 'Organisation Profiles', 'partner_profiles'); }
-    if ((proposal.budget || []).length > 0) ensureHeader('bm', 'Budget', 'budget');
-    if ((proposal.risks || []).length > 0) ensureHeader('rm', 'Risk Management', 'risk');
+    if ((proposal.budget || []).length > 0) ensureHeader('bm', isMobilityMode ? 'Financial Plan' : 'Budget', 'budget');
+    if ((proposal.risks || []).length > 0) ensureHeader('rm', 'Risk Analysis', 'risk');
 
     // HEAVY SUMMARY ENFORCEMENT (De-duplication & Consolidation)
     // 1. Get the best available summary content
@@ -344,7 +356,7 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
 
     if (!hasOverview) {
         const firstWPIdx = items.findIndex(s => s.wpIdx !== undefined && s.type === 'work_package');
-        if (firstWPIdx !== -1) items.splice(firstWPIdx, 0, { id: 'wp_list_final', title: isMobilityMode ? 'Activities overview' : 'Work packages overview', level: 1, type: 'wp_list', order: 1000 });
+        if (firstWPIdx !== -1) items.splice(firstWPIdx, 0, { id: 'wp_list_final', title: isMobilityMode ? 'Activities Overview' : 'Work packages overview', level: 1, type: 'wp_list', order: 1000 });
     } else {
         const ov = items.find(s => { const n = normalize(s.title); return n.includes('workpackagesoverview') || n.includes('wplist') || n.includes('listofworkpackages') || n.includes('activitiesoverview'); });
         if (ov) ov.type = 'wp_list';

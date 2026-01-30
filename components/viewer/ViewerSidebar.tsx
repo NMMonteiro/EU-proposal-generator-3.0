@@ -75,7 +75,12 @@ export function ViewerSidebar({
                                             } ${section.level > 1 ? 'ml-4 opacity-80' : ''}`}
                                     >
                                         <div className="mt-1 w-1 h-1 rounded-full bg-border group-hover:bg-primary/50 shrink-0" />
-                                        <span className="truncate">{section.title}</span>
+                                        <span className="truncate">
+                                            {logicMode === 'mobility'
+                                                ? section.title.replace(/WP\s*(\d+)/gi, "Activity $1").replace(/Work\s*Package\s*(\d+)/gi, "Activity $1")
+                                                : section.title
+                                            }
+                                        </span>
                                     </button>
                                 ))}
                             </div>

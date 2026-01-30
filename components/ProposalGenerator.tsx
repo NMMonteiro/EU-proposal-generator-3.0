@@ -3,6 +3,7 @@ import { URLInputStep } from './URLInputStep';
 import { IdeasStep } from './IdeasStep';
 import { PartnerSelectionModal } from './PartnerSelectionModal';
 import { ProposalStep } from './ProposalStep';
+import { MobilityProposalStep } from './MobilityProposalStep';
 import type { AnalysisResult, Idea, FullProposal } from '../types/proposal';
 
 type Step = 'url-input' | 'ideas' | 'partners' | 'proposal';
@@ -20,6 +21,37 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
   const [selectedPartners, setSelectedPartners] = useState<any[]>([]);
   const [proposal, setProposal] = useState<FullProposal | null>(null);
+
+  // HEURISTIC: Force detection in frontend if backend is old/not deployed
+  const getEffectiveLogicMode = () => {
+    if (!analysisResult) return 'standard';
+    if (analysisResult.logic_mode) return analysisResult.logic_mode;
+
+    // Check funding schemes
+    const selectedScheme = fundingSchemes.find(s => s.id === selectedSchemeId);
+    if (selectedScheme?.logic_mode === 'mobility') return 'mobility';
+
+    const contextText = `${userPrompt} ${analysisResult.summary} ${sourceUrl}`.toLowerCase();
+    const isMobility = contextText.includes('mobility') ||
+      contextText.includes('ka122') ||
+      contextText.includes('ka121') ||
+      contextText.includes('erasmus');
+
+    return isMobility ? 'mobility' : 'standard';
+  };
+
+  const [fundingSchemes, setFundingSchemes] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    // Load schemes to check logic_mode
+    const fetchSchemes = async () => {
+      const { data } = await (window as any).supabase.from('funding_schemes').select('id, logic_mode');
+      if (data) setFundingSchemes(data);
+    };
+    fetchSchemes();
+  }, []);
+
+  const logicMode = getEffectiveLogicMode();
 
   const handleUrlSubmit = (result: AnalysisResult, url: string, prompt: string, schemeId: string | null) => {
     setAnalysisResult(result);
@@ -104,16 +136,29 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
       )}
 
       {currentStep === 'proposal' && selectedIdea && analysisResult && (
-        <ProposalStep
-          selectedIdea={selectedIdea}
-          analysisResult={analysisResult}
-          selectedPartners={selectedPartners}
-          userPrompt={userPrompt}
-          selectedSchemeId={selectedSchemeId}
-          onProposalGenerated={handleProposalGenerated}
-          onBack={handleBackToPartners}
-          onViewProposal={onViewProposal}
-        />
+        logicMode === 'mobility' ? (
+          <MobilityProposalStep
+            selectedIdea={selectedIdea}
+            analysisResult={{ ...analysisResult, logic_mode: 'mobility' }} // Force it down
+            selectedPartners={selectedPartners}
+            userPrompt={userPrompt}
+            selectedSchemeId={selectedSchemeId}
+            onProposalGenerated={handleProposalGenerated}
+            onBack={handleBackToPartners}
+            onViewProposal={onViewProposal}
+          />
+        ) : (
+          <ProposalStep
+            selectedIdea={selectedIdea}
+            analysisResult={analysisResult}
+            selectedPartners={selectedPartners}
+            userPrompt={userPrompt}
+            selectedSchemeId={selectedSchemeId}
+            onProposalGenerated={handleProposalGenerated}
+            onBack={handleBackToPartners}
+            onViewProposal={onViewProposal}
+          />
+        )
       )}
     </div>
   );

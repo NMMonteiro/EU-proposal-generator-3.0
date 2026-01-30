@@ -23,7 +23,8 @@ export function Layout() {
     // State for expanded folders - default all to true
     const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
         'Proposal Tools': true,
-        'Resources': true,
+        'Discovery': true,
+        'Intelligence': true,
         'Configuration': true
     });
 
@@ -43,18 +44,24 @@ export function Layout() {
             ]
         },
         {
-            title: 'Resources',
+            title: 'Discovery',
             items: [
-                { href: '/funding', label: 'Funding Search', icon: Search },
+                { href: '/funding', label: 'Funding Explorer', icon: Search },
                 { href: '/partners', label: 'Partners', icon: Users },
+                { href: '/partners/search', label: 'Partner Discovery', icon: Sparkles },
+            ]
+        },
+        {
+            title: 'Intelligence',
+            items: [
+                { href: '/admin/global-library', label: 'Knowledge Library', icon: Book },
+                { href: '/admin/funding-schemes', label: 'Scheme Templates', icon: Sparkles },
             ]
         },
         {
             title: 'Configuration',
             items: [
-                { href: '/admin/funding-schemes', label: 'Funding Schemes', icon: Sparkles },
-                { href: '/admin/global-library', label: 'Global Library', icon: Book },
-                { href: '/settings', label: 'Settings', icon: Settings },
+                { href: '/settings', label: 'Organization', icon: Settings },
             ]
         }
     ];

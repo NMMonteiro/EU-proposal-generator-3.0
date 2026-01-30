@@ -8,7 +8,9 @@ import {
     Plus,
     Users,
     Sparkles,
-    Pencil
+    Pencil,
+    Search,
+    Euro
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -87,10 +89,6 @@ export function transformWideTables(html: string): string {
 
             if (headers.length <= 4) return; // Only transform wide tables or handled key-value
 
-            modified = true;
-            const container = doc.createElement('div');
-            container.className = "space-y-4 my-6 not-prose";
-
             const dataRows = Array.from(table.querySelectorAll('tr')).filter(tr =>
                 !tr.parentElement || tr.parentElement.tagName !== 'THEAD'
             );
@@ -98,6 +96,10 @@ export function transformWideTables(html: string): string {
             if (!thead && dataRows.length > 0 && headers.join('|') === Array.from(dataRows[0].cells).map(c => c.textContent?.trim() || "").join('|')) {
                 dataRows.shift();
             }
+
+            modified = true;
+            const container = doc.createElement('div');
+            container.className = "space-y-4 my-6 not-prose";
 
             dataRows.forEach((tr, idx) => {
                 const cells = Array.from(tr.cells);
@@ -355,6 +357,87 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
     );
 };
 
+export const MobilityActivitiesSection = ({ activities, currency }: { activities: any[], currency: string }) => {
+    if (!activities || activities.length === 0) {
+        return <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-muted/20 text-muted-foreground italic">No mobility activities defined yet.</div>;
+    }
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
+
+    return (
+        <div className="space-y-8">
+            {activities.map((act, idx) => (
+                <Card key={idx} className="border-border/60 shadow-sm overflow-hidden bg-card/50">
+                    <CardHeader className="bg-primary/5 border-b border-border/40 py-4 px-6 flex flex-row items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center font-bold">
+                                A{idx + 1}
+                            </div>
+                            <CardTitle className="text-lg font-bold">
+                                {act.name.replace(/^(?:WP|Work[\s_-]*Packages?|Work[\s_-]*Plan)[\s_-]*\d+\s*[:\.-]*/i, '').trim() || act.name}
+                            </CardTitle>
+                        </div>
+                        {act.activityType && (
+                            <Badge variant="outline" className="border-primary/30 text-primary uppercase text-[10px] tracking-wider font-bold h-6 px-3">
+                                {act.activityType.replace(/_/g, ' ')}
+                            </Badge>
+                        )}
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-border/40">
+                            <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Participants</span>
+                                <div className="flex items-center gap-2 text-foreground/90 font-bold">
+                                    <Users className="w-4 h-4 text-primary" />
+                                    {act.participants || 0} Pax
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Duration</span>
+                                <div className="text-foreground/90 font-bold">
+                                    {act.duration || 0} Days
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Destination</span>
+                                <div className="flex items-center gap-2 text-foreground/90 font-bold">
+                                    <Globe className="w-4 h-4 text-primary" />
+                                    {act.destinationCountry || '---'}
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Budget Est.</span>
+                                <div className="text-emerald-600 font-bold">
+                                    {formatCurrency((act.activities || []).reduce((sum: number, a: any) => sum + (a.estimatedBudget || 0), 0))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase text-primary/70 tracking-widest">Activity Description & Learning Outcomes</h4>
+                            <div className="prose prose-slate prose-sm max-w-none text-muted-foreground leading-relaxed italic" dangerouslySetInnerHTML={{ __html: act.description }} />
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 pt-4 border-t border-border/20">
+                            {act.fewerOpportunities > 0 && <Badge variant="secondary" className="gap-1 bg-amber-50 text-amber-700 border-amber-200"><Sparkles className="w-3 h-3" /> {act.fewerOpportunities} Fewer Opp.</Badge>}
+                            {act.greenTravel && <Badge variant="secondary" className="gap-1 bg-emerald-50 text-emerald-700 border-emerald-200">🌱 Green Travel</Badge>}
+                            {act.blendedMobility && <Badge variant="secondary" className="gap-1 bg-blue-50 text-blue-700 border-blue-200">💻 Blended</Badge>}
+                            {act.accompanyingPersons > 0 && <Badge variant="secondary" className="gap-1 bg-slate-50 text-slate-700 border-slate-200"><Users className="w-3 h-3" /> {act.accompanyingPersons} Accompanying</Badge>}
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    );
+};
+
 export const DynamicBudgetSection = ({
     budget,
     currency,
@@ -412,6 +495,258 @@ export const DynamicBudgetSection = ({
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+        </div>
+    );
+};
+
+export const MobilityBudgetSection = ({
+    budget,
+    currency,
+    mobilityMetadata,
+    activities = [],
+    proposalId
+}: {
+    budget: any[],
+    currency: string,
+    mobilityMetadata?: any,
+    activities?: any[],
+    proposalId?: string
+}) => {
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    };
+
+    // Group budget items by type for mobility
+    const categories = [
+        { key: 'organis', label: 'Organisational Support', icon: Building2 },
+        { key: 'travel', label: 'Travel', icon: Globe },
+        { key: 'individual', label: 'Individual Support', altKey: 'subsistence', icon: Users },
+        { key: 'inclusion', label: 'Inclusion Support', icon: CheckCircle2 },
+        { key: 'fees', label: 'Course Fees', altKey: 'course', icon: LayoutDashboard },
+        { key: 'linguistic', label: 'Linguistic Support', icon: Sparkles },
+        { key: 'preparatory', label: 'Preparatory Visits', icon: Search },
+    ];
+
+    const total = budget.reduce((sum, item) => sum + (Number(item.cost) || Number(item.total) || 0), 0);
+    const matchedIds = new Set<number>();
+
+    // Helper to match items to categories
+    const getItemsForCategory = (cat: any) => {
+        return budget.filter((item, idx) => {
+            const name = (item.item || item.name || "").toLowerCase();
+            const desc = (item.description || "").toLowerCase();
+            const category = (item.category || "").toLowerCase();
+
+            const isMatch = name.includes(cat.key) ||
+                desc.includes(cat.key) ||
+                category.includes(cat.key) ||
+                (cat.altKey && (name.includes(cat.altKey) || desc.includes(cat.altKey) || category.includes(cat.altKey)));
+
+            if (isMatch) matchedIds.add(idx);
+            return isMatch;
+        });
+    };
+
+    if (budget.length === 0) {
+        return (
+            <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-muted/20 flex flex-col items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-primary"><LayoutDashboard className="w-6 h-6" /></span>
+                </div>
+                <div className="max-w-md">
+                    <h3 className="text-lg font-bold text-foreground">No Budget Items Detected</h3>
+                    <p className="text-muted-foreground text-sm mt-2">
+                        The financial plan is currently empty. If you just ran a SQL script, please ensure it targeted the correct Proposal ID:
+                    </p>
+                    <code className="block mt-3 p-2 bg-black/5 rounded font-mono text-xs break-all border border-border/20">
+                        {proposalId || "Unknown ID"}
+                    </code>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-primary/5 border-primary/20">
+                    <CardContent className="pt-6">
+                        <div className="text-[10px] uppercase font-bold text-primary/70 tracking-wider">Total Grant Requested</div>
+                        <div className="text-3xl font-black text-primary mt-1">{formatCurrency(total)}</div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Budget Summary Table (Replicating PDF Page 21) */}
+            <Card className="border-border/60 shadow-sm overflow-hidden bg-card/50">
+                <CardHeader className="bg-primary/5 py-3 px-4 border-b border-border/40">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <LayoutDashboard className="w-4 h-4 text-primary" />
+                        Project Budget Summary
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 overflow-x-auto">
+                    <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
+                        <thead className="bg-slate-50 border-b border-border/40">
+                            <tr>
+                                <th className="py-2 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider sticky left-0 bg-slate-50 z-10">Activity Type</th>
+                                {categories.map(cat => (
+                                    <th key={cat.key} className="py-2 px-2 font-bold text-[10px] text-muted-foreground text-right uppercase tracking-wider whitespace-nowrap">
+                                        {cat.label.replace(' Support', '').replace(' Individual', 'Indiv.').replace('Preparatory Visits', 'Prep. Visits')}
+                                    </th>
+                                ))}
+                                <th className="py-2 px-4 font-bold text-[10px] text-primary text-right bg-primary/5 uppercase tracking-wider">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/20">
+                            {(activities.length > 0 ? activities : [{ name: 'Mobility Project' }]).map((act, idx) => {
+                                const actName = typeof act === 'string' ? act : (act.name?.replace(/^(?:WP|Work[\s_-]*Packages?|Work[\s_-]*Plan)[\s_-]*\d+\s*[:\.-]*/i, '').trim() || 'Mobility Activity');
+                                let rowTotal = 0;
+                                return (
+                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="py-2 px-4 font-medium text-slate-700 text-xs sticky left-0 bg-white/80 backdrop-blur-sm z-10">{actName}</td>
+                                        {categories.map(cat => {
+                                            const catItems = budget.filter(b => {
+                                                const bName = (b.item || "").toLowerCase();
+                                                const bDesc = (b.description || "").toLowerCase();
+                                                const isCatMatch = bName.includes(cat.key) ||
+                                                    bDesc.includes(cat.key) ||
+                                                    (cat.altKey && (bName.includes(cat.altKey) || bDesc.includes(cat.altKey)));
+
+                                                if (!isCatMatch) return false;
+
+                                                // If multiple activities, try to match activity context (relaxed)
+                                                if (activities.length > 1) {
+                                                    const cleanActName = actName.toLowerCase();
+                                                    // Match if activity name is in description or vice versa
+                                                    // OR if they share a significant word (like 'Spain', 'Finland', 'Job')
+                                                    const significantWords = cleanActName.split(/\s+/).filter(w => w.length > 4);
+                                                    return bDesc.includes(cleanActName) ||
+                                                        cleanActName.includes(bDesc) ||
+                                                        significantWords.some(w => bDesc.includes(w) || bName.includes(w));
+                                                }
+                                                return true;
+                                            });
+                                            const cost = catItems.reduce((sum, b) => sum + (Number(b.cost) || Number(b.total) || 0), 0);
+                                            rowTotal += cost;
+                                            return (
+                                                <td key={cat.key} className="py-2 px-2 text-right font-mono text-[11px] text-slate-600">
+                                                    {cost > 0 ? cost.toLocaleString() : '-'}
+                                                </td>
+                                            );
+                                        })}
+                                        <td className="py-2 px-4 text-right font-bold text-xs text-primary bg-primary/5">{rowTotal > 0 ? formatCurrency(rowTotal) : '-'}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                        <tfoot className="bg-slate-100/50 border-t-2 border-border/40">
+                            <tr className="font-bold text-xs">
+                                <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-100/80 backdrop-blur-sm z-10">Total Grant (EUR)</td>
+                                {categories.map(cat => {
+                                    const catTotal = budget.filter(b => {
+                                        const bName = (b.item || "").toLowerCase();
+                                        const bDesc = (b.description || "").toLowerCase();
+                                        return bName.includes(cat.key) ||
+                                            bDesc.includes(cat.key) ||
+                                            (cat.altKey && (bName.includes(cat.altKey) || bDesc.includes(cat.altKey)));
+                                    }).reduce((sum, b) => sum + (Number(b.cost) || Number(b.total) || 0), 0);
+                                    return (
+                                        <td key={cat.key} className="py-3 px-2 text-right font-mono text-slate-900">
+                                            {catTotal.toLocaleString()}
+                                        </td>
+                                    );
+                                })}
+                                <td className="py-3 px-4 text-right font-black text-primary bg-primary/10">{formatCurrency(total)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+                {categories.map((cat) => {
+                    const items = getItemsForCategory(cat);
+                    if (items.length === 0) return null;
+
+                    const catTotal = items.reduce((sum, item) => sum + (Number(item.cost) || Number(item.total) || 0), 0);
+
+                    return (
+                        <Card key={cat.key} className="border-border/40 overflow-hidden">
+                            <CardHeader className="bg-secondary/10 py-3 px-4 flex flex-row items-center justify-between">
+                                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                    <span className="text-primary"><cat.icon className="w-4 h-4" /></span>
+                                    {cat.label}
+                                </CardTitle>
+                                <Badge variant="outline" className="font-mono text-xs">{formatCurrency(catTotal)}</Badge>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <table className="w-full text-xs text-left border-collapse">
+                                    <thead className="bg-slate-50 border-b border-border/40">
+                                        <tr>
+                                            <th className="py-2 px-4 font-semibold text-muted-foreground">Item Description</th>
+                                            <th className="py-2 px-4 font-semibold text-muted-foreground text-right w-32">Grant</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/20">
+                                        {items.map((item, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="py-2.5 px-4 text-slate-700">
+                                                    <div className="font-medium">{item.item}</div>
+                                                    <div className="text-[10px] text-muted-foreground mt-0.5">{item.description}</div>
+                                                </td>
+                                                <td className="py-2.5 px-4 text-right font-mono font-medium text-slate-900">
+                                                    {formatCurrency(Number(item.cost) || Number(item.total) || 0)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+
+                {/* Catch-all for unmatched items */}
+                {budget.some((_, idx) => !matchedIds.has(idx)) && (
+                    <Card className="border-border/40 overflow-hidden border-dashed border-2">
+                        <CardHeader className="bg-slate-50 py-3 px-4 flex flex-row items-center justify-between">
+                            <CardTitle className="text-sm font-bold flex items-center gap-2">
+                                <span className="text-slate-400"><LayoutDashboard className="w-4 h-4" /></span>
+                                Other Project Costs
+                            </CardTitle>
+                            <Badge variant="outline" className="font-mono text-xs">
+                                {formatCurrency(budget.reduce((sum, item, idx) => !matchedIds.has(idx) ? sum + (Number(item.cost) || Number(item.total) || 0) : sum, 0))}
+                            </Badge>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <table className="w-full text-xs text-left border-collapse">
+                                <tbody className="divide-y divide-border/20">
+                                    {budget.map((item, idx) => {
+                                        if (matchedIds.has(idx)) return null;
+                                        return (
+                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="py-2.5 px-4 text-slate-700">
+                                                    <div className="font-bold">{item.item}</div>
+                                                    <div className="text-[10px] text-muted-foreground">{item.description}</div>
+                                                </td>
+                                                <td className="py-2.5 px-4 text-right font-mono font-medium text-slate-900">
+                                                    {formatCurrency(Number(item.cost) || Number(item.total) || 0)}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );

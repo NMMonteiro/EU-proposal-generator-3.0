@@ -9,27 +9,34 @@ export const extractNumericBudget = (text: string): number | null => {
   if (highIntentMatch) {
     let val = highIntentMatch[1].replace(/[.,]/g, (m, offset, str) => {
       // If it's a thousand separator (e.g. 150.000)
-      if (str.length - offset <= 3) return ''; // Decimal or thousand? Actually let's just use the robust logic below
+      if (str.length - offset <= 3) return '';
       return m;
     });
-    // Let's use the existing robust parsing logic on the matched group
     const rawVal = highIntentMatch[1];
     return parseRobustNumber(rawVal);
   }
 
-  // Fallback to simple pattern - Avoid 4-digit numbers starting with 20 (likely years)
+  // Fallback to simple pattern
   let clean = text.replace(/&nbsp;/g, ' ').replace(/\s/g, '');
-  const match = clean.match(/(?:€|EUR|budgetof|totalof|amountof)?(\d{4,9})/i);
-  if (match) {
-    const val = parseInt(match[1]);
-    // Safety check: if it's strictly 4 digits and looks like a current year, ignore it
-    const looksLikeYear = val >= 2020 && val <= 2030;
-    if (!looksLikeYear) return val;
+
+  const matchWithKeyword = clean.match(/(?:budget|grant|limit|total|amount|sum|allocation|funding|of|requested)[:\s€EUR]*(\d{1,3}(?:[.,]\d{3})+|\d{4,9})/i);
+  if (matchWithKeyword) {
+    const val = parseRobustNumber(matchWithKeyword[1]);
+    if (val && !(val >= 2020 && val <= 2030)) return val;
+  }
+
+  const allNumbers = clean.match(/(\d{1,3}(?:[.,]\d{3})+|\d{4,9})/g);
+  if (allNumbers) {
+    for (const n of allNumbers) {
+      const val = parseRobustNumber(n);
+      if (val && val >= 1000 && !(val >= 2020 && val <= 2030)) {
+        return val;
+      }
+    }
   }
   return null;
 };
 
-// Helper for complex number parsing
 function parseRobustNumber(val: string): number | null {
   if (val.includes('.') && val.includes(',')) {
     val = val.indexOf('.') < val.indexOf(',') ? val.split(',')[0].replace(/\./g, '') : val.split('.')[0].replace(/,/g, '');
@@ -52,30 +59,22 @@ export function buildPhase2Prompt(summary: string, constraints: any, userPrompt?
 ${userPrompt}
 
 CRITICAL: ALL project ideas MUST directly address these user requirements.
-If a specific budget or duration is mentioned above, it is a MANDATORY constraint.
 ============================================================
 
 CONTEXT SUMMARY: ${summary}
 
 TASK: Generate 10-12 high-quality project ideas that DIRECTLY address the user requirements above.
 
-Each idea must:
-1. Clearly relate to the user's requirements (e.g., if a specific topic or budget is mentioned, include it)
-2. Be feasible within the constraints
-3. Be innovative and impactful
-
 OUTPUT FORMAT:
-Return ONLY valid JSON (no markdown, no backticks) with this structure:
+Return ONLY valid JSON structure:
 {
   "ideas": [
     {
-      "title": "Project idea title clearly related to user requirements",
-      "description": "Detailed description (2-3 sentences) showing how this fulfills the user requirements"
+      "title": "Project idea title",
+      "description": "Detailed description"
     }
   ]
-}
-
-Return ONLY valid JSON, no other text.`
+}`
     : `You are a creative brainstorming assistant.
 
 CONTEXT SUMMARY: ${summary}
@@ -87,23 +86,16 @@ CONSTRAINTS:
 
 TASK: Generate 10-12 innovative project ideas based on the context summary.
 
-Each idea should:
-1. Align with the funding opportunity
-2. Be feasible within the constraints
-3. Be innovative and impactful
-
 OUTPUT FORMAT:
-Return ONLY valid JSON (no markdown, no backticks) with this structure:
+Return ONLY valid JSON structure:
 {
   "ideas": [
     {
       "title": "Project idea title",
-      "description": "Detailed description (2-3 sentences)"
+      "description": "Detailed description"
     }
   ]
-}
-
-Return ONLY valid JSON, no other text.`;
+}`;
 
   return basePrompt;
 }
@@ -115,60 +107,7 @@ export function buildRelevancePrompt(
   ideas: any[],
   userPrompt?: string
 ): string {
-  const basePrompt = userPrompt
-    ? `Validate these project ideas against the user requirements and source content.
-
-USER REQUIREMENTS (PRIMARY CRITERION - MUST BE 100% SATISFIED):
-${userPrompt}
-
-SOURCE URL: ${url}
-SOURCE CONTENT: ${urlContent.substring(0, 5000)}
-
-PROJECT IDEAS:
-${JSON.stringify(ideas, null, 2)}
-
-TASK: Evaluate how well the ideas address the user requirements AND align with the source content.
-If an idea deviates from a specific budget, duration, or topic mentioned in USER REQUIREMENTS, it must be scored 'Poor'.
-
-Scoring:
-- "Good": Ideas strongly address user requirements and align with source
-- "Fair": Ideas partially address requirements or have moderate alignment
-- "Poor": Ideas miss user requirements or don't align with source
-
-OUTPUT FORMAT (JSON ONLY):
-{
-  "score": "Good" | "Fair" | "Poor",
-  "justification": "Explain why the ideas match or miss the requirements and source content"
-}
-
-Return ONLY valid JSON, no other text.`
-    : `Validate these project ideas against the source content.
-
-SOURCE URL: ${url}
-SOURCE CONTENT: ${urlContent.substring(0, 5000)}
-
-PROJECT IDEAS:
-${JSON.stringify(ideas, null, 2)}
-
-CONSTRAINTS:
-${JSON.stringify(constraints, null, 2)}
-
-TASK: Evaluate how well the ideas align with the source content and constraints.
-
-Scoring:
-- "Good": Ideas strongly align with source and constraints
-- "Fair": Ideas partially align
-- "Poor": Ideas don't align well
-
-OUTPUT FORMAT (JSON ONLY):
-{
-  "score": "Good" | "Fair" | "Poor",
-  "justification": "Explain the alignment assessment"
-}
-
-Return ONLY valid JSON, no other text.`;
-
-  return basePrompt;
+  return `Evaluate relevance of ideas against: ${urlContent.substring(0, 2000)}. Return JSON {score, justification}`;
 }
 
 export function buildProposalPrompt(
@@ -177,14 +116,16 @@ export function buildProposalPrompt(
   constraints: any,
   partners: any = [],
   userPrompt?: string,
-  fundingScheme?: any
+  fundingScheme?: any,
+  logicModeOverride?: string
 ): string {
-  // Helper to flatten sections and subsections
+  const logicMode = logicModeOverride || fundingScheme?.logic_mode || 'standard';
+  const isMobility = logicMode === 'mobility';
+
   interface FlatSection {
     key: string;
     label: string;
     description: string;
-    charLimit?: number;
     aiPrompt?: string;
   }
 
@@ -193,12 +134,10 @@ export function buildProposalPrompt(
     sections.forEach(s => {
       const fallbackKey = (s.label || 'section').toLowerCase().replace(/\s+/g, '_').replace(/\W/g, '');
       const validKey = s.key || fallbackKey;
-
       result.push({
         key: validKey,
         label: s.label || 'Untitled Section',
         description: s.description || '',
-        charLimit: s.charLimit,
         aiPrompt: s.aiPrompt
       });
       if (s.subsections && s.subsections.length > 0) {
@@ -211,175 +150,110 @@ export function buildProposalPrompt(
   let allSections = fundingScheme?.template_json?.sections
     ? flattenSections(fundingScheme.template_json.sections)
     : [
-      { key: 'project_summary', label: 'Project Summary', description: 'Overview of project.' },
-      { key: 'relevance', label: 'Relevance', description: 'Why this project is needed.' },
-      { key: 'impact', label: 'Impact', description: 'Expected change.' }
+      { key: 'project_summary', label: 'Project Summary', description: 'Overview.' },
+      { key: 'relevance', label: 'Relevance', description: 'Why.' },
+      { key: 'impact', label: 'Impact', description: 'Change.' }
     ];
 
-  // Ensure high-priority sections requested by user are in the list if not already there
   const prioritySections = [
-    { key: 'project_description', label: 'Project description', description: 'Comprehensive overview of the solution and methodology.' },
-    { key: 'needs_analysis', label: 'Needs analysis', description: 'Evidence-based analysis of target group gaps and urgent needs.' }
+    { key: 'project_description', label: 'Project description', description: 'Overview.' },
+    { key: 'needs_analysis', label: 'Needs analysis', description: 'Analysis.' }
   ];
 
   prioritySections.forEach(ps => {
     if (!allSections.some(s => s.key === ps.key || s.label.toLowerCase().includes(ps.label.toLowerCase()))) {
-      allSections.splice(1, 0, ps); // Insert after Summary/Context
+      allSections.splice(1, 0, ps);
     }
   });
 
-  const userRequirements = userPrompt
-    ? `\n\n🎯 MANDATORY USER REQUIREMENTS - HIGHEST PRIORITY:\n${userPrompt}\n============================================================`
-    : '';
-
-  // Robust budget extraction with hierarchical priority
   let budgetNum = extractNumericBudget(userPrompt || '');
-
-  // If not in prompt, check project constraints
   if (!budgetNum) {
     budgetNum = extractNumericBudget(constraints.budget || '') || extractNumericBudget(constraints.budgetLimit || '');
   }
-
-  // If still not found, check funding scheme template
   if (!budgetNum && fundingScheme?.template_json?.maxBudget) {
     budgetNum = parseInt(fundingScheme.template_json.maxBudget);
   }
-
-  // Final fallback if NO budget information is found anywhere
   if (!budgetNum || budgetNum < 1000) {
-    budgetNum = 250000; // Standard EU small-medium project fallback
+    budgetNum = isMobility ? 60000 : 250000;
   }
 
   const finalBudgetStr = `€${budgetNum.toLocaleString()}`;
-  const personnelBudget = Math.floor(budgetNum * 0.6);
-  const operationalBudget = Math.floor(budgetNum * 0.4);
 
-  const partnerDictionary = partners.map((p: any, i: number) => `[PARTNER ${i + 1}]: "${p.name}" 
-   - Acronym: ${p.acronym || 'N/A'}
-   - Role: ${p.isCoordinator ? 'LEAD COORDINATOR (APPLICANT ORGANISATION)' : 'Partner'}
-   - Country: ${p.country || 'N/A'}
-   - Profile: ${p.description || 'No profile provided.'}
-   - Expertise: ${p.experience || 'No expertise provided.'}`).join('\n\n');
+  const partnerDictionary = partners.map((p: any, i: number) => `[PARTNER ${i + 1}]: "${p.name}" (${p.country || 'N/A'})`).join('\n');
 
   const sectionInstructions = allSections.map((s) => {
-    return `SECTION: ${s.label}
-    KEY: "${s.key}"
-    AI INSTRUCTION: ${s.aiPrompt || 'Write a technical narrative addressing this section.'}`;
+    return `SECTION: ${s.label}\nKEY: "${s.key}"\nAI: ${s.aiPrompt || 'Write narrative.'}`;
   }).join('\n\n');
 
-  const expertPlaybook = fundingScheme?.expert_playbook;
-  const playbookInstructions = expertPlaybook ? `
-  ### CRITICAL SCHEME INTELLIGENCE (FROM EXPERT PLAYBOOK):
-  - CORE OBJECTIVES: ${expertPlaybook.core_objectives?.join(', ')}
-  - SCORING CRITERIA: ${expertPlaybook.scoring_criteria?.join(', ')}
-  - BEST PRACTICES: ${expertPlaybook.best_practices?.join(', ')}
-  - COMMON PITFALLS TO AVOID: ${expertPlaybook.common_pitfalls?.join(', ')}
-  - REQUIRED TERMINOLOGY: ${expertPlaybook.key_terminology?.join(', ')}
-  
-  MANDATORY: You MUST subtly weave this specific terminology and address these objectives throughout the proposal narrative to ensure maximum scoring.
-  ` : '';
-
-  // Determine the best instruction for the project_summary section
   const summarySection = allSections.find(s => s.key === 'project_summary' || s.label.toLowerCase().includes('project summary'));
   const rawInstruction = summarySection?.aiPrompt || summarySection?.description || '';
-  const isQA = rawInstruction.includes('Objectives:') || rawInstruction.includes('Implementation:') || rawInstruction.includes('Results:');
-
   const summaryInstruction = summarySection
-    ? `CRITICAL: ${summarySection.label}. ${rawInstruction}. 
-       MANDATORY FORMAT: You MUST structure this section as a series of specific sub-sections using HTML <h3> tags for each question/heading provided in the template (e.g., Objectives, Implementation, Results).
-       For each sub-section, use the following format:
-       <h3>[The Question/Heading]</h3>
-       <p>[Detailed, professional answer of at least 150-200 words]</p>
-       Do NOT just write a single block of text or simple bullet points. This must be ready for the official application form.`
-    : `CRITICAL: Write a comprehensive, detailed HTML-formatted summary covering: (1) Project context and background, (2) Main objectives, (3) Expected outcomes and impact. Use <h3> for each sub-header.`;
+    ? `CRITICAL: ${summarySection.label}. ${rawInstruction}. Use HTML <h3> for sub-headers.`
+    : `Write detailed summary with <h3> headers.`;
 
-  return `You are an elite European Grant Writing Consultant with a 100% success rate in Erasmus+ and Horizon Europe funding. 
-Your writing style is highly professional, technical, persuasive, and data-driven. 
+  const mobilityRules = isMobility ? `
+6. **MOBILITY METADATA (MANDATORY)**: Populate "mobilityMetadata" object at root.
+7. **NO WORK PACKAGES**: NEVER use "Work Package" or "WP". Use "Activity 1", "Activity 2", etc.
+  ` : '';
 
-${playbookInstructions}
+  return `You are an elite European Grant Writing Consultant.
+Writing Style: Technical, persuasive, data-driven.
 
-MANDATORY INSTRUCTION: You MUST provide a DETAILED and EXHAUSTIVE output for the following sections in this EXACT SEQUENCE. Be technically profound but concise enough to stay within the output limit (approx. 40,000 characters).
-1. Relevance of the project: Deep context, policy alignment, and urgent need.
-2. Project description: Comprehensive overview of the solution.
-3. Needs analysis: Evidence-based analysis of target group gaps.
-4. Impact: Concrete, measurable outcomes (short and long term).
-5. Project design and implementation: Detailed methodology and operational flow.
-6. All Workpackages and activities: Granular breakdown of every single task and sub-activity.
+MANDATORY SECTIONS SEQUENCE:
+1. Relevance
+2. Project description
+3. Needs analysis
+4. Impact
+5. Implementation
+6. ${isMobility ? 'Erasmus Mobility Activities (Activity 1, 2...). NO "Work Packages".' : 'Work Packages and Tasks.'}
 
-PROJECT IDEA:
-Title: ${idea.title}
-Summary: ${idea.description}
+PROJECT: ${idea.title} - ${idea.description}
 
-CONSORTIUM PARTNERS (LOADED FROM DATABASE - YOU MUST USE ALL ${partners.length} OF THEM):
+PARTNERS: ${partners.length} organizations.
 ${partnerDictionary}
 
-BUDGET CONSTRAINTS:
-- Total: ${finalBudgetStr} (${budgetNum} EUR)
-- Rule: USE ONLY LARGE INTEGERS for "cost", "unitCost", and "amount".
-- STRICT TOTAL: The sum of all items in the "budget" array MUST equal EXACTLY ${budgetNum} EUR.
-- PRIORITY: If a different budget was mentioned in the user prompt, IGNORE it and USE EXACTLY ${budgetNum} EUR.
-- PARTNER ALLOCATION: Distribute the ${budgetNum} EUR across all ${partners.length} partners in the "partnerAllocations" arrays.
+BUDGET: ${finalBudgetStr} (${budgetNum} EUR).
+The sum of all "budget" items MUST equal EXACTLY ${budgetNum} EUR.
 
-STRICT OUTPUT CONTRACT:
-1. **PARTNERS MAPPING**: 
-   - You MUST include EXACTLY ${partners.length} partners in the "partners" array.
-   - The first partner MUST be the Lead Coordinator: "${partners[0]?.name}".
-2. **WORK PACKAGES (CRITICAL)**:
-   - You MUST generate exactly 5 distinct Work Packages in the "workPackages" array.
-   - Each Work Package MUST contain between 3 and 5 detailed activities.
-   - In EACH activity, provide a comprehensive "description" (at least 2-3 sentences) explaining the technical implementation, method, and expected outcome.
-   - Each Work Package MUST have 2-3 clear deliverables.
-   - For EACH Work Package, you MUST also create a narrative summary in "dynamicSections" using keys like "work_package_1", "work_package_2", etc. The narrative summary should be 3-4 paragraphs of high-level technical text.
-3. **SECTION MAPPING**: 
-   - You MUST fill content for EVERY key listed in the "STRUCTURE TO FOLLOW" section below.
-   - If you see a key like "applicant_organisation", provide a technical description of "${partners[0]?.name}".
-   - If you see a key like "participating_organisations", describe the synergy between ALL partners.
-4. **EXACT BUDGET**: The total budget MUST be exactly ${budgetNum} EUR. Distribute it realistically among Personnel, Equipment, and Travel. Ensure the sum of "estimatedBudget" in ALL activities across ALL WPs equals exactly ${budgetNum} EUR.
-5. **NO HALLUCINATIONS**: Do NOT invent partners. Use ONLY the ${partners.length} organizations provided.
+STRICT CONTRACT:
+1. **PARTNERS**: Include all ${partners.length} in "partners" array. First one is Lead Coordinator.
+2. **STRUCTURE**: ${isMobility ? 'Use "Activity" terminology, NEVER "Work Package".' : 'Use Work Packages.'}
+3. **BUDGET**: ${isMobility ? 'Use categories: Organizational Support, Travel, Individual Support, Inclusion Support, Course Fees, Linguistic Support.' : 'Personnel, Equipment, Travel.'}
+${mobilityRules}
 
-STRUCTURE TO FOLLOW (MANDATORY KEYS):
+STRUCTURE TO FOLLOW:
 ${sectionInstructions}
-    KEY: "work_packages_overview" (Provide the 'All Workpackages and activities' summary here)
+KEY: "${isMobility ? 'activities_overview' : 'work_packages_overview'}" (Terminology: ${isMobility ? 'Activities' : 'Work Packages'})
 
-STRICT JSON OUTPUT FORMAT (FOLLOW EXACTLY):
+STRICT JSON FORMAT:
 {
   "title": "${idea.title}",
-  "summary": "Brief 2-3 sentence overview of the project (this is metadata, NOT the full Project Summary section)",
+  "summary": "Metadata summary...",
   "partners": [
-    ${partners.map((p: any) => `{ "name": "${p.name}", "role": "${p.isCoordinator ? 'Lead Coordinator' : 'Partner'}", "country": "${p.country || ''}", "isCoordinator": ${p.isCoordinator || false}, "description": "Professional technical profile based on expertise." }`).join(',\n    ')}
+    ${partners.map((p: any) => `{ "name": "${p.name}", "role": "${p.isCoordinator ? 'Lead Coordinator' : 'Partner'}", "country": "${p.country || ''}", "isCoordinator": ${p.isCoordinator || false} }`).join(',')}
   ],
   "workPackages": [
     {
-      "name": "WP1: Project Management",
-      "description": "Exhaustive management narrative summary...",
-      "duration": "M1-M24",
+      "name": "${isMobility ? 'Activity 1: Title' : 'WP1: Title'}",
+      "description": "Narrative...",
+      "duration": "Duration...",
+      ${isMobility ? '"participants": 15, "activityType": "job_shadowing", "destinationCountry": "Spain", "greenTravel": true, "fewerOpportunities": 2,' : ''}
       "activities": [
-        { "name": "Project Coordination & Quality Assurance", "description": "Continuous monitoring of project milestones, ensuring adherence to quality standards and timeline. Regular steering committee meetings and risk mitigation sessions.", "leadPartner": "${partners[0]?.name}", "estimatedBudget": ${Math.floor(personnelBudget * 0.1)} },
-        { "name": "Financial Management & Reporting", "description": "Oversight of budget allocation, expense tracking, and preparation of periodic financial reports for the funding agency. Ensuring compliance with financial regulations.", "leadPartner": "${partners[0]?.name}", "estimatedBudget": ${Math.floor(personnelBudget * 0.05)} },
-        { "name": "Internal Communication Infrastructure", "description": "Establishment of collaborative platforms, cloud storage, and communication protocols to ensure seamless data exchange and synchronization between all partners.", "leadPartner": "${partners[0]?.name}", "estimatedBudget": ${Math.floor(personnelBudget * 0.05)} }
+        { "name": "Task", "description": "Desc...", "leadPartner": "${partners[0]?.name}", "estimatedBudget": 5000 }
       ],
-      "deliverables": ["Management Plan", "Quality Manual", "Financial Reports"]
+      "deliverables": ["Result 1"]
     }
   ],
   "budget": [
-    {
-      "item": "Personnel",
-      "cost": ${personnelBudget},
-      "description": "Staff costs for all partners including researchers, technicians, and administrators.",
-      "breakdown": [{ "subItem": "Researchers", "quantity": 1, "unitCost": ${personnelBudget}, "total": ${personnelBudget} }],
-      "partnerAllocations": [${partners.map((p: any) => `{ "partner": "${p.name}", "amount": ${Math.floor(personnelBudget / (partners.length || 1))} }`).join(', ')}]
-    }
+    { "item": "${isMobility ? 'Organizational Support' : 'Personnel'}", "cost": 5000, "description": "Desc...", "partnerAllocations": [] }
   ],
-  "risks": [{ "risk": "Technical delay", "likelihood": "Low", "impact": "High", "mitigation": "Proper planning and alternative resource allocation." }],
+  "risks": [{ "risk": "Risk", "likelihood": "Low", "impact": "High", "mitigation": "Plan" }],
+  ${isMobility ? `"mobilityMetadata": { "fieldOfApplication": "School Education", "totalGrantRequested": ${budgetNum} },` : ''}
   "dynamicSections": {
     "project_summary": "${summaryInstruction.replace(/"/g, '\\"')}",
-    "key_from_structure_above": "HTML technical narrative for each section...",
-    "work_package_1": "Narrative for WP1...",
-    "work_package_2": "Narrative for WP2..."
+    "${isMobility ? 'activity_1' : 'work_package_1'}": "Narrative text..."
   }
 }
-
-CRITICAL REMINDER: The "project_summary" key in dynamicSections is THE MOST IMPORTANT section. It must be comprehensive, detailed, and professionally written. This is what evaluators read first!
 
 Return ONLY valid JSON.`;
 }

@@ -19,6 +19,7 @@ export interface AnalysisResult {
   constraints: Constraints;
   ideas: Idea[];
   knowledgeContext?: string[];
+  logic_mode?: string;
 }
 
 export interface RelevanceAnalysis {
@@ -32,15 +33,27 @@ export interface WorkPackage {
   name: string;
   description: string;
   duration?: string;
-  participants?: number; // Mobility specific
-  activityType?: string; // Mobility specific (e.g. job_shadowing)
-  isMobility?: boolean;  // Flag to switch UI logic
+
+  // Mobility Specific Fields
+  participants?: number;
+  activityType?: string; // e.g., 'job_shadowing', 'pupil_mobility', 'staff_training'
+  destinationCountry?: string;
+  accompanyingPersons?: number;
+  durationAccompanying?: number;
+  fewerOpportunities?: number;
+  blendedMobility?: boolean;
+  greenTravel?: boolean;
+  isMobility?: boolean;
+
   activities: {
     name: string;
     description: string;
     leadPartner: string;
-    participatingPartners: string[];
+    participatingPartners?: string[];
     estimatedBudget: number;
+    // Activity-level mobility details if needed
+    participants?: number;
+    duration?: number;
   }[];
   deliverables: string[];
 }
@@ -148,6 +161,18 @@ export interface FullProposal {
   updatedAt?: string;
   settings?: ProposalSettings;
   generationPrompt?: string;
+
+  // Mobility Specific Metadata
+  mobilityMetadata?: {
+    fieldOfApplication?: string;
+    startDate?: string;
+    endDate?: string;
+    durationMonths?: number;
+    nationalAgency?: string;
+    language?: string;
+    totalGrantRequested?: number;
+  };
+  logic_mode?: string;
 }
 
 export interface ProposalSettings {

@@ -7,7 +7,9 @@ import {
     DynamicWorkPackageSection,
     DynamicBudgetSection,
     DynamicRiskSection,
-    DynamicPartnerSection
+    DynamicPartnerSection,
+    MobilityBudgetSection,
+    MobilityActivitiesSection
 } from '../ProposalSections';
 import { AnnexesManager } from '../AnnexesManager';
 import type { FullProposal } from '../../types/proposal';
@@ -25,6 +27,7 @@ interface ViewerTabsProps {
     onAiEdit: (section: DisplaySection) => void;
     onAnnexesUpdate?: () => void;
     logicMode?: 'standard' | 'mobility' | 'lumpsum' | string;
+    proposalId?: string;
 }
 
 export function ViewerTabs({
@@ -38,8 +41,11 @@ export function ViewerTabs({
     onRebalance,
     onAiEdit,
     onAnnexesUpdate,
-    logicMode = 'standard'
+    logicMode = 'standard',
+    proposalId
 }: ViewerTabsProps) {
+    const isMobility = logicMode === 'mobility';
+
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsContent value="narrative" className="mt-0 focus-visible:outline-none">
@@ -70,21 +76,38 @@ export function ViewerTabs({
 
             <TabsContent value="budget" className="mt-0">
                 <div className="max-w-5xl mx-auto space-y-8">
-                    <DynamicBudgetSection
-                        budget={proposal.budget || []}
-                        currency={proposal.settings?.currency || 'EUR'}
-                        limit={budgetLimit}
-                        onRebalance={onRebalance}
-                    />
+                    {isMobility ? (
+                        <MobilityBudgetSection
+                            budget={proposal.budget || []}
+                            currency={proposal.settings?.currency || 'EUR'}
+                            mobilityMetadata={proposal.mobilityMetadata}
+                            activities={proposal.workPackages || []}
+                            proposalId={proposalId || proposal.id}
+                        />
+                    ) : (
+                        <DynamicBudgetSection
+                            budget={proposal.budget || []}
+                            currency={proposal.settings?.currency || 'EUR'}
+                            limit={budgetLimit}
+                            onRebalance={onRebalance}
+                        />
+                    )}
                 </div>
             </TabsContent>
 
             <TabsContent value="timeline" className="mt-0">
                 <div className="max-w-5xl mx-auto space-y-8">
-                    <DynamicWorkPackageSection
-                        workPackages={proposal.workPackages || []}
-                        currency={proposal.settings?.currency || 'EUR'}
-                    />
+                    {isMobility ? (
+                        <MobilityActivitiesSection
+                            activities={proposal.workPackages || []}
+                            currency={proposal.settings?.currency || 'EUR'}
+                        />
+                    ) : (
+                        <DynamicWorkPackageSection
+                            workPackages={proposal.workPackages || []}
+                            currency={proposal.settings?.currency || 'EUR'}
+                        />
+                    )}
                 </div>
             </TabsContent>
 
@@ -107,4 +130,4 @@ export function ViewerTabs({
             </TabsContent>
         </Tabs>
     );
-}
+};

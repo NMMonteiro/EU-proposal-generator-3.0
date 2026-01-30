@@ -11,6 +11,7 @@ import { SettingsPage } from './components/SettingsPage';
 import { ProposalViewerPage } from './components/ProposalViewerPage';
 import { ProposalSummaryPage } from './components/ProposalSummaryPage';
 import { PartnerEditPage } from './components/PartnerEditPage';
+import { PartnerSearchPage } from './components/PartnerSearchPage';
 import { FundingSchemeAdminPage } from './components/FundingSchemeAdminPage';
 import { GlobalLibraryPage } from './components/GlobalLibraryPage';
 import { TestExportPage } from './components/TestExportPage';
@@ -56,10 +57,10 @@ function App() {
             <Routes>
                 <Route element={<Layout />}>
                     <Route path="/" element={<ProposalGeneratorWrapper />} />
-                    <Route path="/funding" element={<FundingSearchPageSimple />} />
-                    <Route path="/funding-hybrid" element={<FundingSearchHybrid />} />
+                    <Route path="/funding" element={<FundingSearchHybrid />} />
                     <Route path="/partners" element={<PartnersPageWrapper />} />
                     <Route path="/partners/:id" element={<PartnerEditPageWrapper />} />
+                    <Route path="/partners/search" element={<PartnerSearchPage />} />
                     <Route path="/saved" element={<SavedProposalsPageWrapper />} />
                     <Route path="/proposals/:id" element={<ProposalViewerPageWrapper />} />
                     <Route path="/proposals/:id/summary" element={<ProposalSummaryPageWrapper />} />

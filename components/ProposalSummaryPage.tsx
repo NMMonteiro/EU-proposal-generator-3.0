@@ -10,7 +10,9 @@ import {
     DynamicWorkPackageSection,
     DynamicBudgetSection,
     DynamicRiskSection,
-    DynamicPartnerSection
+    DynamicPartnerSection,
+    MobilityActivitiesSection,
+    MobilityBudgetSection
 } from './ProposalSections';
 import { exportToDocx } from '../utils/export-docx';
 import { assembleDocument, DisplaySection } from '../utils/proposal-assembly';
@@ -129,6 +131,9 @@ export const ProposalSummaryPage: React.FC<ProposalSummaryPageProps> = ({ propos
             maximumFractionDigits: 0
         }).format(amount);
     };
+
+    const logicMode = proposal.logic_mode || fundingScheme?.logic_mode || (proposal.mobilityMetadata ? 'mobility' : 'standard');
+    const isMobility = logicMode === 'mobility';
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 lg:p-12 print:bg-white print:p-0 font-sans">
@@ -263,19 +268,29 @@ export const ProposalSummaryPage: React.FC<ProposalSummaryPageProps> = ({ propos
                                         )}
                                         {isProfiles && <DynamicPartnerSection partners={proposal.partners || []} />}
                                         {(isWP || isWPList) && (
-                                            <DynamicWorkPackageSection
-                                                workPackages={workPackages}
-                                                limitToIndex={section.wpIdx}
-                                                currency={currency}
-                                                onlyOverview={isWPList}
-                                                overrideWP={(section.wpIdx !== undefined && !workPackages[section.wpIdx]) ? {
-                                                    name: section.title,
-                                                    description: section.content,
-                                                    activities: []
-                                                } : undefined}
-                                            />
+                                            isMobility ? (
+                                                <MobilityActivitiesSection activities={workPackages} currency={currency} />
+                                            ) : (
+                                                <DynamicWorkPackageSection
+                                                    workPackages={workPackages}
+                                                    limitToIndex={section.wpIdx}
+                                                    currency={currency}
+                                                    onlyOverview={isWPList}
+                                                    overrideWP={(section.wpIdx !== undefined && !workPackages[section.wpIdx]) ? {
+                                                        name: section.title,
+                                                        description: section.content,
+                                                        activities: []
+                                                    } : undefined}
+                                                />
+                                            )
                                         )}
-                                        {isBudget && <DynamicBudgetSection budget={budget} currency={currency} />}
+                                        {isBudget && (
+                                            isMobility ? (
+                                                <MobilityBudgetSection budget={budget} currency={currency} mobilityMetadata={proposal.mobilityMetadata} />
+                                            ) : (
+                                                <DynamicBudgetSection budget={budget} currency={currency} />
+                                            )
+                                        )}
                                         {isRisk && <DynamicRiskSection risks={risks} />}
                                     </div>
                                 </div>

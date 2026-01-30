@@ -70,6 +70,16 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
 
     const sections = assembleDocument(proposal);
 
+    const schemeName = (proposal.fundingScheme?.name || (proposal as any).funding_scheme?.name || '').toUpperCase();
+    const isMobilityImplicit = !!(proposal.mobilityMetadata?.fieldOfApplication ||
+        proposal.mobilityMetadata?.nationalAgency ||
+        schemeName.includes('KA122') ||
+        schemeName.includes('KA121') ||
+        schemeName.includes('MOBILITY') ||
+        (proposal.workPackages && proposal.workPackages.some((wp: any) => wp.activityType || (wp as any).participants)));
+
+    const logicMode = proposal.logic_mode === 'mobility' || isMobilityImplicit ? 'mobility' : (proposal.logic_mode || 'standard');
+
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
             <ViewerHeader
@@ -90,7 +100,7 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                     sections={sections}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
-                    logicMode={proposal.fundingScheme?.logic_mode || 'standard'}
+                    logicMode={logicMode}
                     onSectionClick={(id) => {
                         setActiveTab('narrative');
                         const el = document.getElementById(id);
@@ -104,7 +114,8 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                         setActiveTab={setActiveTab}
                         proposal={proposal}
                         sections={sections}
-                        logicMode={proposal.fundingScheme?.logic_mode || 'standard'}
+                        logicMode={logicMode}
+                        proposalId={proposalId}
                         onEdit={(s) => {
                             setEditingSectionId(s.id);
                             setEditingSectionTitle(s.title);

@@ -62,17 +62,26 @@ export async function handleCopilotChat(params: any) {
     const proposal = await loadFullProposal(proposalId);
     if (!proposal) throw new Error("Proposal not found");
 
+    // RAG: Fetch relevant intelligence from Global Knowledge Base
+    const { KnowledgeRetriever } = await import('./knowledge_retriever.ts');
+    const retriever = new KnowledgeRetriever();
+    const smartKeywords = KnowledgeRetriever.extractSmartKeywords(`${proposal.fundingScheme?.name || ''} ${message}`);
+    const expertKnowledge = await retriever.getRelevantKnowledge(smartKeywords, 3);
+
     const model = getGeminiModel({ temperature: 0.7 });
 
-    const logicMode = proposal.fundingScheme?.logic_mode || 'standard';
+    const logicMode = proposal.logic_mode || proposal.fundingScheme?.logic_mode || (proposal.mobilityMetadata ? 'mobility' : 'standard');
     const mobilityRules = proposal.fundingScheme?.template_json?.mobilityRules;
 
     // Build context-aware system prompt
     const systemPrompt = `You are the "Proposal Copilot", an elite AI assistant specialized in European funding (Erasmus+, Horizon Europe, etc.).
-    You have full access to the current project context below.
+    You have full access to the current project context and EXPERT INTELLIGENCE below.
     
     LOGIC MODE: "${logicMode}" 
     ${logicMode === 'mobility' ? 'This is a MOBILITY project (like KA121/KA122). Focus on participant flows, individual support, and learning outcomes instead of complex work packages.' : 'This is a STANDARD project (like KA220/Horizon). Focus on structured Work Packages, tasks, and actual cost breakdowns.'}
+
+    ${expertKnowledge.content ? `### EXPERT INTELLIGENCE (BEST PRACTICES):
+    ${expertKnowledge.content}` : ''}
 
     PROJECT CONTEXT:
     - Title: ${proposal.title}
@@ -170,6 +179,12 @@ export async function handleCopilotChat(params: any) {
                     proposal.settings = {
                         ...(proposal.settings || {}),
                         ...updates.settings
+                    };
+                }
+                if (updates.mobilityMetadata) {
+                    proposal.mobilityMetadata = {
+                        ...(proposal.mobilityMetadata || {}),
+                        ...updates.mobilityMetadata
                     };
                 }
             } else if (action.type === 'update_work_package') {

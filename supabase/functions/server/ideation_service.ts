@@ -83,10 +83,19 @@ OUTPUT FORMAT: Strict JSON
     const phase2Result = await ideationModel.generateContent(phase2Prompt);
     const phase2Data = extractJSON(phase2Result.response.text());
 
+    // Detect logic_mode
+    const contextText = `${fundingScheme?.name || ''} ${phase1Data.summary} ${userPrompt || ''} ${cleanContent.substring(0, 1000)}`.toLowerCase();
+    const detectedLogicMode = (fundingScheme?.logic_mode === 'mobility' ||
+        contextText.includes('mobility') ||
+        contextText.includes('ka122') ||
+        contextText.includes('ka121') ||
+        contextText.includes('erasmus')) ? 'mobility' : 'standard';
+
     return {
         summary: phase1Data.summary,
         constraints: phase1Data.constraints,
         ideas: phase2Data.ideas,
-        knowledgeContext: expertKnowledge.sources
+        knowledgeContext: expertKnowledge.sources,
+        logic_mode: detectedLogicMode
     };
 };
