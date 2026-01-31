@@ -98,10 +98,10 @@ export const generateProposalFull = async (params: any) => {
     }
 
     // Special handling for known schemes with missing maxBudget in template
-    const contextText = `${fundingScheme?.name || ''} ${summary} ${idea.description || ''} ${idea.title || ''}`;
-    if (!targetBudget && contextText.includes('KA122')) {
-        targetBudget = 60000;
-        console.log(`[PROPOSAL] Budget inferred from KA122 context: ${targetBudget}`);
+    const contextText = `${fundingScheme?.name || ''} ${summary} ${idea.description || ''} ${idea.title || ''} ${userPrompt || ''}`;
+
+    if (!targetBudget && fundingScheme?.template_json?.maxBudget) {
+        targetBudget = parseInt(fundingScheme.template_json.maxBudget);
     }
 
     if (!targetBudget && expertKnowledge.content) {
@@ -110,8 +110,8 @@ export const generateProposalFull = async (params: any) => {
     }
 
     if (!targetBudget || targetBudget < 1000) {
-        targetBudget = logicMode === 'mobility' ? 60000 : 250000;
-        console.log(`[PROPOSAL] Using fallback budget (${logicMode} mode): ${targetBudget}`);
+        console.log(`[PROPOSAL] No clear budget constraint found. Setting targetBudget to 0 for dynamic calculation.`);
+        targetBudget = 0;
     }
 
     console.log(`[PROPOSAL] FINAL Rebalancing budget to: ${targetBudget}`);

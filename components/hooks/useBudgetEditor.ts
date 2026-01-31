@@ -15,14 +15,30 @@ export function useBudgetEditor(proposal: any, setProposal: (p: any) => void) {
         }
     }, [proposal]);
 
+    const updateItem = (index: number, updates: any) => {
+        if (!proposal?.budget) return;
+        const newBudget = [...proposal.budget];
+        newBudget[index] = { ...newBudget[index], ...updates };
+        setProposal({ ...proposal, budget: newBudget });
+    };
+
+    const addItem = (item: any = { item: 'New Item', cost: 0, description: '' }) => {
+        const newBudget = [...(proposal?.budget || []), item];
+        setProposal({ ...proposal, budget: newBudget });
+    };
+
+    const removeItem = (index: number) => {
+        if (!proposal?.budget) return;
+        const newBudget = proposal.budget.filter((_: any, i: number) => i !== index);
+        setProposal({ ...proposal, budget: newBudget });
+    };
+
     const handleRebalance = async (newLimit: number) => {
         if (!proposal) return;
         setBudgetLimit(newLimit);
         toast.info("Rescaling budget items...");
 
         try {
-            // We can do this locally or call backend
-            // Let's call backend for consistency
             const response = await fetch(`${serverUrl}/proposals/${proposal.id}/rebalance`, {
                 method: 'POST',
                 headers: {
@@ -45,6 +61,9 @@ export function useBudgetEditor(proposal: any, setProposal: (p: any) => void) {
     return {
         budgetLimit,
         setBudgetLimit,
-        handleRebalance
+        handleRebalance,
+        updateItem,
+        addItem,
+        removeItem
     };
 }

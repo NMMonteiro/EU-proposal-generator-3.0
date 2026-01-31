@@ -166,6 +166,7 @@ export function buildProposalPrompt(
     }
   });
 
+  // Ensure budget detection is robust
   let budgetNum = extractNumericBudget(userPrompt || '');
   if (!budgetNum) {
     budgetNum = extractNumericBudget(constraints.budget || '') || extractNumericBudget(constraints.budgetLimit || '');
@@ -173,16 +174,53 @@ export function buildProposalPrompt(
   if (!budgetNum && fundingScheme?.template_json?.maxBudget) {
     budgetNum = parseInt(fundingScheme.template_json.maxBudget);
   }
-  if (!budgetNum || budgetNum < 1000) {
-    budgetNum = isMobility ? 60000 : 250000;
+
+  // Determine if this is specifically KA122-SCH
+  const isSCH = (fundingScheme?.name || '').toLowerCase().includes('sch') || (idea.title + idea.description).toLowerCase().includes('school');
+
+  // If still no budget, we don't assume a default. We use 0 if necessary but prefer leaving it to the AI to suggest if not told, 
+  // though the prompt requires a number. So we'll use a very low minimum or just allow the AI to decide if not constrained.
+  // Actually, to avoid breaking the math, we use a placeholder if absolute nothing found.
+  if (!budgetNum) {
+    console.log("[PROMPT_BUILDER] No budget found in prompt or template.");
+    budgetNum = 0;
   }
 
-  const finalBudgetStr = `€${budgetNum.toLocaleString()}`;
+  const finalBudgetStr = budgetNum > 0 ? `€${budgetNum.toLocaleString()}` : "To be determined based on activity scale";
 
   const partnerDictionary = partners.map((p: any, i: number) => `[PARTNER ${i + 1}]: "${p.name}" (${p.country || 'N/A'})`).join('\n');
 
   const sectionInstructions = allSections.map((s) => {
-    return `SECTION: ${s.label}\nKEY: "${s.key}"\nAI: ${s.aiPrompt || 'Write narrative.'}`;
+    let aiMsg = s.aiPrompt || 'Write narrative.';
+
+    // Inject mobility-specific logic for Objectives
+    if (isMobility && (s.key === 'objectives' || s.label.toLowerCase().includes('objective'))) {
+      const schGuidance = isSCH ? `
+      SPECIFIC SCH GUIDANCE:
+      1. Institutional internationalization: How the school builds capacity for international projects.
+      2. Student Competences: Focus on key competences, language skills, and European citizenship.
+      3. Inclusive Mobility: Transparent selection and support for students with fewer opportunities.
+      4. Professional Excellence: Staff learning innovative pedagogies (e.g., STEAM, Finnish model).` : '';
+
+      aiMsg = `Define the project's objectives based on its specific context and needs. ${schGuidance}
+      Objectives should be distinct, concrete, and measurable. Create a separate section for each objective starting with an <h3> tag.
+      Format each objective as: <h3>Objective X: Title</h3> followed by:
+      - **Context & Relevance**: Why is this objective important for this specific project?
+      - **Planned Outcome**: What specific change or improvement is expected?
+      - **Measurement (KPIs)**: How will success be measured?
+      - **Topic Linking**: How does this align with broader project priorities?`;
+    }
+
+    // Inject mobility-specific logic for Activities Narrative
+    if (isMobility && (s.key === 'activities_narrative' || s.label.toLowerCase().includes('activities strategy'))) {
+      aiMsg = `Describe the planned mobilities in detail. For each flow (e.g. Spain, Finland), explain: 
+      - The profile of participants. 
+      - The learning outcomes. 
+      - MAPPING: Explicitly state WHICH of the 4 project objectives this specific activity contributes to.
+      Ensure the narrative matches the numbers in the "workPackages" array below.`;
+    }
+
+    return `SECTION: ${s.label}\nKEY: "${s.key}"\nAI: ${aiMsg}`;
   }).join('\n\n');
 
   const summarySection = allSections.find(s => s.key === 'project_summary' || s.label.toLowerCase().includes('project summary'));
@@ -194,9 +232,11 @@ export function buildProposalPrompt(
   const mobilityRules = isMobility ? `
 6. **MOBILITY METADATA (MANDATORY)**: Populate "mobilityMetadata" object at root.
 7. **NO WORK PACKAGES**: NEVER use "Work Package" or "WP". Use "Activity 1", "Activity 2", etc.
+8. **OBJECTIVES**: The "objectives" section in "dynamicSections" MUST contain EXACTLY 4 distinct objectives, each with an <h3> header containing its name.
+9. **ACTIVITY LINKING**: In the activities narrative, you MUST explicitly link each mobility flow to the 4 objectives defined earlier.
   ` : '';
 
-  return `You are an elite European Grant Writing Consultant.
+  return `You are an elite European Grant Writing Consultant specialized in Erasmus+ and Horizon Europe.
 Writing Style: Technical, persuasive, data-driven.
 
 MANDATORY SECTIONS SEQUENCE:
@@ -218,7 +258,7 @@ The sum of all "budget" items MUST equal EXACTLY ${budgetNum} EUR.
 STRICT CONTRACT:
 1. **PARTNERS**: Include all ${partners.length} in "partners" array. First one is Lead Coordinator.
 2. **STRUCTURE**: ${isMobility ? 'Use "Activity" terminology, NEVER "Work Package".' : 'Use Work Packages.'}
-3. **BUDGET**: ${isMobility ? 'Use categories: Organizational Support, Travel, Individual Support, Inclusion Support, Course Fees, Linguistic Support.' : 'Personnel, Equipment, Travel.'}
+3. **BUDGET**: ${isMobility ? 'Use categories: Organizational Support, Travel, Individual Support, Inclusion Support, Course Fees, Linguistic Support. Use the "breakdown" field to assign costs to Activity 1, Activity 2, etc.' : 'Personnel, Equipment, Travel.'}
 ${mobilityRules}
 
 STRUCTURE TO FOLLOW:
@@ -237,6 +277,7 @@ STRICT JSON FORMAT:
       "name": "${isMobility ? 'Activity 1: Title' : 'WP1: Title'}",
       "description": "Narrative...",
       "duration": "Duration...",
+      "isMobility": true,
       ${isMobility ? '"participants": 15, "activityType": "job_shadowing", "destinationCountry": "Spain", "greenTravel": true, "fewerOpportunities": 2,' : ''}
       "activities": [
         { "name": "Task", "description": "Desc...", "leadPartner": "${partners[0]?.name}", "estimatedBudget": 5000 }
@@ -245,12 +286,20 @@ STRICT JSON FORMAT:
     }
   ],
   "budget": [
-    { "item": "${isMobility ? 'Organizational Support' : 'Personnel'}", "cost": 5000, "description": "Desc...", "partnerAllocations": [] }
+    { 
+      "item": "${isMobility ? 'Organizational Support' : 'Personnel'}", 
+      "cost": 5000, 
+      "description": "Desc...", 
+      "breakdown": [
+        { "item": "${isMobility ? 'Activity 1' : 'Task 1'}", "total": 5000 }
+      ] 
+    }
   ],
   "risks": [{ "risk": "Risk", "likelihood": "Low", "impact": "High", "mitigation": "Plan" }],
   ${isMobility ? `"mobilityMetadata": { "fieldOfApplication": "School Education", "totalGrantRequested": ${budgetNum} },` : ''}
   "dynamicSections": {
     "project_summary": "${summaryInstruction.replace(/"/g, '\\"')}",
+    "objectives": "<h3>Objective 1: Title</h3><p>...</p><h3>Objective 2: Title</h3><p>...</p><h3>Objective 3: Title</h3><p>...</p><h3>Objective 4: Title</h3><p>...</p>",
     "${isMobility ? 'activity_1' : 'work_package_1'}": "Narrative text..."
   }
 }

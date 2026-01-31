@@ -563,10 +563,10 @@ function createSectionHeader(text: string, level: number = 1): Paragraph {
   });
 }
 
-function createTableHeaderCell(text: string): TableCell {
+function createTableHeaderCell(text: string, size: number = BODY_SIZE): TableCell {
   return new TableCell({
     children: [new Paragraph({
-      children: [new TextRun({ text, bold: true, size: BODY_SIZE, font: FONT })],
+      children: [new TextRun({ text, bold: true, size, font: FONT })],
       alignment: AlignmentType.CENTER
     })],
     shading: { fill: COLOR_TABLE_HEADER, type: ShadingType.CLEAR },
@@ -1143,83 +1143,127 @@ function createMobilityBudgetSection(budget: any[], currency: string, activities
   }));
 
   const categories = [
-    { key: "organis", label: "Organisational Support" },
-    { key: "travel", label: "Travel" },
-    { key: "individual", altKey: "subsistence", label: "Individual Support" },
-    { key: "fees", altKey: "course", label: "Course Fees" },
-    { key: "linguistic", label: "Linguistic Support" },
-    { key: "preparatory", label: "Preparatory visits" },
-    { key: "inclusion", label: "Inclusion support" }
+    { key: 'organis', label: 'Organisational Support' },
+    { key: 'individual', altKey: 'subsistence', label: 'Individual Support' },
+    { key: 'travel', label: 'Travel' },
+    { key: 'fees', altKey: 'course', label: 'Course Fees' },
+    { key: 'linguistic', label: 'Linguistic Support' },
+    { key: 'preparatory', label: 'Preparatory Visits' },
+    { key: 'inclusion', label: 'Inclusion Support' },
   ];
 
-  // Map budget items to categories for easier lookup
-  const categoryTotals: any = {};
-  categories.forEach(cat => {
-    categoryTotals[cat.key] = 0;
-  });
+  // Helper to match items to categories (consistent with UI)
+  const getBudgetItemsForCategory = (cat: any) => {
+    return budget.filter((item) => {
+      const name = (item.item || item.name || "").toLowerCase();
+      const category = (item.category || "").toLowerCase();
+
+      const isLabelMatch = name === cat.label.toLowerCase() || category === cat.key;
+      const isKeyMatch = name.includes(cat.key) || (cat.altKey && name.includes(cat.altKey));
+
+      if (cat.key === 'travel' && !isLabelMatch) {
+        if (name.includes('individual') || name.includes('subsistence')) return false;
+      }
+      return isLabelMatch || isKeyMatch;
+    });
+  };
 
   const summaryRows = [
     new TableRow({
       children: [
-        createTableHeaderCell("Activity type"),
-        ...categories.map(c => createTableHeaderCell(c.label + " (EUR)"))
+        createTableHeaderCell("Activity type", 14),
+        ...categories.map(c => createTableHeaderCell(c.label.replace(' Support', '') + " (EUR)", 14)),
+        createTableHeaderCell("Total (EUR)", 14)
       ]
     })
   ];
 
-  // Activities (Rows)
-  const activityGroups = activities.length > 0 ? activities : [{ name: "Total Project" }];
+  const activityGroups = activities.length > 0 ? activities : [{ name: "Mobility Project" }];
+  let grandTotal = 0;
 
-  activityGroups.forEach(act => {
-    const actName = (typeof act === 'string' ? act : act.name || "").replace(/^(?:WP|Work[\s_-]*Packages?|Work[\s_-]*Plan|Activity)[\s_-]*\d+\s*[:\.-]*/i, '').trim() || "Activity";
+  activityGroups.forEach((act, idx) => {
+    // Only skip rows that are clearly not mobility if they have 0 cost
+    // But for a better look, let's include all but give them a smaller row height
+    const actIdent = (idx + 1).toString();
+    const actName = (typeof act === 'string' ? act : act.name || "").replace(/^(?:WP|Work[\s_-]*Packages?|Work[\s_-]*Plan|Activity)[\s_-]*\d+\s*[:\.-]*/i, '').trim() || "Mobility Activity";
+    const fullActName = typeof act === 'string' ? act : (act.name || 'Activity ' + actIdent);
 
-    summaryRows.push(new TableRow({
-      children: [
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: actName, font: FONT, size: 16 })] })] }),
-        ...categories.map(cat => {
-          const cost = budget.filter(b => {
-            const bName = (b.item || "").toLowerCase();
+    const isShortTerm = fullActName.toLowerCase().includes('short') || fullActName.toLowerCase().includes('learner') || fullActName.toLowerCase().includes('student');
+    const isStaff = fullActName.toLowerCase().includes('staff') || fullActName.toLowerCase().includes('teacher') || fullActName.toLowerCase().includes('course') || fullActName.toLowerCase().includes('job');
+
+    let rowTotal = 0;
+    const cells = [
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: actName, font: FONT, size: 14 })] })] })
+    ];
+
+    categories.forEach(cat => {
+      const catItems = getBudgetItemsForCategory(cat);
+      let cellCost = 0;
+
+      catItems.forEach(b => {
+        if (!b.breakdown || b.breakdown.length === 0) {
+          if (activities.length <= 1) {
+            cellCost += (Number(b.cost) || Number(b.total) || 0);
+          } else {
+            const cleanActName = actName.toLowerCase();
             const bDesc = (b.description || "").toLowerCase();
-            const isCatMatch = bName.includes(cat.key) ||
-              bDesc.includes(cat.key) ||
-              (cat.altKey && (bName.includes(cat.altKey) || bDesc.includes(cat.altKey)));
-
-            if (!isCatMatch) return false;
-
-            if (activityGroups.length > 1) {
-              const cleanActName = actName.toLowerCase();
-              const sigWords = cleanActName.split(/\s+/).filter(w => w.length > 4);
-              return bDesc.includes(cleanActName) ||
-                cleanActName.includes(bDesc) ||
-                sigWords.some(w => bDesc.includes(w) || bName.includes(w));
+            const bItemName = (b.item || "").toLowerCase();
+            if (bDesc.includes(cleanActName) || bItemName.includes(cleanActName)) {
+              cellCost += (Number(b.cost) || Number(b.total) || 0);
             }
-            return true;
-          }).reduce((sum, b) => sum + (Number(b.cost) || Number(b.total) || 0), 0);
+          }
+        } else {
+          b.breakdown.forEach((sub: any) => {
+            const subName = (sub.item || sub.name || "").toLowerCase();
+            const countryMatch = act.destinationCountry && subName.includes(act.destinationCountry.toLowerCase());
+            const matchShort = isShortTerm && (subName.includes('short') || subName.includes('learner'));
+            const matchStaff = isStaff && (subName.includes('cours') || subName.includes('staff') || subName.includes('job'));
+            const isMobilityRow = isShortTerm || isStaff;
+            const matchNum = isMobilityRow && subName.includes('0' + actIdent);
 
-          categoryTotals[cat.key] += cost;
-          return new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: cost > 0 ? cost.toLocaleString() : "0", font: FONT, size: 16 })], alignment: AlignmentType.RIGHT })] });
-        })
-      ]
+            if (countryMatch || (isMobilityRow && (matchShort || matchStaff || matchNum))) {
+              cellCost += (Number(sub.total) || Number(sub.cost) || 0);
+            }
+          });
+        }
+      });
+
+      rowTotal += cellCost;
+      cells.push(new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: cellCost > 0 ? cellCost.toLocaleString() : "0", font: FONT, size: 14 })], alignment: AlignmentType.RIGHT })]
+      }));
+    });
+
+    grandTotal += rowTotal;
+    // Add Row Total Cell
+    cells.push(new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: rowTotal > 0 ? rowTotal.toLocaleString() : "0", bold: true, font: FONT, size: 14 })], alignment: AlignmentType.RIGHT })],
+      shading: { fill: "F9F9F9" }
+    }));
+
+    summaryRows.push(new TableRow({ children: cells }));
+  });
+
+  // Total footer row
+  const footerCells = [
+    new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total", bold: true, font: FONT, size: 14 })] })], shading: { fill: "F0F0F0" } })
+  ];
+
+  categories.forEach(cat => {
+    const catTotal = getBudgetItemsForCategory(cat).reduce((sum, b) => sum + (Number(b.cost) || Number(b.total) || 0), 0);
+    footerCells.push(new TableCell({
+      children: [new Paragraph({ children: [new TextRun({ text: catTotal.toLocaleString(), bold: true, font: FONT, size: 14 })], alignment: AlignmentType.RIGHT })],
+      shading: { fill: "F0F0F0" }
     }));
   });
 
-  // Total row
-  summaryRows.push(new TableRow({
-    children: [
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Total", bold: true, font: FONT, size: 16 })] })], shading: { fill: "F9F9F9" } }),
-      ...categories.map(cat => {
-        const catTotal = budget.filter(b => {
-          const bName = (b.item || "").toLowerCase();
-          const bDesc = (b.description || "").toLowerCase();
-          return bName.includes(cat.key) ||
-            bDesc.includes(cat.key) ||
-            (cat.altKey && (bName.includes(cat.altKey) || bDesc.includes(cat.altKey)));
-        }).reduce((sum, b) => sum + (Number(b.cost) || Number(b.total) || 0), 0);
-
-        return new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: catTotal.toLocaleString(), bold: true, font: FONT, size: 16 })], alignment: AlignmentType.RIGHT })], shading: { fill: "F9F9F9" } });
-      })
-    ]
+  // Add Grand Total Footer Cell
+  footerCells.push(new TableCell({
+    children: [new Paragraph({ children: [new TextRun({ text: grandTotal.toLocaleString(), bold: true, font: FONT, size: 14 })], alignment: AlignmentType.RIGHT })],
+    shading: { fill: "E0E0E0" }
   }));
+
+  summaryRows.push(new TableRow({ children: footerCells }));
 
   children.push(new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },

@@ -39,7 +39,14 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
         refresh
     } = useProposalData(proposalId);
 
-    const { budgetLimit, setBudgetLimit, handleRebalance } = useBudgetEditor(proposal, setProposal);
+    const {
+        budgetLimit,
+        setBudgetLimit,
+        handleRebalance,
+        updateItem,
+        addItem,
+        removeItem
+    } = useBudgetEditor(proposal, setProposal);
 
     const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -133,6 +140,9 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                         onAddPartner={() => setIsPartnerModalOpen(true)}
                         budgetLimit={budgetLimit}
                         onRebalance={handleRebalance}
+                        onUpdateBudgetItem={updateItem}
+                        onAddBudgetItem={addItem}
+                        onRemoveBudgetItem={removeItem}
                         onAnnexesUpdate={async () => {
                             try {
                                 const response = await fetch(`${serverUrl}/proposals/${proposalId}`, {

@@ -3,6 +3,9 @@ import {
     Building2,
     Globe,
     CheckCircle2,
+    Settings2,
+    Trash2,
+    PlusSquare,
     LayoutDashboard,
     Edit3,
     Plus,
@@ -103,7 +106,7 @@ export function transformWideTables(html: string): string {
 
             dataRows.forEach((tr, idx) => {
                 const cells = Array.from(tr.cells);
-                const title = cells[0]?.textContent?.trim() || `Item ${idx + 1}`;
+                const title = cells[0]?.textContent?.trim() || `Item ${idx + 1} `;
 
                 const card = doc.createElement('div');
                 card.className = "bg-card/50 border border-border/60 rounded-lg p-4 shadow-sm";
@@ -119,7 +122,7 @@ export function transformWideTables(html: string): string {
                 cells.forEach((cell, cIdx) => {
                     if (cIdx === 0) return;
 
-                    const label = headers[cIdx] || `Column ${cIdx + 1}`;
+                    const label = headers[cIdx] || `Column ${cIdx + 1} `;
                     const value = cell.innerHTML.trim();
                     if (!value) return;
 
@@ -442,15 +445,22 @@ export const DynamicBudgetSection = ({
     budget,
     currency,
     limit,
-    onRebalance
+    onRebalance,
+    onUpdateItem,
+    onAddItem,
+    onRemoveItem
 }: {
     budget: any[],
     currency: string,
     limit?: number,
-    onRebalance?: (limit: number) => void
+    onRebalance?: (limit: number) => void,
+    onUpdateItem?: (index: number, updates: any) => void,
+    onAddItem?: () => void,
+    onRemoveItem?: (index: number) => void
 }) => {
-    if (!budget || budget.length === 0) return null;
-    if (!budget || budget.length === 0) return null;
+    const [isEditing, setIsEditing] = useState(false);
+
+    if (!budget) return null;
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
@@ -461,41 +471,126 @@ export const DynamicBudgetSection = ({
         }).format(amount);
     };
 
-    const total = budget.reduce((sum, item) => sum + (item.cost || 0), 0);
+    const total = budget.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
 
     return (
         <div className="space-y-4">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                    <PlusSquare className="w-5 h-5 text-primary" />
+                    Project Budget
+                </h3>
+                <div className="flex gap-2">
+                    {onAddItem && isEditing && (
+                        <Button variant="outline" size="sm" onClick={onAddItem} className="gap-2">
+                            <Plus className="w-4 h-4" /> Add Item
+                        </Button>
+                    )}
+                    <Button
+                        variant={isEditing ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setIsEditing(!isEditing)}
+                        className="gap-2"
+                    >
+                        {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
+                        {isEditing ? "Done Editing" : "Manage Budget"}
+                    </Button>
+                </div>
+            </div>
+
             <div className="border rounded-xl overflow-hidden border-border/40 bg-card/20">
                 <table className="w-full text-sm border-collapse">
                     <thead className="bg-secondary/40">
                         <tr className="border-b border-border/40">
                             <th className="text-left py-3 px-4 font-semibold text-foreground/70 w-1/2">Item & Description</th>
-                            <th className="text-right py-3 px-4 font-semibold text-foreground/70">Cost</th>
+                            <th className="text-right py-3 px-4 font-semibold text-foreground/70 w-1/4">Cost ({currency})</th>
+                            {isEditing && <th className="w-10"></th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/20">
-                        {budget.filter(item => !!item && !!item.item).map((item, i) => (
+                        {budget.map((item, i) => (
                             <tr key={i} className="hover:bg-white/5 transition-colors">
                                 <td className="py-3 px-4">
-                                    <div className="font-medium text-foreground/90">{item.item}</div>
-                                    <div className="text-xs text-muted-foreground mt-0.5">{item.description}</div>
+                                    {isEditing ? (
+                                        <div className="space-y-2">
+                                            <input
+                                                className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 font-medium"
+                                                value={item.item || ''}
+                                                onChange={(e) => onUpdateItem?.(i, { item: e.target.value })}
+                                            />
+                                            <textarea
+                                                className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 text-xs"
+                                                value={item.description || ''}
+                                                onChange={(e) => onUpdateItem?.(i, { description: e.target.value })}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="font-medium text-foreground/90">{item.item}</div>
+                                            <div className="text-xs text-muted-foreground mt-0.5">{item.description}</div>
+                                        </>
+                                    )}
                                 </td>
                                 <td className="py-3 px-4 text-right font-mono text-primary/90">
-                                    {formatCurrency(item.cost)}
+                                    {isEditing ? (
+                                        <input
+                                            type="number"
+                                            className="w-24 bg-background/50 border border-border/40 rounded px-2 py-1 text-right"
+                                            value={item.cost || 0}
+                                            onChange={(e) => onUpdateItem?.(i, { cost: Number(e.target.value) })}
+                                        />
+                                    ) : (
+                                        formatCurrency(item.cost)
+                                    )}
                                 </td>
+                                {isEditing && (
+                                    <td className="pr-4">
+                                        <button
+                                            onClick={() => onRemoveItem?.(i)}
+                                            className="text-destructive hover:scale-110 transition-transform"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>
                     <tfoot className="bg-primary/5">
                         <tr className="font-bold border-t border-primary/20">
                             <td className="py-3 px-4 text-foreground/90">Total Estimated Budget</td>
-                            <td className="py-3 px-4 text-right font-mono text-primary">
+                            <td className="py-3 px-4 text-right font-mono text-primary" colSpan={isEditing ? 2 : 1}>
                                 {formatCurrency(total)}
                             </td>
                         </tr>
                     </tfoot>
                 </table>
             </div>
+
+            {onRebalance && !isEditing && (
+                <div className="flex items-center gap-4 bg-primary/5 p-4 rounded-xl border border-primary/10">
+                    <div className="flex-1">
+                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Budget Rebalancer</div>
+                        <div className="text-sm text-muted-foreground">Adjust all items proportionally to fit a new total:</div>
+                    </div>
+                    <div className="flex gap-2">
+                        <input
+                            type="number"
+                            className="w-32 bg-background border border-border rounded px-3 py-1.5 text-right font-mono"
+                            placeholder={total.toString()}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    onRebalance(Number((e.target as HTMLInputElement).value));
+                                }
+                            }}
+                        />
+                        <Button size="sm" onClick={(e) => {
+                            const input = e.currentTarget.previousSibling as HTMLInputElement;
+                            onRebalance(Number(input.value));
+                        }}>Rescale</Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -505,14 +600,24 @@ export const MobilityBudgetSection = ({
     currency,
     mobilityMetadata,
     activities = [],
-    proposalId
+    proposalId,
+    onUpdateItem,
+    onAddItem,
+    onRemoveItem
 }: {
     budget: any[],
     currency: string,
     mobilityMetadata?: any,
     activities?: any[],
-    proposalId?: string
+    proposalId?: string,
+    onUpdateItem?: (index: number, updates: any) => void,
+    onAddItem?: () => void,
+    onRemoveItem?: (index: number) => void
 }) => {
+    const [isEditing, setIsEditing] = useState(false);
+
+    if (!budget) return null;
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -522,232 +627,140 @@ export const MobilityBudgetSection = ({
         }).format(amount);
     };
 
-    // Group budget items by type for mobility
-    const categories = [
-        { key: 'organis', label: 'Organisational Support', icon: Building2 },
-        { key: 'travel', label: 'Travel', icon: Globe },
-        { key: 'individual', label: 'Individual Support', altKey: 'subsistence', icon: Users },
-        { key: 'inclusion', label: 'Inclusion Support', icon: CheckCircle2 },
-        { key: 'fees', label: 'Course Fees', altKey: 'course', icon: LayoutDashboard },
-        { key: 'linguistic', label: 'Linguistic Support', icon: Sparkles },
-        { key: 'preparatory', label: 'Preparatory Visits', icon: Search },
-    ];
-
-    const total = budget.reduce((sum, item) => sum + (Number(item.cost) || Number(item.total) || 0), 0);
-    const matchedIds = new Set<number>();
-
-    // Helper to match items to categories
-    const getItemsForCategory = (cat: any) => {
-        return budget.filter((item, idx) => {
-            const name = (item.item || item.name || "").toLowerCase();
-            const desc = (item.description || "").toLowerCase();
-            const category = (item.category || "").toLowerCase();
-
-            const isMatch = name.includes(cat.key) ||
-                desc.includes(cat.key) ||
-                category.includes(cat.key) ||
-                (cat.altKey && (name.includes(cat.altKey) || desc.includes(cat.altKey) || category.includes(cat.altKey)));
-
-            if (isMatch) matchedIds.add(idx);
-            return isMatch;
-        });
-    };
-
-    if (budget.length === 0) {
-        return (
-            <div className="p-12 text-center border-2 border-dashed rounded-2xl bg-muted/20 flex flex-col items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary"><LayoutDashboard className="w-6 h-6" /></span>
-                </div>
-                <div className="max-w-md">
-                    <h3 className="text-lg font-bold text-foreground">No Budget Items Detected</h3>
-                    <p className="text-muted-foreground text-sm mt-2">
-                        The financial plan is currently empty. If you just ran a SQL script, please ensure it targeted the correct Proposal ID:
-                    </p>
-                    <code className="block mt-3 p-2 bg-black/5 rounded font-mono text-xs break-all border border-border/20">
-                        {proposalId || "Unknown ID"}
-                    </code>
-                </div>
-            </div>
-        );
-    }
+    const total = budget.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-primary/5 border-primary/20">
-                    <CardContent className="pt-6">
-                        <div className="text-[10px] uppercase font-bold text-primary/70 tracking-wider">Total Grant Requested</div>
-                        <div className="text-3xl font-black text-primary mt-1">{formatCurrency(total)}</div>
-                    </CardContent>
-                </Card>
+            <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <Euro className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold">Grant Calculation</h3>
+                        <p className="text-xs text-muted-foreground italic">Project ID: {proposalId}</p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    {onAddItem && isEditing && (
+                        <Button variant="outline" size="sm" onClick={onAddItem} className="gap-2">
+                            <Plus className="w-4 h-4" /> Add Item
+                        </Button>
+                    )}
+                    <Button
+                        variant={isEditing ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setIsEditing(!isEditing)}
+                        className="gap-2"
+                    >
+                        {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
+                        {isEditing ? "Done Editing" : "Manage Budget"}
+                    </Button>
+                </div>
             </div>
 
-            {/* Budget Summary Table (Replicating PDF Page 21) */}
-            <Card className="border-border/60 shadow-sm overflow-hidden bg-card/50">
-                <CardHeader className="bg-primary/5 py-3 px-4 border-b border-border/40">
-                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                        <LayoutDashboard className="w-4 h-4 text-primary" />
-                        Project Budget Summary
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 overflow-x-auto">
-                    <table className="w-full text-left border-collapse" style={{ minWidth: '800px' }}>
-                        <thead className="bg-slate-50 border-b border-border/40">
-                            <tr>
-                                <th className="py-2 px-4 font-bold text-[10px] text-muted-foreground uppercase tracking-wider sticky left-0 bg-slate-50 z-10">Activity Type</th>
-                                {categories.map(cat => (
-                                    <th key={cat.key} className="py-2 px-2 font-bold text-[10px] text-muted-foreground text-right uppercase tracking-wider whitespace-nowrap">
-                                        {cat.label.replace(' Support', '').replace(' Individual', 'Indiv.').replace('Preparatory Visits', 'Prep. Visits')}
-                                    </th>
-                                ))}
-                                <th className="py-2 px-4 font-bold text-[10px] text-primary text-right bg-primary/5 uppercase tracking-wider">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/20">
-                            {(activities.length > 0 ? activities : [{ name: 'Mobility Project' }]).map((act, idx) => {
-                                const actName = typeof act === 'string' ? act : (act.name?.replace(/^(?:WP|Work[\s_-]*Packages?|Work[\s_-]*Plan)[\s_-]*\d+\s*[:\.-]*/i, '').trim() || 'Mobility Activity');
-                                let rowTotal = 0;
-                                return (
-                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="py-2 px-4 font-medium text-slate-700 text-xs sticky left-0 bg-white/80 backdrop-blur-sm z-10">{actName}</td>
-                                        {categories.map(cat => {
-                                            const catItems = budget.filter(b => {
-                                                const bName = (b.item || "").toLowerCase();
-                                                const bDesc = (b.description || "").toLowerCase();
-                                                const isCatMatch = bName.includes(cat.key) ||
-                                                    bDesc.includes(cat.key) ||
-                                                    (cat.altKey && (bName.includes(cat.altKey) || bDesc.includes(cat.altKey)));
-
-                                                if (!isCatMatch) return false;
-
-                                                // If multiple activities, try to match activity context (relaxed)
-                                                if (activities.length > 1) {
-                                                    const cleanActName = actName.toLowerCase();
-                                                    // Match if activity name is in description or vice versa
-                                                    // OR if they share a significant word (like 'Spain', 'Finland', 'Job')
-                                                    const significantWords = cleanActName.split(/\s+/).filter(w => w.length > 4);
-                                                    return bDesc.includes(cleanActName) ||
-                                                        cleanActName.includes(bDesc) ||
-                                                        significantWords.some(w => bDesc.includes(w) || bName.includes(w));
-                                                }
-                                                return true;
-                                            });
-                                            const cost = catItems.reduce((sum, b) => sum + (Number(b.cost) || Number(b.total) || 0), 0);
-                                            rowTotal += cost;
-                                            return (
-                                                <td key={cat.key} className="py-2 px-2 text-right font-mono text-[11px] text-slate-600">
-                                                    {cost > 0 ? cost.toLocaleString() : '-'}
-                                                </td>
-                                            );
-                                        })}
-                                        <td className="py-2 px-4 text-right font-bold text-xs text-primary bg-primary/5">{rowTotal > 0 ? formatCurrency(rowTotal) : '-'}</td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                        <tfoot className="bg-slate-100/50 border-t-2 border-border/40">
-                            <tr className="font-bold text-xs">
-                                <td className="py-3 px-4 text-slate-900 sticky left-0 bg-slate-100/80 backdrop-blur-sm z-10">Total Grant (EUR)</td>
-                                {categories.map(cat => {
-                                    const catTotal = budget.filter(b => {
-                                        const bName = (b.item || "").toLowerCase();
-                                        const bDesc = (b.description || "").toLowerCase();
-                                        return bName.includes(cat.key) ||
-                                            bDesc.includes(cat.key) ||
-                                            (cat.altKey && (bName.includes(cat.altKey) || bDesc.includes(cat.altKey)));
-                                    }).reduce((sum, b) => sum + (Number(b.cost) || Number(b.total) || 0), 0);
-                                    return (
-                                        <td key={cat.key} className="py-3 px-2 text-right font-mono text-slate-900">
-                                            {catTotal.toLocaleString()}
-                                        </td>
-                                    );
-                                })}
-                                <td className="py-3 px-4 text-right font-black text-primary bg-primary/10">{formatCurrency(total)}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </CardContent>
-            </Card>
-
-            <div className="space-y-4">
-                {categories.map((cat) => {
-                    const items = getItemsForCategory(cat);
-                    if (items.length === 0) return null;
-
-                    const catTotal = items.reduce((sum, item) => sum + (Number(item.cost) || Number(item.total) || 0), 0);
-
-                    return (
-                        <Card key={cat.key} className="border-border/40 overflow-hidden">
-                            <CardHeader className="bg-secondary/10 py-3 px-4 flex flex-row items-center justify-between">
-                                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                    <span className="text-primary"><cat.icon className="w-4 h-4" /></span>
-                                    {cat.label}
-                                </CardTitle>
-                                <Badge variant="outline" className="font-mono text-xs">{formatCurrency(catTotal)}</Badge>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <table className="w-full text-xs text-left border-collapse">
-                                    <thead className="bg-slate-50 border-b border-border/40">
-                                        <tr>
-                                            <th className="py-2 px-4 font-semibold text-muted-foreground">Item Description</th>
-                                            <th className="py-2 px-4 font-semibold text-muted-foreground text-right w-32">Grant</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border/20">
-                                        {items.map((item, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="py-2.5 px-4 text-slate-700">
-                                                    <div className="font-medium">{item.item}</div>
-                                                    <div className="text-[10px] text-muted-foreground mt-0.5">{item.description}</div>
-                                                </td>
-                                                <td className="py-2.5 px-4 text-right font-mono font-medium text-slate-900">
-                                                    {formatCurrency(Number(item.cost) || Number(item.total) || 0)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </CardContent>
-                        </Card>
-                    );
-                })}
-
-                {/* Catch-all for unmatched items */}
-                {budget.some((_, idx) => !matchedIds.has(idx)) && (
-                    <Card className="border-border/40 overflow-hidden border-dashed border-2">
-                        <CardHeader className="bg-slate-50 py-3 px-4 flex flex-row items-center justify-between">
-                            <CardTitle className="text-sm font-bold flex items-center gap-2">
-                                <span className="text-slate-400"><LayoutDashboard className="w-4 h-4" /></span>
-                                Other Project Costs
-                            </CardTitle>
-                            <Badge variant="outline" className="font-mono text-xs">
-                                {formatCurrency(budget.reduce((sum, item, idx) => !matchedIds.has(idx) ? sum + (Number(item.cost) || Number(item.total) || 0) : sum, 0))}
-                            </Badge>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <table className="w-full text-xs text-left border-collapse">
-                                <tbody className="divide-y divide-border/20">
-                                    {budget.map((item, idx) => {
-                                        if (matchedIds.has(idx)) return null;
-                                        return (
-                                            <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="py-2.5 px-4 text-slate-700">
-                                                    <div className="font-bold">{item.item}</div>
-                                                    <div className="text-[10px] text-muted-foreground">{item.description}</div>
-                                                </td>
-                                                <td className="py-2.5 px-4 text-right font-mono font-medium text-slate-900">
-                                                    {formatCurrency(Number(item.cost) || Number(item.total) || 0)}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </CardContent>
-                    </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-secondary/20 rounded-xl border border-border/40">
+                    <div className="text-[10px] uppercase font-bold text-primary/70 tracking-widest mb-1">Total Grant</div>
+                    <div className="text-2xl font-mono font-bold text-primary">{formatCurrency(total)}</div>
+                </div>
+                {mobilityMetadata?.nationalAgency && (
+                    <div className="p-4 bg-secondary/20 rounded-xl border border-border/40">
+                        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">National Agency</div>
+                        <div className="text-sm font-medium">{mobilityMetadata.nationalAgency}</div>
+                    </div>
+                )}
+                {mobilityMetadata?.totalParticipants && (
+                    <div className="p-4 bg-secondary/20 rounded-xl border border-border/40">
+                        <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Participants</div>
+                        <div className="text-sm font-medium">{mobilityMetadata.totalParticipants} mobilities</div>
+                    </div>
                 )}
             </div>
+
+            <div className="border rounded-2xl overflow-hidden border-border/40 bg-card/20 backdrop-blur-sm">
+                <table className="w-full text-sm border-collapse">
+                    <thead className="bg-secondary/40">
+                        <tr className="border-b border-border/40">
+                            <th className="text-left py-4 px-6 font-semibold text-foreground/70 uppercase tracking-wider text-[10px] w-[50%]">Budget Category / Detail</th>
+                            <th className="text-right py-4 px-6 font-semibold text-foreground/70 uppercase tracking-wider text-[10px] w-[40%]">Amount ({currency})</th>
+                            {isEditing && <th className="w-10"></th>}
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/20">
+                        {budget.map((item, i) => (
+                            <tr key={i} className="hover:bg-white/5 transition-colors group">
+                                <td className="py-4 px-6">
+                                    {isEditing ? (
+                                        <div className="space-y-2">
+                                            <input
+                                                className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 font-medium text-sm"
+                                                value={item.item || ''}
+                                                onChange={(e) => onUpdateItem?.(i, { item: e.target.value })}
+                                                placeholder="Budget Category"
+                                            />
+                                            <textarea
+                                                className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 text-xs"
+                                                value={item.description || ''}
+                                                onChange={(e) => onUpdateItem?.(i, { description: e.target.value })}
+                                                placeholder="Description / Breakdown"
+                                                rows={2}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="font-bold text-foreground/90 group-hover:text-primary transition-colors">{item.item}</div>
+                                            <div className="text-xs text-muted-foreground/80 mt-1 leading-relaxed">{item.description}</div>
+                                        </>
+                                    )}
+                                </td>
+                                <td className="py-4 px-6 text-right font-mono font-bold text-primary/90 text-base">
+                                    {isEditing ? (
+                                        <input
+                                            type="number"
+                                            className="w-32 bg-background/50 border border-border/40 rounded px-3 py-1.5 text-right font-mono text-primary"
+                                            value={item.cost || 0}
+                                            onChange={(e) => onUpdateItem?.(i, { cost: Number(e.target.value) })}
+                                        />
+                                    ) : (
+                                        formatCurrency(item.cost)
+                                    )}
+                                </td>
+                                {isEditing && (
+                                    <td className="pr-6">
+                                        <button
+                                            onClick={() => onRemoveItem?.(i)}
+                                            className="text-destructive p-1 hover:bg-destructive/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                                            title="Remove line item"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                )}
+                            </tr>
+                        ))}
+                    </tbody>
+                    <tfoot className="bg-primary/5">
+                        <tr className="border-t-2 border-primary/20">
+                            <td className="py-5 px-6">
+                                <span className="font-bold text-lg text-foreground/90">Total Estimated Grant</span>
+                            </td>
+                            <td className="py-5 px-6 text-right font-mono text-xl font-black text-primary" colSpan={isEditing ? 2 : 1}>
+                                {formatCurrency(total)}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            {!isEditing && (
+                <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 border-dashed">
+                    <p className="text-xs text-muted-foreground text-center">
+                        Note: This budget is an estimate based on the planned mobilities and unit costs.
+                        Use the <strong>Manage Budget</strong> button to manually adjust any line items.
+                    </p>
+                </div>
+            )}
         </div>
     );
 };

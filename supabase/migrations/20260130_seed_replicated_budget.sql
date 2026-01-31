@@ -72,7 +72,5 @@ SET budget = '[
     ]
   }
 ]'::jsonb
-WHERE id = 'YOUR_PROPOSAL_ID';
-
--- Optional: If you want to apply it to the LATEST proposal automatically, uncomment the line below and comment the WHERE line above.
--- WHERE id = (SELECT id FROM public.proposals ORDER BY updated_at DESC LIMIT 1);
+-- WHERE id = 'YOUR_PROPOSAL_ID';
+WHERE id = (SELECT id FROM public.proposals ORDER BY updated_at DESC LIMIT 1);

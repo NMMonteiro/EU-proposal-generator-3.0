@@ -25,6 +25,9 @@ interface ViewerTabsProps {
     budgetLimit: number;
     onRebalance: (limit: number) => void;
     onAiEdit: (section: DisplaySection) => void;
+    onUpdateBudgetItem: (index: number, updates: any) => void;
+    onAddBudgetItem: (item?: any) => void;
+    onRemoveBudgetItem: (index: number) => void;
     onAnnexesUpdate?: () => void;
     logicMode?: 'standard' | 'mobility' | 'lumpsum' | string;
     proposalId?: string;
@@ -39,6 +42,9 @@ export function ViewerTabs({
     onAddPartner,
     budgetLimit,
     onRebalance,
+    onUpdateBudgetItem,
+    onAddBudgetItem,
+    onRemoveBudgetItem,
     onAiEdit,
     onAnnexesUpdate,
     logicMode = 'standard',
@@ -66,7 +72,7 @@ export function ViewerTabs({
             </TabsContent>
 
             <TabsContent value="partners" className="mt-0">
-                <div className="max-w-5xl mx-auto space-y-8">
+                <div className="max-w-7xl mx-auto space-y-8">
                     <DynamicPartnerSection
                         partners={proposal.partners || []}
                         onAddPartner={onAddPartner}
@@ -75,7 +81,7 @@ export function ViewerTabs({
             </TabsContent>
 
             <TabsContent value="budget" className="mt-0">
-                <div className="max-w-5xl mx-auto space-y-8">
+                <div className="max-w-7xl mx-auto space-y-8">
                     {isMobility ? (
                         <MobilityBudgetSection
                             budget={proposal.budget || []}
@@ -83,6 +89,9 @@ export function ViewerTabs({
                             mobilityMetadata={proposal.mobilityMetadata}
                             activities={proposal.workPackages || []}
                             proposalId={proposalId || proposal.id}
+                            onUpdateItem={onUpdateBudgetItem}
+                            onAddItem={onAddBudgetItem}
+                            onRemoveItem={onRemoveBudgetItem}
                         />
                     ) : (
                         <DynamicBudgetSection
@@ -90,13 +99,16 @@ export function ViewerTabs({
                             currency={proposal.settings?.currency || 'EUR'}
                             limit={budgetLimit}
                             onRebalance={onRebalance}
+                            onUpdateItem={onUpdateBudgetItem}
+                            onAddItem={onAddBudgetItem}
+                            onRemoveItem={onRemoveBudgetItem}
                         />
                     )}
                 </div>
             </TabsContent>
 
             <TabsContent value="timeline" className="mt-0">
-                <div className="max-w-5xl mx-auto space-y-8">
+                <div className="max-w-7xl mx-auto space-y-8">
                     {isMobility ? (
                         <MobilityActivitiesSection
                             activities={proposal.workPackages || []}
