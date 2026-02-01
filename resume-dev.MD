@@ -140,6 +140,21 @@ The raw JSON display is still appearing despite the code changes. Possible cause
 - `components/FundingSchemeCRUD.tsx` (lines 576-690) - Expert Intelligence Panel
 - `supabase/migrations/20260131_seed_ka122_expert_intelligence.sql` - Database seed data structure
 
+## 14. Version 5.0 Migration & Clean Deployment
+**Objective:** Transition to the 5.0 development cycle with a fresh repository and production environment to ensure stability and clean version control.
+
+### Changes Implemented (2026-02-01):
+- **New Repository Established:** 
+    - **URL:** [https://github.com/NMMonteiro/EU-Projects-generator-5.0-v2](https://github.com/NMMonteiro/EU-Projects-generator-5.0-v2)
+    - **Status:** Fully synced with latest local Version 5.0 features.
+- **Vercel Production Refresh:**
+    - **New Project:** `eu-projects-generator-5-0`
+    - **URL:** [https://eu-projects-generator-5-0-nunos-projects.vercel.app](https://eu-projects-generator-5-0-hojrohxg1-nunos-projects-d60951f9.vercel.app)
+    - **Automation:** Linked GitHub Push-to-Deploy workflow for seamless everyday updates.
+- **Environment Synchronization:** 
+    - Automated the injection of core API keys (Gemini, Supabase URL/Keys, Project IDs) into the Vercel production environment via CLI.
+- **Persistence Fix:** Resolved a CLI-level "Project Search" failure by resetting local `.vercel` configurations and establishing a fresh project link.
+
 ---
-*Updated on 2026-01-31 18:29 UTC by Antigravity (Advanced AI Coding Assistant)*
-*Session: Expert IQ Display Enhancement - Issue remains unresolved, requires further investigation*
+*Updated on 2026-02-01 08:42 UTC by Antigravity (Advanced AI Coding Assistant)*
+*Session: Version 5.0 Deployment - Successfully migrated to new GitHub & Vercel infrastructure*
