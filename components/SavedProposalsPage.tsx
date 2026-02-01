@@ -15,6 +15,8 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
   const [proposals, setProposals] = useState<FullProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za'>('newest');
+  const [filterMode, setFilterMode] = useState<'all' | 'standard' | 'mobility'>('all');
 
   useEffect(() => {
     loadProposals();
@@ -68,11 +70,38 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
     }
   };
 
-  const filteredProposals = proposals.filter(proposal =>
-    proposal.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    proposal.selectedIdea?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    proposal.projectUrl?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProposals = proposals
+    .filter(proposal => {
+      const matchesSearch =
+        proposal.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        proposal.selectedIdea?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        proposal.projectUrl?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesFilter = filterMode === 'all' ||
+        proposal.logic_mode === filterMode ||
+        (filterMode === 'standard' && !proposal.logic_mode);
+
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') {
+        const dateA = new Date(a.savedAt || a.generatedAt || 0).getTime();
+        const dateB = new Date(b.savedAt || b.generatedAt || 0).getTime();
+        return dateB - dateA;
+      }
+      if (sortBy === 'oldest') {
+        const dateA = new Date(a.savedAt || a.generatedAt || 0).getTime();
+        const dateB = new Date(b.savedAt || b.generatedAt || 0).getTime();
+        return dateA - dateB;
+      }
+      if (sortBy === 'az') {
+        return (a.title || '').localeCompare(b.title || '');
+      }
+      if (sortBy === 'za') {
+        return (b.title || '').localeCompare(a.title || '');
+      }
+      return 0;
+    });
 
   if (loading) {
     return (
@@ -94,14 +123,45 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
         </div>
       </div>
 
-      <div className="relative group">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-blue-500" />
-        <Input
-          placeholder="Search proposals by title, idea, or source..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-12 py-6 bg-white border-slate-200 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-2xl shadow-sm transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
-        />
+      <div className="flex flex-col lg:flex-row gap-4 items-end">
+        <div className="relative group flex-1 w-full">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-blue-500" />
+          <Input
+            placeholder="Search proposals by title, idea, or source..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-12 py-6 bg-white border-slate-200 focus:bg-white text-slate-900 placeholder:text-slate-400 rounded-2xl shadow-sm transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+          />
+        </div>
+
+        <div className="flex gap-2 w-full lg:w-auto">
+          <div className="flex-1 lg:w-40">
+            <label className="text-[10px] font-bold uppercase text-slate-400 mb-1 block ml-1">Sort By</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 transition-all outline-none h-[48px]"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="az">Title (A-Z)</option>
+              <option value="za">Title (Z-A)</option>
+            </select>
+          </div>
+
+          <div className="flex-1 lg:w-40">
+            <label className="text-[10px] font-bold uppercase text-slate-400 mb-1 block ml-1">Type</label>
+            <select
+              value={filterMode}
+              onChange={(e) => setFilterMode(e.target.value as any)}
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 transition-all outline-none h-[48px]"
+            >
+              <option value="all">All Types</option>
+              <option value="standard">WP-Based</option>
+              <option value="mobility">Mobility</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {filteredProposals.length === 0 ? (

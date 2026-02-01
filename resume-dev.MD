@@ -52,5 +52,94 @@ This document outlines the critical technical changes, architectural improvement
 - **KV Store:** Redis/KV is used for fast caching of draft states.
 - **Frontend:** Next.js / Vite (React) with TailwindCSS and Lucide React.
 
+## 7. High-Fidelity DOCX Export (Erasmus+ KA122 Compliance)
+**Objective:** Align the generated document output with official EU Grant management standards (specifically Erasmus+ KA122-SCH).
+
+### Implementation Details (`utils/export-docx.ts`):
+- **Project Context Layer:** Added a structured "Project Context" table after the title page, capturing Programme, Key Action, Action Type, and National Agency details.
+- **Dynamic Budget System:** 
+    - **Summary View:** High-level grant requested per category (Travel, Individual Support, etc.).
+    - **Activity Breakdown:** Detailed items showing the **Calculation Logic** (`Units x Rate`) and accurate currency formatting.
+- **Premium EU Aesthetics:**
+    - Standardized on **EU Blue** (`#003399`) for all primary accents and table headers.
+    - Implemented stylized section headers with a thick blue bottom border.
+    - Expanded Partner Profiles to include deep-relational data (OID, VAT, registration details).
+
+## 8. Mobility Logic & Scheme Intelligence
+**Objective:** Ensure the system correctly identifies and adapts to different EU funding models (Activity-Based vs. Work Package-Based).
+
+### Key Updates:
+- **Janitor Migration:** Applied a system-wide SQL update to correct `logic_mode` for 30+ funding schemes (KA121, KA122, KA131, MOVE, etc.).
+- **Deno Sync Logic:** Updated `funding_scheme_service.ts` to intelligently classify logic modes during AI-assisted guideline parsing.
+- **Strict Formatting:** Modified `proposal-assembly.ts` to automatically rename "Work Packages" to "Activities" when in mobility mode.
+
+## 9. UI/UX: Project Intelligence & Expert Settings
+**Objective:** Provide transparency and control over the AI's "brain" and the funding scheme rules.
+
+### Features Added (`components/URLInputStep.tsx`):
+- **Blue-and-White Theme:** Standardized the Expert Settings card with the global design system (clean white surface, indigo accents).
+- **Scheme Intelligence Dialog:** Added a high-detail "View Details & Rules" modal that exposes:
+    - **Expert IQ:** Categories like core objectives, scoring criteria, and terminology synthesized from global libraries.
+    - **Structure rules:** Mandatory sections and metadata requirements.
+    - **Logic identification:** Clear visibility into how the AI interprets the project structure.
+
+## 10. Bug Fixes & Persistence Improvements
+- **"Saved Proposals" Persistence:** Fixed a bug in `proposal_generator_service.ts` where new projects were missing the `savedAt` timestamp, causing them to disappear from dashboard lists.
+- **Docx Linting:** Fixed property errors (`italic` → `italics`) and improved table border constants.
+- **Hydration Reliability:** Standardized `FullProposal` hydration to ensure camelCase/snake_case consistency between DB and DOCX tools.
+
+## 11. Intelligence Enrichment & RAG Transparency
+**Objective:** Clarify the relationship between static scheme metadata and dynamic AI knowledge (RAG).
+
+### Features Implemented:
+- **On-Demand Enrichment:** Added a "Synthesize from Global Library" button that triggers the `enrich-scheme` endpoint to distill a readable expert playbook from indexed documents.
+- **RAG Status Indicator:** Integrated a real-time status bar in the UI to confirm when the "Expert System" is actively indexing and retrieving documentation.
+- **Improved Empty States:** Replaced blank boxes with helpful informational states explaining that intelligence is retrieved dynamically during generation even if the playbook summary is pending.
+- **Deep JSON Mapping:** Standardized the rendering of complex `budget_rules` and `evaluation_criteria` objects into professional, categorized UI components.
+
+## 12. Generation Depth & Expert IQ Calibration
+**Objective:** Enhance the narrative quality, technical depth, and compliance of AI-generated content.
+
+### Improvements Implemented:
+- **Mandatory Playbook Injection:** The synthesized "Expert IQ" (directives, objectives, rules) is now a primary system instruction for the generation engine.
+- **Enforced Narrative Depth:** Configured strict constraints for section lengths (minimum 350 words for core narratives) and structural requirements (multi-paragraph, structured headings).
+- **KPI-Driven Objectives:** The system now automatically requires 3-5 concrete KPIs per project objective to ensure audit-readiness.
+- **Balanced Creativity:** recalibrated model temperature (0.3) to balance strict rule adherence with the descriptive depth needed for high-scoring proposals.
+- **Example-Based Benchmarking:** Integrated "Gold Standard" examples directly into the full-proposal generation prompt to mirror quality levels.
+
+## 13. Expert IQ Display Enhancement (In Progress)
+**Objective:** Transform raw JSON displays of AI-generated expert intelligence into beautiful, user-friendly formatted views.
+
+### Current Status - INCOMPLETE:
+- **Problem Identified:** Expert intelligence data (including mobility project phases with activities/deliverables) is still displaying as raw JSON in some parts of the UI.
+- **Components Modified:**
+    - `components/URLInputStep.tsx` - Added intelligent formatting for expert_rules display
+    - `components/FundingSchemeCRUD.tsx` - Added phase detection and structured rendering
+- **Formatting Logic Added:**
+    - Array-based rules: Numbered cards with gradient backgrounds
+    - Object-based rules: Categorized sections with bullet lists
+    - Phase-based structures: Special detection for mobility schemes with activities/deliverables
+    - Nested data: Key-value pair displays for complex objects
+
+### Known Issue:
+The raw JSON display is still appearing despite the code changes. Possible causes:
+1. The data structure in the database may be different from what the code expects
+2. The data might be coming from a different field (not `expert_rules`)
+3. Browser cache may need to be cleared
+4. The component rendering the raw JSON might be different from the ones modified
+
+### Next Steps for Resolution:
+1. **Identify the exact source:** Use browser DevTools to inspect which component is rendering the raw JSON
+2. **Check database structure:** Query the actual `funding_schemes` table to see the real data format
+3. **Verify field names:** Confirm whether the data is in `expert_rules`, `mobility_rules`, `template_json`, or another field
+4. **Test with hard refresh:** Clear browser cache and do a hard refresh (Ctrl+Shift+R)
+5. **Add console logging:** Temporarily add `console.log()` statements to see what data structure is being received
+
+### Files to Review:
+- `components/URLInputStep.tsx` (lines 363-520) - Expert IQ display section
+- `components/FundingSchemeCRUD.tsx` (lines 576-690) - Expert Intelligence Panel
+- `supabase/migrations/20260131_seed_ka122_expert_intelligence.sql` - Database seed data structure
+
 ---
-*Created on 2026-01-17 by the Development Assistant.*
+*Updated on 2026-01-31 18:29 UTC by Antigravity (Advanced AI Coding Assistant)*
+*Session: Expert IQ Display Enhancement - Issue remains unresolved, requires further investigation*

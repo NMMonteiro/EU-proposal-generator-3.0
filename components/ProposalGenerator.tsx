@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SchemeSelectorStep } from './SchemeSelectorStep';
 import { URLInputStep } from './URLInputStep';
 import { IdeasStep } from './IdeasStep';
 import { PartnerSelectionModal } from './PartnerSelectionModal';
@@ -6,58 +7,46 @@ import { ProposalStep } from './ProposalStep';
 import { MobilityProposalStep } from './MobilityProposalStep';
 import type { AnalysisResult, Idea, FullProposal } from '../types/proposal';
 
-type Step = 'url-input' | 'ideas' | 'partners' | 'proposal';
+type Step = 'scheme-selection' | 'url-input' | 'ideas' | 'partners' | 'proposal';
 
 interface ProposalGeneratorProps {
   onViewProposal?: (id: string) => void;
 }
 
 export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
-  const [currentStep, setCurrentStep] = useState<Step>('url-input');
+  const [currentStep, setCurrentStep] = useState<Step>('scheme-selection');
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [sourceUrl, setSourceUrl] = useState('');
   const [userPrompt, setUserPrompt] = useState('');
   const [selectedSchemeId, setSelectedSchemeId] = useState<string | null>(null);
+  const [forcedLogicMode, setForcedLogicMode] = useState<'standard' | 'mobility' | null>(null);
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
   const [selectedPartners, setSelectedPartners] = useState<any[]>([]);
   const [proposal, setProposal] = useState<FullProposal | null>(null);
 
-  // HEURISTIC: Force detection in frontend if backend is old/not deployed
   const getEffectiveLogicMode = () => {
+    if (forcedLogicMode) return forcedLogicMode;
     if (!analysisResult) return 'standard';
-    if (analysisResult.logic_mode) return analysisResult.logic_mode;
-
-    // Check funding schemes
-    const selectedScheme = fundingSchemes.find(s => s.id === selectedSchemeId);
-    if (selectedScheme?.logic_mode === 'mobility') return 'mobility';
-
-    const contextText = `${userPrompt} ${analysisResult.summary} ${sourceUrl}`.toLowerCase();
-    const isMobility = contextText.includes('mobility') ||
-      contextText.includes('ka122') ||
-      contextText.includes('ka121') ||
-      contextText.includes('erasmus');
-
-    return isMobility ? 'mobility' : 'standard';
+    return analysisResult.logic_mode || 'standard';
   };
-
-  const [fundingSchemes, setFundingSchemes] = useState<any[]>([]);
-
-  React.useEffect(() => {
-    // Load schemes to check logic_mode
-    const fetchSchemes = async () => {
-      const { data } = await (window as any).supabase.from('funding_schemes').select('id, logic_mode');
-      if (data) setFundingSchemes(data);
-    };
-    fetchSchemes();
-  }, []);
 
   const logicMode = getEffectiveLogicMode();
 
+  const handleSchemeSelect = (schemeId: string, logicMode: string) => {
+    setSelectedSchemeId(schemeId);
+    setForcedLogicMode(logicMode as 'standard' | 'mobility');
+    setCurrentStep('url-input');
+  };
+
   const handleUrlSubmit = (result: AnalysisResult, url: string, prompt: string, schemeId: string | null) => {
-    setAnalysisResult(result);
+    setAnalysisResult({
+      ...result,
+      logic_mode: forcedLogicMode || result.logic_mode
+    });
     setSourceUrl(url);
     setUserPrompt(prompt);
-    setSelectedSchemeId(schemeId);
+    // Maintain the scheme selected in Step 0 if it's not provided here
+    if (schemeId) setSelectedSchemeId(schemeId);
     setCurrentStep('ideas');
   };
 
@@ -75,12 +64,17 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
     setProposal(generatedProposal);
   };
 
+  const handleBackToScheme = () => {
+    setCurrentStep('scheme-selection');
+    setSelectedSchemeId(null);
+    setForcedLogicMode(null);
+  };
+
   const handleBackToUrl = () => {
     setCurrentStep('url-input');
     setAnalysisResult(null);
     setSourceUrl('');
     setUserPrompt('');
-    setSelectedSchemeId(null);
     setSelectedIdea(null);
     setProposal(null);
   };
@@ -98,8 +92,16 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
 
   return (
     <div className="p-6">
+      {currentStep === 'scheme-selection' && (
+        <SchemeSelectorStep onSelect={handleSchemeSelect} />
+      )}
+
       {currentStep === 'url-input' && (
-        <URLInputStep onSubmit={handleUrlSubmit} />
+        <URLInputStep
+          onSubmit={handleUrlSubmit}
+          onBack={handleBackToScheme}
+          initialSchemeId={selectedSchemeId}
+        />
       )}
 
       {currentStep === 'ideas' && analysisResult && (

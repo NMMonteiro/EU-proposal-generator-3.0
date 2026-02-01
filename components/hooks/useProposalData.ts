@@ -14,7 +14,7 @@ export function useProposalViewer(proposalId: string) {
     const loadProposal = useCallback(async (silent = false) => {
         if (!silent) setLoading(true);
         try {
-            const response = await fetch(`${serverUrl}/proposals/${proposalId}`, {
+            const response = await fetch(`${serverUrl}/proposals/${proposalId}?t=${Date.now()}`, {
                 headers: { 'Authorization': `Bearer ${publicAnonKey}` },
             });
 

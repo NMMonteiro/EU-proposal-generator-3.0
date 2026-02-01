@@ -490,7 +490,7 @@ export function FundingSchemeCRUD() {
                                                     Inactive
                                                 </span>
                                             )}
-                                            {scheme.expert_playbook && (
+                                            {scheme.expert_rules && (
                                                 <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full border border-blue-100 animate-in fade-in zoom-in duration-500">
                                                     <Sparkles className="h-3 w-3 fill-blue-600/20" />
                                                     AI Enriched
@@ -527,13 +527,13 @@ export function FundingSchemeCRUD() {
                                     <button
                                         onClick={() => handleEnrich(scheme.id)}
                                         disabled={enrichingId === scheme.id}
-                                        className={`p-2 rounded-lg transition ${scheme.expert_playbook ? 'bg-blue-50 text-blue-600' : 'hover:bg-muted text-muted-foreground'}`}
-                                        title={scheme.expert_playbook ? 'Re-enrich with AI' : 'Enrich with Global Library Knowledge'}
+                                        className={`p-2 rounded-lg transition ${scheme.expert_rules ? 'bg-blue-50 text-blue-600' : 'hover:bg-muted text-muted-foreground'}`}
+                                        title={scheme.expert_rules ? 'Re-enrich with AI' : 'Enrich with Global Library Knowledge'}
                                     >
                                         {enrichingId === scheme.id ? (
                                             <Loader2 className="h-4 w-4 animate-spin" />
                                         ) : (
-                                            <Sparkles className={`h-4 w-4 ${scheme.expert_playbook ? 'fill-blue-600' : ''}`} />
+                                            <Sparkles className={`h-4 w-4 ${scheme.expert_rules ? 'fill-blue-600' : ''}`} />
                                         )}
                                     </button>
                                     <button
@@ -570,54 +570,173 @@ export function FundingSchemeCRUD() {
                                     </button>
                                     <button
                                         onClick={() => setViewPlaybookId(viewPlaybookId === scheme.id ? null : scheme.id)}
-                                        disabled={!scheme.expert_playbook}
-                                        className={`p-2 rounded-lg transition ${viewPlaybookId === scheme.id ? 'bg-slate-100' : 'hover:bg-muted'} ${!scheme.expert_playbook ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                        title="View Expert Playbook"
+                                        disabled={!scheme.expert_rules}
+                                        className={`p-2 rounded-lg transition ${viewPlaybookId === scheme.id ? 'bg-slate-100' : 'hover:bg-muted'} ${!scheme.expert_rules ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                        title="View Expert Intelligence"
                                     >
                                         {viewPlaybookId === scheme.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Expert Playbook Panel */}
-                            {viewPlaybookId === scheme.id && scheme.expert_playbook && (
+                            {/* Expert Intelligence Panel */}
+                            {viewPlaybookId === scheme.id && scheme.expert_rules && (
                                 <div className="mt-6 pt-6 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
                                     <div className="flex items-center gap-2 mb-4">
                                         <div className="p-2 bg-blue-50 rounded-lg">
                                             <Brain className="h-4 w-4 text-blue-600" />
                                         </div>
-                                        <h5 className="font-bold text-slate-900">Expert Playbook Intelligence</h5>
-                                        <span className="text-xs text-blue-500 font-medium px-2 py-0.5 bg-blue-50 rounded-full">Extracted from Global Library</span>
+                                        <h5 className="font-bold text-slate-900">Expert Intelligence Playbook</h5>
+                                        <span className="text-xs text-blue-500 font-medium px-2 py-0.5 bg-blue-50 rounded-full">Synthesized from Global Library</span>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {[
-                                            { label: 'Core Objectives', key: 'core_objectives', color: 'blue' },
-                                            { label: 'Scoring Criteria', key: 'scoring_criteria', color: 'emerald' },
-                                            { label: 'Best Practices', key: 'best_practices', color: 'indigo' },
-                                            { label: 'Common Pitfalls', key: 'common_pitfalls', color: 'red' },
-                                            { label: 'Required Terminology', key: 'key_terminology', color: 'amber' },
-                                            { label: 'Budget Rules', key: 'budget_rules', color: 'slate' }
-                                        ].map((section) => (
-                                            <div key={section.key} className="space-y-2">
-                                                <h6 className={`text-xs font-black uppercase tracking-wider text-${section.color}-600 flex items-center gap-1.5`}>
-                                                    <div className={`w-1 h-1 rounded-full bg-${section.color}-600`} />
-                                                    {section.label}
-                                                </h6>
-                                                <ul className="space-y-1.5">
-                                                    {Array.isArray(scheme.expert_playbook[section.key]) ? (
-                                                        scheme.expert_playbook[section.key].map((item: string, i: number) => (
-                                                            <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
-                                                                <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-300 shrink-0" />
-                                                                {item}
-                                                            </li>
-                                                        ))
-                                                    ) : (
-                                                        <li className="text-sm text-slate-400 italic">No specific {section.label.toLowerCase()} extracted.</li>
-                                                    )}
-                                                </ul>
-                                            </div>
-                                        ))}
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {(() => {
+                                            const rules = scheme.expert_rules;
+
+                                            // Handle array format (preferred)
+                                            if (Array.isArray(rules)) {
+                                                return rules.map((rule: any, i: number) => (
+                                                    <div key={i} className="p-4 bg-gradient-to-br from-white to-blue-50/30 border border-blue-100 rounded-xl shadow-sm">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-sm font-bold">
+                                                                {i + 1}
+                                                            </div>
+                                                            <div className="flex-1 space-y-2">
+                                                                <p className="text-sm font-bold text-slate-900 leading-tight">
+                                                                    {rule.rule || rule.topic || rule.label || `Directive ${i + 1}`}
+                                                                </p>
+                                                                <p className="text-xs text-slate-600 leading-relaxed">
+                                                                    {rule.guidance || rule.description || rule.content || 'No details provided'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ));
+                                            }
+
+                                            // Handle object format (legacy structure with sections)
+                                            return Object.entries(rules).map(([key, val]: [string, any]) => {
+                                                const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                                                if (!val || (Array.isArray(val) && val.length === 0)) return null;
+
+                                                // Render arrays as lists
+                                                if (Array.isArray(val)) {
+                                                    return (
+                                                        <div key={key} className="space-y-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                                                <h6 className="text-sm font-bold text-blue-900">{label}</h6>
+                                                            </div>
+                                                            <div className="bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm">
+                                                                <ul className="divide-y divide-slate-50">
+                                                                    {val.map((item, i) => (
+                                                                        <li key={i} className="p-3 text-xs text-slate-700 flex items-start gap-3 hover:bg-blue-50/30 transition-colors">
+                                                                            <div className="h-1.5 w-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                                                                            <span className="leading-relaxed">
+                                                                                {typeof item === 'string' ? item : (
+                                                                                    typeof item === 'object' && item !== null ? (
+                                                                                        <span className="font-medium">
+                                                                                            {item.rule || item.topic || item.label}: {item.guidance || item.description || JSON.stringify(item)}
+                                                                                        </span>
+                                                                                    ) : String(item)
+                                                                                )}
+                                                                            </span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // Render objects as key-value cards
+                                                if (typeof val === 'object' && val !== null) {
+                                                    // Check if this is a phase object (has activities/deliverables/description)
+                                                    const isPhase = val.activities || val.deliverables || val.description;
+
+                                                    if (isPhase) {
+                                                        return (
+                                                            <div key={key} className="space-y-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                                                    <h6 className="text-sm font-bold text-blue-900">{label}</h6>
+                                                                </div>
+                                                                <div className="bg-gradient-to-br from-white to-blue-50/20 border border-blue-100 rounded-xl p-4 shadow-sm space-y-3">
+                                                                    {val.description && (
+                                                                        <p className="text-xs text-slate-700 leading-relaxed italic border-l-2 border-blue-300 pl-3">
+                                                                            {val.description}
+                                                                        </p>
+                                                                    )}
+                                                                    {val.activities && Array.isArray(val.activities) && val.activities.length > 0 && (
+                                                                        <div className="space-y-2">
+                                                                            <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Activities</p>
+                                                                            <ul className="space-y-1.5">
+                                                                                {val.activities.map((activity: string, i: number) => (
+                                                                                    <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                                                                                        <span className="text-blue-500 font-bold shrink-0">{i + 1}.</span>
+                                                                                        <span className="leading-relaxed">{activity}</span>
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    )}
+                                                                    {val.deliverables && Array.isArray(val.deliverables) && val.deliverables.length > 0 && (
+                                                                        <div className="space-y-2">
+                                                                            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Deliverables</p>
+                                                                            <ul className="space-y-1.5">
+                                                                                {val.deliverables.map((deliverable: string, i: number) => (
+                                                                                    <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
+                                                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                                                                                        <span className="leading-relaxed">{deliverable}</span>
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Regular object display
+                                                    return (
+                                                        <div key={key} className="space-y-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                                                <h6 className="text-sm font-bold text-blue-900">{label}</h6>
+                                                            </div>
+                                                            <div className="bg-white border border-blue-100 rounded-xl p-4 shadow-sm space-y-2">
+                                                                {Object.entries(val).map(([subKey, subVal]: [string, any]) => (
+                                                                    <div key={subKey} className="flex justify-between items-start gap-4 pb-2 border-b border-slate-50 last:border-0 last:pb-0">
+                                                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                                                            {subKey.replace(/_/g, ' ')}
+                                                                        </span>
+                                                                        <span className="text-xs text-slate-700 text-right max-w-[70%] leading-relaxed">
+                                                                            {typeof subVal === 'string' ? subVal : JSON.stringify(subVal)}
+                                                                        </span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // Render strings
+                                                return (
+                                                    <div key={key} className="space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                                            <h6 className="text-sm font-bold text-blue-900">{label}</h6>
+                                                        </div>
+                                                        <div className="bg-white border border-blue-100 rounded-xl p-4 shadow-sm">
+                                                            <p className="text-xs text-slate-700 leading-relaxed">{String(val)}</p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
                                     </div>
                                 </div>
                             )}

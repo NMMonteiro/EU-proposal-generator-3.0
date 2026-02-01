@@ -231,12 +231,20 @@ Deno.serve(async (req) => {
             }
         }
 
-        // --- 5. PARTNER PDF IMPORT ---
-        if (segments.includes('import-partner-pdf') && method === 'POST') {
-            const { importPartnerPdf } = await import('./pdf_parser_service.ts');
+        // --- 5. LIBRARY & EXAMPLE IMPORT ---
+        if (segments.includes('import-library-pdf') && method === 'POST') {
+            const { importLibraryPdf } = await import('./pdf_parser_service.ts');
             const formData = await req.formData();
             const file = formData.get('file') as File;
-            const data = await importPartnerPdf(file);
+            const data = await importLibraryPdf(file);
+            return new Response(JSON.stringify(data), { headers: corsHeaders });
+        }
+
+        if (segments.includes('import-example-pdf') && method === 'POST') {
+            const { importExamplePdf } = await import('./pdf_parser_service.ts');
+            const formData = await req.formData();
+            const file = formData.get('file') as File;
+            const data = await importExamplePdf(file);
             return new Response(JSON.stringify(data), { headers: corsHeaders });
         }
 

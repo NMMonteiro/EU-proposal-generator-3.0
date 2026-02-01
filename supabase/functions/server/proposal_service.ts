@@ -11,18 +11,18 @@ export const saveToSupabase = async (proposal: any) => {
             title: proposal.title || 'Untitled Proposal',
             summary: proposal.summary,
             project_url: proposal.projectUrl || proposal.project_url,
-            selected_idea: proposal.selectedIdea,
+            selected_idea: proposal.selectedIdea || proposal.selected_idea,
             settings: proposal.settings || {},
-            generated_at: proposal.generatedAt,
-            saved_at: proposal.savedAt || new Date().toISOString(),
+            generated_at: proposal.generatedAt || proposal.generated_at,
+            saved_at: proposal.savedAt || proposal.saved_at || new Date().toISOString(),
             updated_at: new Date().toISOString(),
             funding_scheme_id: proposal.funding_scheme_id,
-            dynamic_sections: proposal.dynamic_sections || proposal.dynamicSections || {},
+            dynamic_sections: proposal.dynamicSections || proposal.dynamic_sections || {},
             work_packages: proposal.workPackages || proposal.work_packages || [],
             budget: proposal.budget || [],
             risks: proposal.risks || [],
             partners: proposal.partners || [],
-            logic_mode: proposal.logic_mode || proposal.logicMode || 'standard',
+            logic_mode: proposal.logicMode || proposal.logic_mode || 'standard',
             mobility_metadata: proposal.mobilityMetadata || proposal.mobility_metadata || {}
         };
 
@@ -116,10 +116,45 @@ export const saveToSupabase = async (proposal: any) => {
                 description: wp.description,
                 duration: wp.duration || wp.timeline,
                 order_index: idx,
-                activities: wp.activities || []
+                activities: wp.activities || [],
+                participants: Number(wp.participants) || null,
+                activity_type: wp.activityType || wp.activity_type,
+                destination_country: wp.destinationCountry || wp.destination_country,
+                is_mobility: !!wp.isMobility || !!wp.is_mobility
             }));
             await supabase.from('proposal_work_packages').delete().eq('proposal_id', pid);
             await supabase.from('proposal_work_packages').insert(wpsToInsert);
+        }
+
+        // 5. Relational Budget Items
+        const budget = proposal.budget || [];
+        if (budget.length > 0) {
+            const budgetToInsert = budget.map((b: any, idx: number) => ({
+                proposal_id: pid,
+                item_category: b.category || b.item || 'General Cost',
+                description: b.description || '',
+                cost: Number(b.cost) || 0,
+                breakdown: b.breakdown || [],
+                partner_allocations: b.partnerAllocations || b.partner_allocations || [],
+                order_index: idx
+            }));
+            await supabase.from('proposal_budget_items').delete().eq('proposal_id', pid);
+            await supabase.from('proposal_budget_items').insert(budgetToInsert);
+        }
+
+        // 6. Relational Risks
+        const risks = proposal.risks || [];
+        if (risks.length > 0) {
+            const risksToInsert = risks.map((r: any, idx: number) => ({
+                proposal_id: pid,
+                risk_title: r.risk || r.risk_title || 'New Risk',
+                likelihood: r.likelihood || 'Medium',
+                impact: r.impact || 'Medium',
+                mitigation_strategy: r.mitigation || r.mitigation_strategy || '',
+                order_index: idx
+            }));
+            await supabase.from('proposal_risks').delete().eq('proposal_id', pid);
+            await supabase.from('proposal_risks').insert(risksToInsert);
         }
 
         console.log(`✅ Relational Sync Successful for Proposal: ${pid}`);
@@ -220,27 +255,42 @@ export const loadFullProposal = async (id: string) => {
         dynamic_sections,
         dynamicSections: dynamic_sections,
         partners: hydratedPartners || dbProp.partners,
-        workPackages: dbProp.rel_work_packages?.map((w: any) => ({
-            name: w.name,
-            description: w.description,
-            duration: w.duration,
-            activities: w.activities
-        })) || dbProp.work_packages,
+        workPackages: (dbProp.rel_work_packages && dbProp.rel_work_packages.length > 0)
+            ? dbProp.rel_work_packages
+                .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+                .map((w: any) => ({
+                    name: w.name,
+                    description: w.description,
+                    duration: w.duration,
+                    activities: w.activities,
+                    participants: w.participants,
+                    activityType: w.activity_type,
+                    destinationCountry: w.destination_country,
+                    isMobility: w.is_mobility
+                }))
+            : dbProp.work_packages,
         budget: (dbProp.rel_budget && dbProp.rel_budget.length > 0)
-            ? dbProp.rel_budget.map((b: any) => ({
-                item: b.item_category || b.item,
-                category: b.item_category || b.category,
-                description: b.description,
-                cost: b.cost,
-                breakdown: b.breakdown
-            }))
+            ? dbProp.rel_budget
+                .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+                .map((b: any) => ({
+                    item: b.item_category || b.item,
+                    category: b.item_category || b.category,
+                    description: b.description,
+                    cost: b.cost,
+                    breakdown: b.breakdown,
+                    partnerAllocations: b.partner_allocations
+                }))
             : dbProp.budget,
-        risks: dbProp.rel_risks?.map((r: any) => ({
-            risk: r.risk_title,
-            likelihood: r.likelihood,
-            impact: r.impact,
-            mitigation: r.mitigation_strategy
-        })) || dbProp.risks,
+        risks: (dbProp.rel_risks && dbProp.rel_risks.length > 0)
+            ? dbProp.rel_risks
+                .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+                .map((r: any) => ({
+                    risk: r.risk_title,
+                    likelihood: r.likelihood,
+                    impact: r.impact,
+                    mitigation: r.mitigation_strategy
+                }))
+            : dbProp.risks,
         annexes: dbProp.rel_annexes?.map((a: any) => ({
             id: a.id,
             proposalId: a.proposal_id,

@@ -36,10 +36,14 @@ export interface FundingScheme {
     logo_url?: string; // URL to funding scheme logo
     template_json: FundingSchemeTemplate;
     logic_mode?: 'standard' | 'mobility' | 'lumpsum' | string;
+    budget_rules?: any;
+    standardized_activities?: any;
+    evaluation_criteria?: any;
     mobility_rules?: any;
     is_default: boolean; // If true, used as fallback template
     is_active: boolean; // If false, hidden from UI
-    expert_playbook?: any;
+    expert_rules?: any; // The synthesized playbook or manual rules
+    expert_playbook?: any; // Alias for expert_rules
     created_at: string;
     updated_at: string;
 }

@@ -105,3 +105,80 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
         partnerId: savedPartner.id
     };
 };
+
+/**
+ * Imports a Funding Scheme Guide or Template PDF and syncs it with the Master Table.
+ */
+export const importLibraryPdf = async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const tempFileName = `library-${Date.now()}.pdf`;
+    const tempFilePath = `/tmp/${tempFileName}`;
+    await Deno.writeFile(tempFilePath, new Uint8Array(arrayBuffer));
+
+    const fileManager = getFileManager();
+    const uploadResponse = await fileManager.uploadFile(tempFilePath, {
+        mimeType: 'application/pdf',
+        displayName: file.name,
+    });
+
+    const model = getGeminiModel({ temperature: 0.1 });
+    const result = await model.generateContent([
+        { fileData: { mimeType: uploadResponse.file.mimeType, fileUri: uploadResponse.file.uri } },
+        { text: "Extract the full text of this document. Focus on the structure of application sections, labels, and specific instructions for applicants." }
+    ]);
+
+    const content = result.response.text();
+    const { syncSchemeFromContent } = await import('./funding_scheme_service.ts');
+
+    return await syncSchemeFromContent(content, 'template');
+};
+
+/**
+ * Imports a successful Example Proposal and links it to its Funding Scheme.
+ */
+export const importExamplePdf = async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const tempFileName = `example-${Date.now()}.pdf`;
+    const tempFilePath = `/tmp/${tempFileName}`;
+    await Deno.writeFile(tempFilePath, new Uint8Array(arrayBuffer));
+
+    const fileManager = getFileManager();
+    const uploadResponse = await fileManager.uploadFile(tempFilePath, {
+        mimeType: 'application/pdf',
+        displayName: file.name,
+    });
+
+    const model = getGeminiModel({ temperature: 0.2 });
+    const prompt = `You are a Grant Evaluator. Extract the full technical content of this successful proposal.
+    Return a JSON object with:
+    - title: Project Title
+    - summary: 2-3 paragraph summary
+    - full_content: { "objectives": "...", "sections": { "relevance": "...", "impact": "..." } }
+    - metadata: { "year": "...", "funding_program": "..." }
+    `;
+
+    const result = await model.generateContent([
+        { fileData: { mimeType: uploadResponse.file.mimeType, fileUri: uploadResponse.file.uri } },
+        { text: prompt }
+    ]);
+
+    const exampleData = extractJSON(result.response.text());
+    const { syncSchemeFromContent } = await import('./funding_scheme_service.ts');
+
+    // 1. Sync the master scheme metadata first
+    const syncResult = await syncSchemeFromContent(JSON.stringify(exampleData), 'example');
+
+    // 2. Save the example specifically
+    if (syncResult.success && syncResult.schemeId) {
+        const supabase = await import('./supabase_client.ts').then(m => m.getSupabaseClient());
+        await supabase.from('proposal_examples').insert({
+            funding_scheme_id: syncResult.schemeId,
+            title: exampleData.title,
+            summary: exampleData.summary,
+            full_content: exampleData.full_content,
+            metadata: exampleData.metadata
+        });
+    }
+
+    return syncResult;
+};

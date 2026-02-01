@@ -18,6 +18,7 @@ import { ViewerTabs } from './viewer/ViewerTabs';
 // Hooks
 import { useProposalViewer as useProposalData } from './hooks/useProposalData';
 import { useBudgetEditor } from './hooks/useBudgetEditor';
+import { useWorkPackageEditor } from './hooks/useWorkPackageEditor';
 
 interface ProposalViewerPageProps {
     proposalId: string;
@@ -45,8 +46,20 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
         handleRebalance,
         updateItem,
         addItem,
-        removeItem
+        removeItem,
+        updateSubItem,
+        addSubItem,
+        removeSubItem
     } = useBudgetEditor(proposal, setProposal);
+
+    const {
+        updateWP,
+        addWP,
+        removeWP,
+        updateActivity,
+        addActivity,
+        removeActivity
+    } = useWorkPackageEditor(proposal, setProposal);
 
     const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -143,6 +156,15 @@ export function ProposalViewerPage({ proposalId, onBack }: ProposalViewerPagePro
                         onUpdateBudgetItem={updateItem}
                         onAddBudgetItem={addItem}
                         onRemoveBudgetItem={removeItem}
+                        onUpdateSubBudgetItem={updateSubItem}
+                        onAddSubBudgetItem={addSubItem}
+                        onRemoveSubBudgetItem={removeSubItem}
+                        onUpdateWP={updateWP}
+                        onAddWP={addWP}
+                        onRemoveWP={removeWP}
+                        onUpdateActivity={updateActivity}
+                        onAddActivity={addActivity}
+                        onRemoveActivity={removeActivity}
                         onAnnexesUpdate={async () => {
                             try {
                                 const response = await fetch(`${serverUrl}/proposals/${proposalId}`, {

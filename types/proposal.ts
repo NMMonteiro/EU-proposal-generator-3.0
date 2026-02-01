@@ -6,6 +6,7 @@ import type { Partner } from './partner';
 export interface Idea {
   title: string;
   description: string;
+  alignment?: string;
 }
 
 export interface Constraints {

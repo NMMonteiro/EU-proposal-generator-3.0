@@ -223,7 +223,34 @@ export const ResponsiveSectionContent = ({
     );
 };
 
-export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency, overrideWP, onlyOverview, logicMode = 'standard' }: { workPackages: any[], limitToIndex?: number, currency: string, overrideWP?: any, onlyOverview?: boolean, logicMode?: string }) => {
+export const DynamicWorkPackageSection = ({
+    workPackages,
+    limitToIndex,
+    currency,
+    overrideWP,
+    onlyOverview,
+    logicMode = 'standard',
+    onUpdateWP,
+    onAddWP,
+    onRemoveWP,
+    onUpdateActivity,
+    onAddActivity,
+    onRemoveActivity
+}: {
+    workPackages: any[],
+    limitToIndex?: number,
+    currency: string,
+    overrideWP?: any,
+    onlyOverview?: boolean,
+    logicMode?: string,
+    onUpdateWP?: (index: number, updates: any) => void,
+    onAddWP?: () => void,
+    onRemoveWP?: (index: number) => void,
+    onUpdateActivity?: (wpIndex: number, actIndex: number, updates: any) => void,
+    onAddActivity?: (wpIndex: number) => void,
+    onRemoveActivity?: (wpIndex: number, actIndex: number) => void
+}) => {
+    const [isEditing, setIsEditing] = useState(false);
     if ((!workPackages || workPackages.length === 0) && !overrideWP) {
         return <div className="p-4 text-center text-muted-foreground italic border border-dashed rounded-lg">No {logicMode === 'mobility' ? 'activities' : 'work packages'} defined yet.</div>;
     }
@@ -273,7 +300,35 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
     if (displayWPs.length === 0) return null;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
+            <div className="flex justify-between items-center bg-card/50 p-6 rounded-2xl border border-border/40 backdrop-blur-sm">
+                <div>
+                    <h2 className="text-xl font-bold text-foreground/90">Work Plan & Work Packages</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Detailed breakdown of project activities and deliverables.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsEditing(!isEditing)}
+                        className={`gap-2 h-9 border border-border/40 ${isEditing ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-background hover:bg-secondary'}`}
+                    >
+                        {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
+                        {isEditing ? 'Finish Editing' : 'Edit Plan'}
+                    </Button>
+                    {isEditing && (
+                        <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => onAddWP?.()}
+                            className="gap-2 h-9 shadow-lg bg-gradient-to-tr from-primary to-primary/80"
+                        >
+                            <Plus className="w-4 h-4" /> Add Section
+                        </Button>
+                    )}
+                </div>
+            </div>
+
             {displayWPs.filter(wp => !!wp && !!wp.name).map((wp, i) => {
                 const actualIndex = limitToIndex !== undefined ? limitToIndex : i;
                 const wpBudget = (wp.activities || []).reduce((sum: number, act: any) => sum + (act.estimatedBudget || 0), 0);
@@ -286,55 +341,138 @@ export const DynamicWorkPackageSection = ({ workPackages, limitToIndex, currency
                                     <Badge variant="outline" className="mb-2 border-primary/30 text-primary">
                                         {logicMode === 'mobility' ? 'Activity' : 'WP'} {actualIndex + 1}
                                     </Badge>
-                                    <CardTitle className="text-lg">{wp.name}</CardTitle>
+                                    <CardTitle className="text-lg">
+                                        {isEditing ? (
+                                            <input
+                                                className="bg-background/50 border border-border/40 rounded px-2 py-1 font-bold w-full"
+                                                value={wp.name || ''}
+                                                onChange={(e) => onUpdateWP?.(actualIndex, { name: e.target.value })}
+                                            />
+                                        ) : (
+                                            wp.name
+                                        )}
+                                    </CardTitle>
                                     {logicMode === 'mobility' && wp.activityType && (
                                         <Badge variant="secondary" className="mt-1 text-[10px] uppercase">
                                             {wp.activityType.replace(/_/g, ' ')}
                                         </Badge>
                                     )}
                                 </div>
-                                {(wpBudget > 0 || wp.participants > 0) && (
-                                    <div className="flex flex-col items-end gap-1">
-                                        {wpBudget > 0 && (
-                                            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-                                                {formatCurrency(wpBudget)}
-                                            </Badge>
-                                        )}
-                                        {logicMode === 'mobility' && wp.participants > 0 && (
-                                            <div className="text-[10px] font-bold text-muted-foreground flex items-center gap-1">
-                                                <Users className="w-3 h-3" /> {wp.participants} Pax | {wp.duration} Days
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                <div className="flex gap-4 items-start">
+                                    {(wpBudget > 0 || wp.participants > 0) && (
+                                        <div className="flex flex-col items-end gap-1">
+                                            {wpBudget > 0 && (
+                                                <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                                                    {formatCurrency(wpBudget)}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    )}
+                                    {isEditing && (
+                                        <button
+                                            onClick={() => onRemoveWP?.(actualIndex)}
+                                            className="text-destructive hover:scale-110 transition-transform p-1 hover:bg-destructive/10 rounded"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="prose prose-invert prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: wp.description }} />
+                            {isEditing ? (
+                                <textarea
+                                    className="w-full bg-background/50 border border-border/40 rounded-xl p-4 text-sm min-h-[100px]"
+                                    value={wp.description || ''}
+                                    onChange={(e) => onUpdateWP?.(actualIndex, { description: e.target.value })}
+                                    placeholder="Description of the section..."
+                                />
+                            ) : (
+                                <div className="prose prose-invert prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: wp.description }} />
+                            )}
 
                             {/* Standard Sub-Activities Grid */}
-                            {logicMode === 'standard' && wp.activities && wp.activities.length > 0 && (
+                            {logicMode === 'standard' && (
                                 <div className="mt-6 space-y-4">
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                                        <span className="text-primary"><LayoutDashboard className="w-4 h-4" /></span>
-                                        Tasks
-                                    </h3>
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                                            <span className="text-primary"><LayoutDashboard className="w-4 h-4" /></span>
+                                            Sub-Items (Activities)
+                                        </h3>
+                                        {isEditing && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7 text-[10px] font-bold uppercase gap-1"
+                                                onClick={() => onAddActivity?.(actualIndex)}
+                                            >
+                                                <Plus className="w-3 h-3" /> Add Item
+                                            </Button>
+                                        )}
+                                    </div>
+
                                     <div className="grid gap-3">
-                                        {wp.activities.map((act: any, aIdx: number) => (
-                                            <div key={aIdx} className="bg-slate-50/80 border border-slate-100 rounded-lg p-4 text-sm">
+                                        {(wp.activities || []).map((act: any, aIdx: number) => (
+                                            <div key={aIdx} className="bg-slate-50/80 border border-slate-100 rounded-lg p-4 text-sm group/act">
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <span className="font-bold text-slate-800">
-                                                        {actualIndex + 1}.{aIdx + 1} {act.name}
-                                                    </span>
-                                                    {act.estimatedBudget > 0 && (
-                                                        <span className="text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-500">
-                                                            {formatCurrency(act.estimatedBudget)}
-                                                        </span>
-                                                    )}
+                                                    <div className="flex-1">
+                                                        {isEditing ? (
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-bold text-slate-400">{actualIndex + 1}.{aIdx + 1}</span>
+                                                                    <input
+                                                                        className="flex-1 bg-white border border-slate-200 rounded px-2 py-1 font-bold text-sm"
+                                                                        value={act.name || ''}
+                                                                        onChange={(e) => onUpdateActivity?.(actualIndex, aIdx, { name: e.target.value })}
+                                                                    />
+                                                                </div>
+                                                                <textarea
+                                                                    className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs"
+                                                                    value={act.description || ''}
+                                                                    onChange={(e) => onUpdateActivity?.(actualIndex, aIdx, { description: e.target.value })}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="font-bold text-slate-800">
+                                                                {actualIndex + 1}.{aIdx + 1} {act.name}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3">
+                                                        {isEditing ? (
+                                                            <div className="flex flex-col items-end">
+                                                                <label className="text-[8px] uppercase font-bold text-slate-400">Est. Budget</label>
+                                                                <input
+                                                                    type="number"
+                                                                    className="w-20 text-xs bg-white border border-slate-200 rounded px-1 py-0.5 text-right font-mono"
+                                                                    value={act.estimatedBudget || 0}
+                                                                    onChange={(e) => onUpdateActivity?.(actualIndex, aIdx, { estimatedBudget: Number(e.target.value) })}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            act.estimatedBudget > 0 && (
+                                                                <span className="text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-500">
+                                                                    {formatCurrency(act.estimatedBudget)}
+                                                                </span>
+                                                            )
+                                                        )}
+                                                        {isEditing && (
+                                                            <button
+                                                                onClick={() => onRemoveActivity?.(actualIndex, aIdx)}
+                                                                className="text-slate-300 hover:text-red-500 p-1 opacity-0 group-hover/act:opacity-100 transition-opacity"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="text-slate-600 leading-relaxed text-xs" dangerouslySetInnerHTML={{ __html: act.description }} />
+                                                {!isEditing && <div className="text-slate-600 leading-relaxed text-xs" dangerouslySetInnerHTML={{ __html: act.description }} />}
                                             </div>
                                         ))}
+                                        {logicMode === 'standard' && (!wp.activities || wp.activities.length === 0) && !isEditing && (
+                                            <div className="text-xs italic text-slate-400 py-2">No specific tasks defined for this section.</div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -448,7 +586,10 @@ export const DynamicBudgetSection = ({
     onRebalance,
     onUpdateItem,
     onAddItem,
-    onRemoveItem
+    onRemoveItem,
+    onUpdateSubItem,
+    onAddSubItem,
+    onRemoveSubItem
 }: {
     budget: any[],
     currency: string,
@@ -456,7 +597,10 @@ export const DynamicBudgetSection = ({
     onRebalance?: (limit: number) => void,
     onUpdateItem?: (index: number, updates: any) => void,
     onAddItem?: () => void,
-    onRemoveItem?: (index: number) => void
+    onRemoveItem?: (index: number) => void,
+    onUpdateSubItem?: (itemIndex: number, subIndex: number, updates: any) => void,
+    onAddSubItem?: (itemIndex: number) => void,
+    onRemoveSubItem?: (itemIndex: number, subIndex: number) => void
 }) => {
     const [isEditing, setIsEditing] = useState(false);
 
@@ -509,51 +653,159 @@ export const DynamicBudgetSection = ({
                     </thead>
                     <tbody className="divide-y divide-border/20">
                         {budget.map((item, i) => (
-                            <tr key={i} className="hover:bg-white/5 transition-colors">
-                                <td className="py-3 px-4">
-                                    {isEditing ? (
-                                        <div className="space-y-2">
-                                            <input
-                                                className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 font-medium"
-                                                value={item.item || ''}
-                                                onChange={(e) => onUpdateItem?.(i, { item: e.target.value })}
-                                            />
-                                            <textarea
-                                                className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 text-xs"
-                                                value={item.description || ''}
-                                                onChange={(e) => onUpdateItem?.(i, { description: e.target.value })}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="font-medium text-foreground/90">{item.item}</div>
-                                            <div className="text-xs text-muted-foreground mt-0.5">{item.description}</div>
-                                        </>
-                                    )}
-                                </td>
-                                <td className="py-3 px-4 text-right font-mono text-primary/90">
-                                    {isEditing ? (
-                                        <input
-                                            type="number"
-                                            className="w-24 bg-background/50 border border-border/40 rounded px-2 py-1 text-right"
-                                            value={item.cost || 0}
-                                            onChange={(e) => onUpdateItem?.(i, { cost: Number(e.target.value) })}
-                                        />
-                                    ) : (
-                                        formatCurrency(item.cost)
-                                    )}
-                                </td>
-                                {isEditing && (
-                                    <td className="pr-4">
-                                        <button
-                                            onClick={() => onRemoveItem?.(i)}
-                                            className="text-destructive hover:scale-110 transition-transform"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                            <React.Fragment key={i}>
+                                <tr className="hover:bg-white/5 transition-colors group">
+                                    <td className="py-3 px-4">
+                                        {isEditing ? (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline" className="text-[10px] uppercase font-bold text-primary/70">Section</Badge>
+                                                    <input
+                                                        className="flex-1 bg-background/50 border border-border/40 rounded px-2 py-1 font-bold text-sm"
+                                                        value={item.item || ''}
+                                                        onChange={(e) => onUpdateItem?.(i, { item: e.target.value })}
+                                                        placeholder="Category Name"
+                                                    />
+                                                </div>
+                                                <textarea
+                                                    className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 text-xs"
+                                                    value={item.description || ''}
+                                                    onChange={(e) => onUpdateItem?.(i, { description: e.target.value })}
+                                                    placeholder="General description for this category..."
+                                                />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="font-bold text-foreground/90 flex items-center gap-2">
+                                                    {item.item}
+                                                    {item.breakdown && item.breakdown.length > 0 && <Badge variant="secondary" className="text-[9px] h-4">{item.breakdown.length} items</Badge>}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground mt-0.5">{item.description}</div>
+                                            </>
+                                        )}
                                     </td>
+                                    <td className="py-3 px-4 text-right font-mono text-primary/90 font-bold">
+                                        {isEditing ? (
+                                            <div className="flex flex-col items-end gap-1">
+                                                <input
+                                                    type="number"
+                                                    className="w-24 bg-background/50 border border-border/40 rounded px-2 py-1 text-right font-mono"
+                                                    value={item.cost || 0}
+                                                    onChange={(e) => onUpdateItem?.(i, { cost: Number(e.target.value) })}
+                                                    disabled={item.breakdown && item.breakdown.length > 0}
+                                                />
+                                                {item.breakdown && item.breakdown.length > 0 && (
+                                                    <span className="text-[9px] uppercase font-bold text-muted-foreground">Auto-calculated</span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            formatCurrency(item.cost)
+                                        )}
+                                    </td>
+                                    {isEditing && (
+                                        <td className="pr-4">
+                                            <button
+                                                onClick={() => onRemoveItem?.(i)}
+                                                className="text-destructive hover:scale-110 transition-transform p-1 hover:bg-destructive/10 rounded"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    )}
+                                </tr>
+
+                                {/* Sub-items / Breakdown Row */}
+                                {(isEditing || (item.breakdown && item.breakdown.length > 0)) && (
+                                    <tr className="bg-slate-50/30">
+                                        <td colSpan={isEditing ? 3 : 2} className="py-0 px-0">
+                                            <div className="pl-12 pr-4 py-3 border-l-2 border-primary/20 space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Detailed Breakdown</span>
+                                                    {isEditing && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-6 text-[10px] font-bold uppercase gap-1"
+                                                            onClick={() => onAddSubItem?.(i)}
+                                                        >
+                                                            <Plus className="w-3 h-3" /> Add Sub-item
+                                                        </Button>
+                                                    )}
+                                                </div>
+
+                                                {item.breakdown && item.breakdown.length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        {item.breakdown.map((sub: any, sIdx: number) => (
+                                                            <div key={sIdx} className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-white/50 border border-slate-100 rounded-lg p-2 group/sub">
+                                                                {isEditing ? (
+                                                                    <>
+                                                                        <input
+                                                                            className="flex-1 text-xs bg-transparent border-none focus:ring-1 focus:ring-primary/20 rounded p-1 font-medium"
+                                                                            value={sub.subItem || ''}
+                                                                            onChange={(e) => onUpdateSubItem?.(i, sIdx, { subItem: e.target.value })}
+                                                                            placeholder="Sub-item name..."
+                                                                        />
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="flex flex-col">
+                                                                                <label className="text-[8px] uppercase text-slate-400 font-bold">Qty</label>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="w-14 text-xs bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-center"
+                                                                                    value={sub.quantity || 0}
+                                                                                    onChange={(e) => {
+                                                                                        const q = Number(e.target.value);
+                                                                                        onUpdateSubItem?.(i, sIdx, { quantity: q, total: q * (sub.unitCost || 0) });
+                                                                                    }}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex flex-col">
+                                                                                <label className="text-[8px] uppercase text-slate-400 font-bold">Unit Cost</label>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="w-20 text-xs bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-right"
+                                                                                    value={sub.unitCost || 0}
+                                                                                    onChange={(e) => {
+                                                                                        const uc = Number(e.target.value);
+                                                                                        onUpdateSubItem?.(i, sIdx, { unitCost: uc, total: (sub.quantity || 0) * uc });
+                                                                                    }}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex flex-col">
+                                                                                <label className="text-[8px] uppercase text-slate-400 font-bold">Total</label>
+                                                                                <div className="text-xs font-mono font-bold text-primary/80 pt-1 w-20 text-right">
+                                                                                    {formatCurrency(sub.total || 0)}
+                                                                                </div>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => onRemoveSubItem?.(i, sIdx)}
+                                                                                className="text-slate-300 hover:text-red-500 p-1 opacity-0 group-hover/sub:opacity-100 transition-opacity mt-2"
+                                                                            >
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <span className="flex-1 text-xs font-medium text-slate-600">{sub.subItem}</span>
+                                                                        <div className="flex gap-4 text-[10px] text-slate-400 font-mono">
+                                                                            <span>{sub.quantity} units x {formatCurrency(sub.unitCost)}</span>
+                                                                            <span className="font-bold text-primary/70">{formatCurrency(sub.total)}</span>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : isEditing ? (
+                                                    <div className="text-[10px] italic text-slate-400 text-center py-2 bg-slate-100/30 rounded-lg border border-dashed border-slate-200">
+                                                        No sub-items added yet. Click "Add Sub-item" to define details.
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </td>
+                                    </tr>
                                 )}
-                            </tr>
+                            </React.Fragment>
                         ))}
                     </tbody>
                     <tfoot className="bg-primary/5">

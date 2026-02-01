@@ -5,6 +5,8 @@ import { KnowledgeRetriever } from './knowledge_retriever.ts';
 import { getSupabaseClient } from './supabase_client.ts';
 
 export const analyzeUrl = async (targetUrl: string, userPrompt?: string, fundingSchemeId?: string) => {
+    const supabase = getSupabaseClient();
+
     // 1. Fetch URL content
     let rawContent = '';
     try {
@@ -24,12 +26,19 @@ export const analyzeUrl = async (targetUrl: string, userPrompt?: string, funding
     // Fallback: If clean text is sparse, provide raw HTML (up to 25k) so Gemini can scan for scripts/metadata
     const analysisContext = isPotentiallyEmpty ? rawContent.substring(0, 25000) : cleanContent;
 
-    // 2. Load funding scheme
+    // 2. Load funding scheme AND examples
     let fundingScheme = null;
+    let examples = [];
     if (fundingSchemeId) {
-        const supabase = getSupabaseClient();
-        const { data } = await supabase.from('funding_schemes').select('*').eq('id', fundingSchemeId).single();
-        fundingScheme = data;
+        const { data: schemeData } = await supabase.from('funding_schemes').select('*').eq('id', fundingSchemeId).single();
+        fundingScheme = schemeData;
+
+        const { data: exampleData } = await supabase
+            .from('proposal_examples')
+            .select('title, summary, full_content')
+            .eq('funding_scheme_id', fundingSchemeId)
+            .limit(2);
+        examples = exampleData || [];
     }
 
     // 3. RAG: Expert Intelligence Retrieval
@@ -50,6 +59,9 @@ EXTRACTED WEBSITE CONTENT:
 ${analysisContext}
 
 ${isPotentiallyEmpty ? `NOTE: The website seems to be a Javascript-rendered application. Look for data in embedded JSON, script variables, or meta tags if available in the raw snippets above.` : ''}
+
+${fundingScheme?.expert_rules ? `### SCHEME-SPECIFIC EXPERT RULES:
+${JSON.stringify(fundingScheme.expert_rules, null, 2)}\n` : ''}
 
 ${expertKnowledge.content ? `### GLOBAL LIBRARY INTELLIGENCE (Priority Information):
 ${expertKnowledge.content}\n` : ''}
@@ -78,8 +90,20 @@ OUTPUT FORMAT: Strict JSON
     console.log(`[Constraints] Budget: ${phase1Data.constraints?.budget || 'None'} | Duration: ${phase1Data.constraints?.duration || 'None'}`);
 
     // 5. Phase 2: Idea Generation
-    const ideationModel = getGeminiModel({ temperature: 0.7 });
-    const phase2Prompt = PromptBuilder.buildPhase2Prompt(phase1Data.summary, phase1Data.constraints, userPrompt);
+    const ideationModel = getGeminiModel({
+        temperature: 0.8,
+        topP: 0.95,
+        topK: 40
+    });
+
+    const phase2Prompt = PromptBuilder.buildPhase2Prompt(
+        phase1Data.summary,
+        phase1Data.constraints,
+        userPrompt,
+        fundingScheme,
+        examples
+    );
+
     const phase2Result = await ideationModel.generateContent(phase2Prompt);
     const phase2Data = extractJSON(phase2Result.response.text());
 

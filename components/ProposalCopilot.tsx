@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 import { serverUrl, publicAnonKey } from '../utils/supabase/info.tsx';
 
 const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
@@ -63,8 +64,10 @@ export function ProposalCopilot({ isOpen, onClose, proposalId, onProposalUpdate 
             setMessages(prev => [...prev, { role: 'assistant', content: data.response || "I have processed your request." }]);
 
             if (data.actions && data.actions.length > 0) {
+                toast.success(`Applied ${data.actions.length} project updates`);
                 onProposalUpdate();
             } else if (data.action) {
+                toast.success("Project updated");
                 onProposalUpdate();
             }
         } catch (error) {

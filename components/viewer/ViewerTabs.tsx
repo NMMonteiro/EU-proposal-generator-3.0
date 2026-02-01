@@ -28,6 +28,15 @@ interface ViewerTabsProps {
     onUpdateBudgetItem: (index: number, updates: any) => void;
     onAddBudgetItem: (item?: any) => void;
     onRemoveBudgetItem: (index: number) => void;
+    onUpdateSubBudgetItem?: (itemIndex: number, subIndex: number, updates: any) => void;
+    onAddSubBudgetItem?: (itemIndex: number) => void;
+    onRemoveSubBudgetItem?: (itemIndex: number, subIndex: number) => void;
+    onUpdateWP?: (index: number, updates: any) => void;
+    onAddWP?: () => void;
+    onRemoveWP?: (index: number) => void;
+    onUpdateActivity?: (wpIndex: number, actIndex: number, updates: any) => void;
+    onAddActivity?: (wpIndex: number) => void;
+    onRemoveActivity?: (wpIndex: number, actIndex: number) => void;
     onAnnexesUpdate?: () => void;
     logicMode?: 'standard' | 'mobility' | 'lumpsum' | string;
     proposalId?: string;
@@ -45,6 +54,15 @@ export function ViewerTabs({
     onUpdateBudgetItem,
     onAddBudgetItem,
     onRemoveBudgetItem,
+    onUpdateSubBudgetItem,
+    onAddSubBudgetItem,
+    onRemoveSubBudgetItem,
+    onUpdateWP,
+    onAddWP,
+    onRemoveWP,
+    onUpdateActivity,
+    onAddActivity,
+    onRemoveActivity,
     onAiEdit,
     onAnnexesUpdate,
     logicMode = 'standard',
@@ -102,6 +120,9 @@ export function ViewerTabs({
                             onUpdateItem={onUpdateBudgetItem}
                             onAddItem={onAddBudgetItem}
                             onRemoveItem={onRemoveBudgetItem}
+                            onUpdateSubItem={onUpdateSubBudgetItem}
+                            onAddSubItem={onAddSubBudgetItem}
+                            onRemoveSubItem={onRemoveSubBudgetItem}
                         />
                     )}
                 </div>
@@ -118,6 +139,12 @@ export function ViewerTabs({
                         <DynamicWorkPackageSection
                             workPackages={proposal.workPackages || []}
                             currency={proposal.settings?.currency || 'EUR'}
+                            onUpdateWP={onUpdateWP}
+                            onAddWP={onAddWP}
+                            onRemoveWP={onRemoveWP}
+                            onUpdateActivity={onUpdateActivity}
+                            onAddActivity={onAddActivity}
+                            onRemoveActivity={onRemoveActivity}
                         />
                     )}
                 </div>

@@ -68,8 +68,6 @@ export async function handleCopilotChat(params: any) {
     const smartKeywords = KnowledgeRetriever.extractSmartKeywords(`${proposal.fundingScheme?.name || ''} ${message}`);
     const expertKnowledge = await retriever.getRelevantKnowledge(smartKeywords, 3);
 
-    const model = getGeminiModel({ temperature: 0.7 });
-
     const logicMode = proposal.logic_mode || proposal.fundingScheme?.logic_mode || (proposal.mobilityMetadata ? 'mobility' : 'standard');
     const mobilityRules = proposal.fundingScheme?.template_json?.mobilityRules;
 
@@ -96,7 +94,9 @@ export async function handleCopilotChat(params: any) {
     YOUR CAPABILITIES:
     1. Answer questions concisely and professionally.
     2. Analyze sections and suggest deep improvements.
-    3. Perform direct actions: You MUST trigger actions when the user asks for changes.
+    3. Perform direct actions: You MUST trigger actions whenever the user asks for changes, updates, or additions. If you mention a change in your 'response' text, that change MUST be present in the 'actions' array.
+    
+    CRITICAL: Never just "confirm" a change in text without providing the corresponding 'actions' array to back it up.
     
     OUTPUT FORMAT:
     You must return a JSON response with:
@@ -121,9 +121,23 @@ export async function handleCopilotChat(params: any) {
           }
         },
         {
-          "type": "update_work_package", // Use for Standard mode
-          "index": 0,
-          "data": { "name": "...", "description": "...", "activities": [] }
+          "type": "update_budget",
+          "data": [
+            {
+              "item": "Item Name",
+              "cost": 1000,
+              "description": "Optional description",
+              "breakdown": [
+                { "subItem": "Sub Name", "quantity": 1, "unitCost": 1000, "total": 1000 }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "update_all_work_packages", // Recommended for standard projects
+          "data": [
+            { "name": "WP1: Management", "description": "...", "activities": [{ "name": "Task 1.1", "description": "...", "estimatedBudget": 5000 }] }
+          ]
         },
         {
           "type": "update_mobility_activity", // Use for Mobility mode
@@ -138,9 +152,18 @@ export async function handleCopilotChat(params: any) {
     2. PROACTIVITY: If the user asks for a project in a specific country, suggest partner profiles or local context.
     ${logicMode === 'mobility' ? '3. MOBILITY LOGIC: When adding a mobility, calculate the budget impact based on rules (e.g. org support = 100 per person).' : '3. WP LOGIC: Ensure work packages are coherent and sequential.'}
     
-    Available section keys: ${JSON.stringify(Object.keys(proposal.dynamic_sections || proposal.dynamicSections || {}))}
+    AVAILABLE SECTION KEYS: ${JSON.stringify(Object.keys(proposal.dynamic_sections || proposal.dynamicSections || {}))}
+    
+    CRITICAL BUDGET: When updating Budget, you MUST return the FULL list of items in the 'data' array. If you want to add or modify something, include all other existing items too, otherwise they will be deleted. Ensure each item's 'cost' equals the sum of its 'breakdown' totals if breakdowns are present.
+    
+    CRITICAL WORK PLAN: For standard projects, ALWAYS use the 'update_all_work_packages' action with the FULL array of Work Packages. DO NOT use 'update_work_package' as it is less reliable for structural changes.
     
     Return ONLY valid JSON. Nothing else.`;
+
+    const model = getGeminiModel({
+        temperature: 0.7,
+        systemInstruction: systemPrompt
+    });
 
     const chatHistory = history.map((ms: any) => ({
         role: ms.role === 'assistant' ? 'model' : 'user',
@@ -148,104 +171,115 @@ export async function handleCopilotChat(params: any) {
     }));
 
     const chat = model.startChat({
-        history: [
-            { role: 'user', parts: [{ text: systemPrompt }] },
-            { role: 'model', parts: [{ text: "Understood. I am now acting as the Proposal Copilot. I will trigger actions via the 'actions' array and ensure metadata/section consistency." }] },
-            ...chatHistory
-        ]
+        history: chatHistory
     });
 
     const result = await chat.sendMessage(message);
     const responseText = result.response.text();
     const data = extractJSON(responseText);
+    if (!data) return { response: "I encountered an error parsing the AI response.", actions: [] };
 
     // If actions were requested, perform them in the DB
     const actions = data.actions || (data.action ? [data.action] : []);
 
-    if (actions.length > 0) {
-        console.log(`[Copilot Actions] Count: ${actions.length}`, actions);
+    try {
+        if (actions.length > 0) {
+            console.log(`[Copilot Actions] Count: ${actions.length}`, JSON.stringify(actions));
 
-        for (const action of actions) {
-            if (action.type === 'update_section') {
-                const { section, content } = action;
-                const dynSections = proposal.dynamic_sections || proposal.dynamicSections || {};
-                dynSections[section] = content;
-                proposal.dynamicSections = dynSections;
-            } else if (action.type === 'update_metadata') {
-                const { updates } = action;
-                if (updates.title) proposal.title = updates.title;
-                if (updates.summary) proposal.summary = updates.summary;
-                if (updates.settings) {
-                    proposal.settings = {
-                        ...(proposal.settings || {}),
-                        ...updates.settings
-                    };
-                }
-                if (updates.mobilityMetadata) {
-                    proposal.mobilityMetadata = {
-                        ...(proposal.mobilityMetadata || {}),
-                        ...updates.mobilityMetadata
-                    };
-                }
-            } else if (action.type === 'update_work_package') {
-                const { index, data: wpData } = action;
-                const wps = proposal.workPackages || [];
-                if (index === -1) {
-                    wps.push(wpData);
-                } else if (wps[index]) {
-                    wps[index] = { ...wps[index], ...wpData };
-                }
-                proposal.workPackages = wps;
-            } else if (action.type === 'update_mobility_activity') {
-                const { index, data: mobData } = action;
-                const wps = proposal.workPackages || [];
+            for (const action of actions) {
+                console.log(`[Copilot Processing] Action type: ${action.type}`);
+                if (action.type === 'update_section') {
+                    const { section, content } = action;
+                    const dynSections = proposal.dynamic_sections || proposal.dynamicSections || {};
+                    dynSections[section] = content;
+                    proposal.dynamicSections = dynSections;
+                } else if (action.type === 'update_metadata') {
+                    const { updates } = action;
+                    if (updates.title) proposal.title = updates.title;
+                    if (updates.summary) proposal.summary = updates.summary;
+                    if (updates.settings) {
+                        proposal.settings = { ...(proposal.settings || {}), ...updates.settings };
+                    }
+                    if (updates.mobilityMetadata) {
+                        proposal.mobilityMetadata = { ...(proposal.mobilityMetadata || {}), ...updates.mobilityMetadata };
+                    }
+                } else if (action.type === 'update_work_package' || action.type === 'update_mobility_activity') {
+                    const { index, data: wpData } = action;
+                    const wps = proposal.workPackages || proposal.work_packages || [];
 
-                // Mobility activities are stored in the same place as WPs for now
-                // but with specific metadata
-                const activityObj = {
-                    name: mobData.name || mobData.title,
-                    description: mobData.description,
-                    duration: mobData.days || mobData.duration,
-                    participants: mobData.participants,
-                    activityType: mobData.type,
-                    isMobility: true
-                };
-
-                if (index === -1) {
-                    wps.push(activityObj);
-                } else if (wps[index]) {
-                    wps[index] = { ...wps[index], ...activityObj };
-                }
-                proposal.workPackages = wps;
-
-                // AUTO-UPDATE BUDGET for Mobility (Basic implementation)
-                if (logicMode === 'mobility' && mobilityRules) {
-                    const totalParticipants = wps.reduce((sum, wp) => sum + (Number(wp.participants) || 0), 0);
-                    const orgSupportTotal = totalParticipants * (mobilityRules.unitCosts?.organizational_support || 100);
-
-                    // Update specific budget item
-                    const budget = proposal.budget || [];
-                    const osIdx = budget.findIndex((b: any) => b.category === 'Organizational Support' || b.item === 'Organizational Support');
-
-                    const newItem = {
-                        item: 'Organizational Support',
-                        category: 'Organizational Support',
-                        description: `Support for ${totalParticipants} participants.`,
-                        cost: orgSupportTotal
+                    // Normalize mapping for both standard and mobility
+                    const normalizedWP = {
+                        ...wpData,
+                        name: wpData.name || wpData.title || wpData.activity_name,
+                        description: wpData.description,
+                        duration: wpData.duration || wpData.days || wpData.timeline,
+                        participants: Number(wpData.participants || wpData.pax || wpData.count) || 0,
+                        activityType: wpData.activityType || wpData.type || wpData.activity_type
                     };
 
-                    if (osIdx > -1) budget[osIdx] = newItem;
-                    else budget.push(newItem);
+                    if (index === -1 || (index !== undefined && index >= wps.length)) {
+                        wps.push(normalizedWP);
+                    } else if (index !== undefined && wps[index]) {
+                        wps[index] = { ...wps[index], ...normalizedWP };
+                    }
+                    proposal.workPackages = wps;
 
-                    proposal.budget = budget;
+                    // AUTO-UPDATE BUDGET for Mobility
+                    if (logicMode === 'mobility' && mobilityRules) {
+                        const totalParticipants = wps.reduce((sum: number, wp: any) => sum + (Number(wp.participants) || 0), 0);
+                        const orgSupportTotal = totalParticipants * (mobilityRules.unitCosts?.organizational_support || 100);
+                        const budget = proposal.budget || [];
+                        const osIdx = budget.findIndex((b: any) =>
+                            (b.category || b.item || '').toLowerCase().includes('organizational support')
+                        );
+                        const newItem = {
+                            item: 'Organizational Support',
+                            category: 'Organizational Support',
+                            description: `Support for ${totalParticipants} participants.`,
+                            cost: orgSupportTotal
+                        };
+                        if (osIdx > -1) budget[osIdx] = newItem;
+                        else budget.push(newItem);
+                        proposal.budget = budget;
+                    }
+                } else if (action.type === 'update_all_work_packages') {
+                    if (Array.isArray(action.data)) {
+                        proposal.workPackages = action.data;
+                    }
+                } else if (action.type === 'update_budget') {
+                    const { data: budgetData } = action;
+                    if (Array.isArray(budgetData)) {
+                        proposal.budget = budgetData.map((item: any) => {
+                            if (item.breakdown && item.breakdown.length > 0) {
+                                item.breakdown = item.breakdown.map((b: any) => {
+                                    if (b.quantity !== undefined && b.unitCost !== undefined) {
+                                        b.total = (Number(b.quantity) || 0) * (Number(b.unitCost) || 0);
+                                    }
+                                    return b;
+                                });
+                                item.cost = item.breakdown.reduce((sum: number, b: any) => sum + (Number(b.total) || 0), 0);
+                            }
+                            return item;
+                        });
+                    }
                 }
             }
+            console.log(`[Copilot] Syncing updates for proposal ${proposalId}...`);
+            await saveToSupabase(proposal);
+            console.log(`[Copilot] Sync complete.`);
         }
-        await saveToSupabase(proposal);
+    } catch (err: any) {
+        console.error("[Copilot Error]", err);
+        return {
+            response: `${data.response}\n\n(Note: I encountered a technical issue while saving some updates: ${err.message})`,
+            actions: [],
+            error: err.message
+        };
     }
 
     return {
         ...data,
-        actions // Ensure we return normalized actions
+        actions,
+        knowledgeContext: expertKnowledge.sources
     };
 }

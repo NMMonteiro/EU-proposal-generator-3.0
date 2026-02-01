@@ -51,8 +51,19 @@ export const generateProposalFull = async (params: any) => {
         }
     }
 
+    // 2. Load examples for this scheme
+    let examples = [];
+    if (fundingSchemeId) {
+        const { data: exampleData } = await supabase
+            .from('proposal_examples')
+            .select('title, summary, full_content')
+            .eq('funding_scheme_id', fundingSchemeId)
+            .limit(2);
+        examples = exampleData || [];
+    }
+
     const model = getGeminiModel({
-        temperature: 0.2,
+        temperature: 0.3, // Slightly higher for more descriptive depth
         maxOutputTokens: 8192
     });
 
@@ -61,8 +72,22 @@ export const generateProposalFull = async (params: any) => {
     const smartKeywords = KnowledgeRetriever.extractSmartKeywords(`${fundingScheme?.name || ''} ${idea.title} ${userPrompt || ''}`);
     const expertKnowledge = await retriever.getRelevantKnowledge(smartKeywords, 4);
 
-    const prompt = PromptBuilder.buildProposalPrompt(idea, summary, constraints, partners, userPrompt, fundingScheme, logicMode);
-    const fullyInformedPrompt = expertKnowledge.content ? `${prompt}\n\n### EXPERT INTELLIGENCE:\n${expertKnowledge.content}` : prompt;
+    // Build the prompt with all context
+    const prompt = PromptBuilder.buildProposalPrompt(
+        idea,
+        summary,
+        constraints,
+        partners,
+        userPrompt,
+        fundingScheme,
+        logicMode,
+        examples
+    );
+
+    // Explicitly merge Expert Intelligence (RAG) into the prompt body
+    const fullyInformedPrompt = expertKnowledge.content
+        ? `${prompt}\n\n### GLOBAL LIBRARY INTELLIGENCE (LATEST EU GUIDELINES):\n${expertKnowledge.content}`
+        : prompt;
 
     console.log('[PROPOSAL] Calling Gemini model (this may take 20-40s)...');
     const result = await model.generateContent(fullyInformedPrompt);
@@ -73,6 +98,7 @@ export const generateProposalFull = async (params: any) => {
 
     proposal.id = crypto.randomUUID();
     proposal.generatedAt = new Date().toISOString();
+    proposal.savedAt = proposal.generatedAt;
     proposal.selectedIdea = idea;
     proposal.summary = summary;
     proposal.constraints = constraints;

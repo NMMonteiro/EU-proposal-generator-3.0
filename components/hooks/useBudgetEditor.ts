@@ -22,7 +22,7 @@ export function useBudgetEditor(proposal: any, setProposal: (p: any) => void) {
         setProposal({ ...proposal, budget: newBudget });
     };
 
-    const addItem = (item: any = { item: 'New Item', cost: 0, description: '' }) => {
+    const addItem = (item: any = { item: 'New Item', cost: 0, description: '', breakdown: [] }) => {
         const newBudget = [...(proposal?.budget || []), item];
         setProposal({ ...proposal, budget: newBudget });
     };
@@ -30,6 +30,51 @@ export function useBudgetEditor(proposal: any, setProposal: (p: any) => void) {
     const removeItem = (index: number) => {
         if (!proposal?.budget) return;
         const newBudget = proposal.budget.filter((_: any, i: number) => i !== index);
+        setProposal({ ...proposal, budget: newBudget });
+    };
+
+    const updateSubItem = (itemIndex: number, subIndex: number, updates: any) => {
+        if (!proposal?.budget) return;
+        const newBudget = [...proposal.budget];
+        const item = { ...newBudget[itemIndex] };
+        const breakdown = [...(item.breakdown || [])];
+        const subItem = { ...breakdown[subIndex], ...updates };
+
+        // Auto-calculate sub-item total if qty or unit cost changes
+        if (updates.quantity !== undefined || updates.unitCost !== undefined) {
+            subItem.total = (subItem.quantity || 0) * (subItem.unitCost || 0);
+        }
+
+        breakdown[subIndex] = subItem;
+
+        // Recalculate item total if needed
+        if (updates.total !== undefined || updates.quantity !== undefined || updates.unitCost !== undefined) {
+            item.cost = breakdown.reduce((sum: number, sub: any) => sum + (Number(sub.total) || 0), 0);
+        }
+
+        item.breakdown = breakdown;
+        newBudget[itemIndex] = item;
+        setProposal({ ...proposal, budget: newBudget });
+    };
+
+    const addSubItem = (itemIndex: number) => {
+        if (!proposal?.budget) return;
+        const newBudget = [...proposal.budget];
+        const item = { ...newBudget[itemIndex] };
+        const breakdown = [...(item.breakdown || []), { subItem: 'New Sub-item', quantity: 1, unitCost: 0, total: 0 }];
+        item.breakdown = breakdown;
+        newBudget[itemIndex] = item;
+        setProposal({ ...proposal, budget: newBudget });
+    };
+
+    const removeSubItem = (itemIndex: number, subIndex: number) => {
+        if (!proposal?.budget) return;
+        const newBudget = [...proposal.budget];
+        const item = { ...newBudget[itemIndex] };
+        const breakdown = item.breakdown.filter((_: any, i: number) => i !== subIndex);
+        item.breakdown = breakdown;
+        item.cost = breakdown.reduce((sum: number, sub: any) => sum + (Number(sub.total) || 0), 0);
+        newBudget[itemIndex] = item;
         setProposal({ ...proposal, budget: newBudget });
     };
 
@@ -64,6 +109,9 @@ export function useBudgetEditor(proposal: any, setProposal: (p: any) => void) {
         handleRebalance,
         updateItem,
         addItem,
-        removeItem
+        removeItem,
+        updateSubItem,
+        addSubItem,
+        removeSubItem
     };
 }
