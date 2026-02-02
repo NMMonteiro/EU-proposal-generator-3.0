@@ -158,7 +158,10 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
                                         headers: { 'Authorization': `Bearer ${publicAnonKey}` },
                                         body: formData
                                     });
-                                    if (!response.ok) throw new Error('Extraction failed');
+                                    if (!response.ok) {
+                                        const errorData = await response.json().catch(() => ({}));
+                                        throw new Error(errorData.error || 'Extraction failed');
+                                    }
                                     const data = await response.json();
                                     toast.dismiss(toastId);
                                     toast.success('Partner imported successfully!');
@@ -166,6 +169,7 @@ export function PartnersPage({ onEditPartner }: PartnersPageProps) {
                                 } catch (error: any) {
                                     toast.dismiss(toastId);
                                     toast.error(`Import failed: ${error.message}`);
+                                    console.error('[DEBUG] Import error:', error);
                                 } finally {
                                     e.target.value = '';
                                 }

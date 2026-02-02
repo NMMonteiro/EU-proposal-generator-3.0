@@ -13,7 +13,10 @@ import {
     Sparkles,
     Pencil,
     Search,
-    Euro
+    Euro,
+    Calculator,
+    Users2,
+    Coins
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -430,12 +433,41 @@ export const DynamicWorkPackageSection = ({
                                                                     className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs"
                                                                     value={act.description || ''}
                                                                     onChange={(e) => onUpdateActivity?.(actualIndex, aIdx, { description: e.target.value })}
+                                                                    placeholder="Task description..."
                                                                 />
+                                                                <div className="grid grid-cols-2 gap-2">
+                                                                    <div>
+                                                                        <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Lead</label>
+                                                                        <input
+                                                                            className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs"
+                                                                            value={act.leadPartner || ''}
+                                                                            onChange={(e) => onUpdateActivity?.(actualIndex, aIdx, { leadPartner: e.target.value })}
+                                                                            placeholder="Lead Partner"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">Partners</label>
+                                                                        <input
+                                                                            className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs"
+                                                                            value={act.participatingPartners?.join(', ') || ''}
+                                                                            onChange={(e) => onUpdateActivity?.(actualIndex, aIdx, { participatingPartners: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                                                                            placeholder="P1, P2..."
+                                                                        />
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         ) : (
-                                                            <span className="font-bold text-slate-800">
-                                                                {actualIndex + 1}.{aIdx + 1} {act.name}
-                                                            </span>
+                                                            <div className="flex flex-col gap-1">
+                                                                <span className="font-bold text-slate-800">
+                                                                    {actualIndex + 1}.{aIdx + 1} {act.name}
+                                                                </span>
+                                                                {(act.leadPartner || (act.participatingPartners && act.participatingPartners.length > 0)) && (
+                                                                    <div className="flex flex-wrap gap-2 text-[10px]">
+                                                                        {act.leadPartner && <span className="text-primary font-bold">Lead: {act.leadPartner}</span>}
+                                                                        {act.participatingPartners?.length > 0 && <span className="text-muted-foreground">Partners: {act.participatingPartners.join(', ')}</span>}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
 
@@ -786,10 +818,10 @@ export const DynamicBudgetSection = ({
                                                                     </>
                                                                 ) : (
                                                                     <>
-                                                                        <span className="flex-1 text-xs font-medium text-slate-600">{sub.subItem}</span>
+                                                                        <span className="flex-1 text-xs font-medium text-slate-600">{sub.subItem || sub.item}</span>
                                                                         <div className="flex gap-4 text-[10px] text-slate-400 font-mono">
-                                                                            <span>{sub.quantity} units x {formatCurrency(sub.unitCost)}</span>
-                                                                            <span className="font-bold text-primary/70">{formatCurrency(sub.total)}</span>
+                                                                            <span>{(Number(sub.quantity) || 0)} units x {formatCurrency(Number(sub.unitCost) || 0)}</span>
+                                                                            <span className="font-bold text-primary/70">{formatCurrency(Number(sub.total) || 0)}</span>
                                                                         </div>
                                                                     </>
                                                                 )}
@@ -810,7 +842,16 @@ export const DynamicBudgetSection = ({
                     </tbody>
                     <tfoot className="bg-primary/5">
                         <tr className="font-bold border-t border-primary/20">
-                            <td className="py-3 px-4 text-foreground/90">Total Estimated Budget</td>
+                            <td className="py-3 px-4 text-foreground/90">
+                                Total Estimated Budget
+                                {limit && limit > 0 && (
+                                    <div className="mt-0.5">
+                                        <span className={`text-[10px] font-bold ${total > limit ? 'text-destructive font-black' : 'text-slate-400'}`}>
+                                            Limit: {formatCurrency(Number(limit) || 0)}
+                                        </span>
+                                    </div>
+                                )}
+                            </td>
                             <td className="py-3 px-4 text-right font-mono text-primary" colSpan={isEditing ? 2 : 1}>
                                 {formatCurrency(total)}
                             </td>
@@ -852,19 +893,29 @@ export const MobilityBudgetSection = ({
     currency,
     mobilityMetadata,
     activities = [],
+    limit,
     proposalId,
     onUpdateItem,
     onAddItem,
-    onRemoveItem
+    onRemoveItem,
+    onUpdateSubItem,
+    onAddSubItem,
+    onRemoveSubItem,
+    onRebalance
 }: {
     budget: any[],
     currency: string,
     mobilityMetadata?: any,
     activities?: any[],
+    limit?: number,
     proposalId?: string,
     onUpdateItem?: (index: number, updates: any) => void,
     onAddItem?: () => void,
-    onRemoveItem?: (index: number) => void
+    onRemoveItem?: (index: number) => void,
+    onUpdateSubItem?: (itemIndex: number, subIndex: number, updates: any) => void,
+    onAddSubItem?: (itemIndex: number) => void,
+    onRemoveSubItem?: (itemIndex: number, subIndex: number) => void,
+    onRebalance?: (limit: number) => void
 }) => {
     const [isEditing, setIsEditing] = useState(false);
 
@@ -915,6 +966,13 @@ export const MobilityBudgetSection = ({
                 <div className="p-4 bg-secondary/20 rounded-xl border border-border/40">
                     <div className="text-[10px] uppercase font-bold text-primary/70 tracking-widest mb-1">Total Grant</div>
                     <div className="text-2xl font-mono font-bold text-primary">{formatCurrency(total)}</div>
+                    {limit && limit > 0 && (
+                        <div className="mt-1 flex items-center gap-2">
+                            <span className={`text-[10px] font-bold ${total > limit ? 'text-destructive font-black' : 'text-slate-400'}`}>
+                                Limit: {formatCurrency(Number(limit) || 0)}
+                            </span>
+                        </div>
+                    )}
                 </div>
                 {mobilityMetadata?.nationalAgency && (
                     <div className="p-4 bg-secondary/20 rounded-xl border border-border/40">
@@ -941,61 +999,161 @@ export const MobilityBudgetSection = ({
                     </thead>
                     <tbody className="divide-y divide-border/20">
                         {budget.map((item, i) => (
-                            <tr key={i} className="hover:bg-white/5 transition-colors group">
-                                <td className="py-4 px-6">
-                                    {isEditing ? (
-                                        <div className="space-y-2">
-                                            <input
-                                                className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 font-medium text-sm"
-                                                value={item.item || ''}
-                                                onChange={(e) => onUpdateItem?.(i, { item: e.target.value })}
-                                                placeholder="Budget Category"
-                                            />
-                                            <textarea
-                                                className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 text-xs"
-                                                value={item.description || ''}
-                                                onChange={(e) => onUpdateItem?.(i, { description: e.target.value })}
-                                                placeholder="Description / Breakdown"
-                                                rows={2}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="font-bold text-foreground/90 group-hover:text-primary transition-colors">{item.item}</div>
-                                            <div className="text-xs text-muted-foreground/80 mt-1 leading-relaxed">{item.description}</div>
-                                        </>
-                                    )}
-                                </td>
-                                <td className="py-4 px-6 text-right font-mono font-bold text-primary/90 text-base">
-                                    {isEditing ? (
-                                        <input
-                                            type="number"
-                                            className="w-32 bg-background/50 border border-border/40 rounded px-3 py-1.5 text-right font-mono text-primary"
-                                            value={item.cost || 0}
-                                            onChange={(e) => onUpdateItem?.(i, { cost: Number(e.target.value) })}
-                                        />
-                                    ) : (
-                                        formatCurrency(item.cost)
-                                    )}
-                                </td>
-                                {isEditing && (
-                                    <td className="pr-6">
-                                        <button
-                                            onClick={() => onRemoveItem?.(i)}
-                                            className="text-destructive p-1 hover:bg-destructive/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
-                                            title="Remove line item"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                            <React.Fragment key={i}>
+                                <tr className="hover:bg-white/5 transition-colors group">
+                                    <td className="py-4 px-6">
+                                        {isEditing ? (
+                                            <div className="space-y-2">
+                                                <input
+                                                    className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 font-medium text-sm"
+                                                    value={item.item || ''}
+                                                    onChange={(e) => onUpdateItem?.(i, { item: e.target.value })}
+                                                    placeholder="Budget Category"
+                                                />
+                                                <textarea
+                                                    className="w-full bg-background/50 border border-border/40 rounded px-2 py-1 text-xs"
+                                                    value={item.description || ''}
+                                                    onChange={(e) => onUpdateItem?.(i, { description: e.target.value })}
+                                                    placeholder="Description / Breakdown"
+                                                    rows={2}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="font-bold text-foreground/90 group-hover:text-primary transition-colors">{item.item}</div>
+                                                <div className="text-xs text-muted-foreground/80 mt-1 leading-relaxed">{item.description}</div>
+                                            </>
+                                        )}
                                     </td>
+                                    <td className="py-4 px-6 text-right font-mono font-bold text-primary/90 text-base">
+                                        {isEditing ? (
+                                            <input
+                                                type="number"
+                                                className="w-32 bg-background/50 border border-border/40 rounded px-3 py-1.5 text-right font-mono text-primary"
+                                                value={item.cost || 0}
+                                                onChange={(e) => onUpdateItem?.(i, { cost: Number(e.target.value) })}
+                                            />
+                                        ) : (
+                                            formatCurrency(Number(item.cost) || 0)
+                                        )}
+                                    </td>
+                                    {isEditing && (
+                                        <td className="pr-6">
+                                            <button
+                                                onClick={() => onRemoveItem?.(i)}
+                                                className="text-destructive p-1 hover:bg-destructive/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                                                title="Remove line item"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    )}
+                                </tr>
+
+                                {/* Sub-items / Breakdown Row */}
+                                {(isEditing || (item.breakdown && item.breakdown.length > 0)) && (
+                                    <tr className="bg-slate-50/20">
+                                        <td colSpan={isEditing ? 3 : 2} className="py-0 px-0">
+                                            <div className="pl-12 pr-6 py-4 border-l-2 border-primary/10 space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest flex items-center gap-2">
+                                                        <Calculator className="w-3 h-3" /> Grant Components
+                                                    </span>
+                                                    {isEditing && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-6 text-[10px] font-bold uppercase gap-1 text-primary hover:text-primary hover:bg-primary/5"
+                                                            onClick={() => onAddSubItem?.(i)}
+                                                        >
+                                                            <Plus className="w-3 h-3" /> Add Detail
+                                                        </Button>
+                                                    )}
+                                                </div>
+
+                                                {item.breakdown && item.breakdown.length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        {item.breakdown.map((sub: any, sIdx: number) => (
+                                                            <div key={sIdx} className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/40 border border-slate-100/50 rounded-lg p-3 shadow-sm group/sub">
+                                                                {isEditing ? (
+                                                                    <>
+                                                                        <input
+                                                                            className="flex-1 text-xs bg-transparent border-none focus:ring-1 focus:ring-primary/20 rounded p-1 font-medium"
+                                                                            value={sub.subItem || sub.item || ''}
+                                                                            onChange={(e) => onUpdateSubItem?.(i, sIdx, { subItem: e.target.value })}
+                                                                            placeholder="Item detail..."
+                                                                        />
+                                                                        <div className="flex items-center gap-4">
+                                                                            <div className="flex flex-col">
+                                                                                <label className="text-[8px] uppercase text-slate-400 font-bold mb-0.5">Participants</label>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="w-16 text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 text-center font-bold"
+                                                                                    value={sub.quantity || 0}
+                                                                                    onChange={(e) => onUpdateSubItem?.(i, sIdx, { quantity: Number(e.target.value) })}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex flex-col">
+                                                                                <label className="text-[8px] uppercase text-slate-400 font-bold mb-0.5">Rate/Unit</label>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="w-24 text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 text-right font-mono"
+                                                                                    value={sub.unitCost || 0}
+                                                                                    onChange={(e) => onUpdateSubItem?.(i, sIdx, { unitCost: Number(e.target.value) })}
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex flex-col items-end">
+                                                                                <label className="text-[8px] uppercase text-slate-400 font-bold mb-0.5">Subtotal</label>
+                                                                                <div className="text-xs font-mono font-bold text-primary pt-1">
+                                                                                    {formatCurrency(sub.total || 0)}
+                                                                                </div>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => onRemoveSubItem?.(i, sIdx)}
+                                                                                className="text-slate-300 hover:text-red-500 p-1 opacity-0 group-hover/sub:opacity-100 transition-opacity ml-2 self-end mb-1"
+                                                                            >
+                                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="flex-1">
+                                                                            <span className="text-xs font-semibold text-slate-700 block">{sub.subItem || sub.item}</span>
+                                                                            <span className="text-[10px] text-muted-foreground">{sub.description}</span>
+                                                                        </div>
+                                                                        <div className="flex gap-6 text-[11px] text-slate-500 font-mono items-center">
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <Users2 className="w-3 h-3 text-slate-400" />
+                                                                                <span>{sub.quantity} units</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <Coins className="w-3 h-3 text-slate-400" />
+                                                                                <span>{formatCurrency(sub.unitCost)} / unit</span>
+                                                                            </div>
+                                                                            <span className="font-bold text-primary bg-primary/5 px-2 py-0.5 rounded">{formatCurrency(sub.total || sub.cost)}</span>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : isEditing ? (
+                                                    <div className="text-[10px] italic text-slate-400 text-center py-6 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                                                        No specific details added. Click "Add Detail" to break down this grant category.
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </td>
+                                    </tr>
                                 )}
-                            </tr>
+                            </React.Fragment>
                         ))}
                     </tbody>
                     <tfoot className="bg-primary/5">
                         <tr className="border-t-2 border-primary/20">
                             <td className="py-5 px-6">
-                                <span className="font-bold text-lg text-foreground/90">Total Estimated Grant</span>
+                                <span className="font-bold text-lg text-foreground/90">Total Estimated Grant Requested</span>
                             </td>
                             <td className="py-5 px-6 text-right font-mono text-xl font-black text-primary" colSpan={isEditing ? 2 : 1}>
                                 {formatCurrency(total)}
@@ -1005,11 +1163,36 @@ export const MobilityBudgetSection = ({
                 </table>
             </div>
 
+            {onRebalance && !isEditing && (
+                <div className="flex items-center gap-4 bg-primary/5 p-4 rounded-xl border border-primary/20 border-dashed">
+                    <div className="flex-1">
+                        <div className="text-xs font-bold text-primary uppercase tracking-wider mb-1">Mobility Grant Rebalancer</div>
+                        <div className="text-sm text-muted-foreground">Proportionally adjust all grant categories to fit a new target total:</div>
+                    </div>
+                    <div className="flex gap-2">
+                        <input
+                            type="number"
+                            className="w-32 bg-background border border-primary/20 rounded px-3 py-1.5 text-right font-mono"
+                            placeholder={total.toString()}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    onRebalance?.(Number((e.target as HTMLInputElement).value));
+                                }
+                            }}
+                        />
+                        <Button size="sm" onClick={(e) => {
+                            const input = e.currentTarget.previousSibling as HTMLInputElement;
+                            onRebalance?.(Number(input.value));
+                        }}>Rescale All</Button>
+                    </div>
+                </div>
+            )}
+
             {!isEditing && (
-                <div className="p-4 bg-primary/5 rounded-xl border border-primary/20 border-dashed">
-                    <p className="text-xs text-muted-foreground text-center">
-                        Note: This budget is an estimate based on the planned mobilities and unit costs.
-                        Use the <strong>Manage Budget</strong> button to manually adjust any line items.
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p className="text-[11px] text-muted-foreground text-center italic">
+                        Note: This budget is an estimate based on the planned mobilities and Erasmus+ unit costs.
+                        Use the <strong>Manage Budget</strong> button to manually adjust any line items or add special costs.
                     </p>
                 </div>
             )}

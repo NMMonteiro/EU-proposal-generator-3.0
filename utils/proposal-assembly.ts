@@ -70,7 +70,7 @@ function formatWPTitle(idx: number, rawTitle: string, isMobility = false): strin
 /**
  * Assembles a structured document with ABSOLUTE Sequential Lockdown and NO DUPLICATION.
  */
-export function assembleDocument(proposal: FullProposal): DisplaySection[] {
+export function assembleDocument(proposal: FullProposal, forcedLogicMode?: 'standard' | 'mobility' | 'lumpsum' | string): DisplaySection[] {
     const layout = proposal.layout?.sequence || [];
     const fundingScheme = proposal.fundingScheme || (proposal as any).funding_scheme;
     const dynamicSections = proposal.dynamicSections || (proposal as any).dynamic_sections || {};
@@ -89,7 +89,7 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
         schemeName.includes('MOBILITY') ||
         (workPackages && workPackages.some((wp: any) => wp.activityType || (wp as any).participants)));
 
-    const logicMode = proposal.logic_mode === 'mobility' || isMobilityImplicit ? 'mobility' : (proposal.logic_mode || fundingScheme?.logic_mode || 'standard');
+    const logicMode = forcedLogicMode || proposal.logic_mode || (isMobilityImplicit ? 'mobility' : (fundingScheme?.logic_mode || 'standard'));
     const isMobilityMode = logicMode === 'mobility';
 
     const MASTER_ORDER: Record<string, number> = {
@@ -102,6 +102,8 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
         'design': 600, 'implementation': 600, 'projectdesignandimplementation': 600,
         'partnershiparrangements': 700, 'partnershipandcooperation': 700,
         'workpackagesoverview': 1000, 'activitiesoverview': 1000, 'wplist': 1000, 'listofworkpackages': 1000,
+        'milestones': 1050,
+        'timeline': 1060,
         'budget': 3000,
         'risks': 4000,
         'declaration': 9000,
@@ -297,6 +299,8 @@ export function assembleDocument(proposal: FullProposal): DisplaySection[] {
     if (proposal.partners?.length > 0) { ensureHeader('pm', 'Participating Organisations', 'partners'); ensureHeader('pp', 'Organisation Profiles', 'partner_profiles'); }
     if ((proposal.budget || []).length > 0) ensureHeader('bm', isMobilityMode ? 'Financial Plan' : 'Budget', 'budget');
     if ((proposal.risks || []).length > 0) ensureHeader('rm', 'Risk Analysis', 'risk');
+    if ((proposal.milestones || []).length > 0) ensureHeader('msm', 'Project Milestones', 'milestones');
+    if ((proposal.timeline || []).length > 0) ensureHeader('tlm', 'Project Timeline', 'timeline');
 
     // HEAVY SUMMARY ENFORCEMENT (De-duplication & Consolidation)
     // 1. Get the best available summary content

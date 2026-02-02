@@ -42,15 +42,13 @@ export function useBudgetEditor(proposal: any, setProposal: (p: any) => void) {
 
         // Auto-calculate sub-item total if qty or unit cost changes
         if (updates.quantity !== undefined || updates.unitCost !== undefined) {
-            subItem.total = (subItem.quantity || 0) * (subItem.unitCost || 0);
+            subItem.total = (Number(subItem.quantity) || 0) * (Number(subItem.unitCost) || 0);
         }
 
         breakdown[subIndex] = subItem;
 
-        // Recalculate item total if needed
-        if (updates.total !== undefined || updates.quantity !== undefined || updates.unitCost !== undefined) {
-            item.cost = breakdown.reduce((sum: number, sub: any) => sum + (Number(sub.total) || 0), 0);
-        }
+        // ALWAYS Recalculate item total if breakdown exists
+        item.cost = breakdown.reduce((sum: number, sub: any) => sum + (Number(sub.total) || 0), 0);
 
         item.breakdown = breakdown;
         newBudget[itemIndex] = item;
@@ -63,12 +61,14 @@ export function useBudgetEditor(proposal: any, setProposal: (p: any) => void) {
         const item = { ...newBudget[itemIndex] };
         const breakdown = [...(item.breakdown || []), { subItem: 'New Sub-item', quantity: 1, unitCost: 0, total: 0 }];
         item.breakdown = breakdown;
+        // Cost should be updated too in case adding an item changes total (though 0 total doesn't change it, it's good for consistency)
+        item.cost = breakdown.reduce((sum: number, sub: any) => sum + (Number(sub.total) || 0), 0);
         newBudget[itemIndex] = item;
         setProposal({ ...proposal, budget: newBudget });
     };
 
     const removeSubItem = (itemIndex: number, subIndex: number) => {
-        if (!proposal?.budget) return;
+        if (!proposal?.budget || !proposal.budget[itemIndex]?.breakdown) return;
         const newBudget = [...proposal.budget];
         const item = { ...newBudget[itemIndex] };
         const breakdown = item.breakdown.filter((_: any, i: number) => i !== subIndex);

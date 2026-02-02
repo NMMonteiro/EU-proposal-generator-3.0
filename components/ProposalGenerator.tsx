@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { SchemeSelectorStep } from './SchemeSelectorStep';
 import { URLInputStep } from './URLInputStep';
-import { IdeasStep } from './IdeasStep';
+import { StandardIdeasStep } from './StandardIdeasStep';
+import { MobilityIdeasStep } from './MobilityIdeasStep';
 import { PartnerSelectionModal } from './PartnerSelectionModal';
-import { ProposalStep } from './ProposalStep';
+import { StandardProposalStep } from './StandardProposalStep';
 import { MobilityProposalStep } from './MobilityProposalStep';
 import type { AnalysisResult, Idea, FullProposal } from '../types/proposal';
 
@@ -105,13 +106,23 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
       )}
 
       {currentStep === 'ideas' && analysisResult && (
-        <IdeasStep
-          analysisResult={analysisResult}
-          sourceUrl={sourceUrl}
-          userPrompt={userPrompt}
-          onSelectIdea={handleSelectIdea}
-          onBack={handleBackToUrl}
-        />
+        logicMode === 'mobility' ? (
+          <MobilityIdeasStep
+            analysisResult={analysisResult}
+            sourceUrl={sourceUrl}
+            userPrompt={userPrompt}
+            onSelectIdea={handleSelectIdea}
+            onBack={handleBackToUrl}
+          />
+        ) : (
+          <StandardIdeasStep
+            analysisResult={analysisResult}
+            sourceUrl={sourceUrl}
+            userPrompt={userPrompt}
+            onSelectIdea={handleSelectIdea}
+            onBack={handleBackToUrl}
+          />
+        )
       )}
 
       {currentStep === 'partners' && selectedIdea && (
@@ -150,7 +161,7 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
             onViewProposal={onViewProposal}
           />
         ) : (
-          <ProposalStep
+          <StandardProposalStep
             selectedIdea={selectedIdea}
             analysisResult={analysisResult}
             selectedPartners={selectedPartners}

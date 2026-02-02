@@ -439,7 +439,7 @@ function createKeyValueTable(lines: string[]): Table {
   });
 }
 
-function createWorkPackageTable(wps: WorkPackage[], currency: string = "EUR", logicMode: string = "standard"): Table {
+function createWorkPackageTable(wps: WorkPackage[], currency: string = "EUR", logicMode: string = "standard", fullBudget: any[] = []): Table {
   const isMobility = logicMode === "mobility";
   const rows: TableRow[] = [];
 
@@ -448,13 +448,27 @@ function createWorkPackageTable(wps: WorkPackage[], currency: string = "EUR", lo
     children: [
       createTableHeaderCell("No."),
       createTableHeaderCell(isMobility ? "Activity Title" : "Work Package Title"),
+      createTableHeaderCell("Lead Partner"),
       createTableHeaderCell("Budget"),
     ]
   }));
 
   wps.forEach((wp, idx) => {
     // Calculate WP Budget
-    const wpBudget = (wp.activities || []).reduce((sum, act: any) => sum + (act.estimatedBudget || act.cost || 0), 0);
+    let wpBudget = (wp.activities || []).reduce((sum, act: any) => sum + (act.estimatedBudget || act.cost || 0), 0);
+
+    // Fallback for standard projects: search in main budget array if WP total is 0
+    if (wpBudget === 0 && !isMobility && fullBudget.length > 0) {
+      const wpIdentifier = `WP${idx + 1}`;
+      const match = fullBudget.find(b =>
+        (b.item || "").toUpperCase().includes(wpIdentifier) ||
+        (b.description || "").toUpperCase().includes(wpIdentifier)
+      );
+      if (match) wpBudget = Number(match.cost) || 0;
+    }
+
+    // Determine lead partner (from first activity or WP level if it existed)
+    const leadPartner = wp.activities?.[0]?.leadPartner || "-";
 
     rows.push(new TableRow({
       children: [
@@ -467,6 +481,10 @@ function createWorkPackageTable(wps: WorkPackage[], currency: string = "EUR", lo
           children: [
             new Paragraph({ children: [new TextRun({ text: wp.name, bold: true, font: FONT, size: BODY_SIZE })] })
           ],
+          verticalAlign: VerticalAlign.CENTER
+        }),
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: leadPartner, font: FONT, size: 18 })], alignment: AlignmentType.CENTER })],
           verticalAlign: VerticalAlign.CENTER
         }),
         new TableCell({
@@ -659,9 +677,9 @@ export async function generateDocx(proposal: FullProposal): Promise<{ blob: Blob
       schemeName.includes('KA122') ||
       schemeName.includes('KA121') ||
       schemeName.includes('MOBILITY') ||
-      (p.workPackages && p.workPackages.some((wp: any) => wp.activityType || (wp as any).participants)));
+      (p.workPackages && p.workPackages.some((wp: any) => (wp.activityType && wp.activityType !== 'standard') || wp.isMobility)));
 
-    const logicMode = p.logic_mode === 'mobility' || isMobilityImplicit ? 'mobility' : (p.logic_mode || fScheme?.logic_mode || "standard");
+    const logicMode = p.logic_mode || (isMobilityImplicit ? 'mobility' : (fScheme?.logic_mode || "standard"));
     const isMobility = logicMode === "mobility";
     const currency = p.settings?.currency || "EUR";
     const docChildren: any[] = [];
@@ -738,7 +756,7 @@ export async function generateDocx(proposal: FullProposal): Promise<{ blob: Blob
     docChildren.push(...convertHtmlToParagraphs(bestSummary, "Executive Summary", p.partners, logicMode));
 
     // 3. ASSEMBLED SECTIONS (STRICT ORDER)
-    const finalDocument = assembleDocument(p).filter(s => s.id !== 'summary');
+    const finalDocument = assembleDocument(p, logicMode).filter(s => s.id !== 'summary');
 
     finalDocument.forEach((section: DisplaySection) => {
       const isWP = section.type === 'work_package';
@@ -799,7 +817,7 @@ export async function generateDocx(proposal: FullProposal): Promise<{ blob: Blob
       } else if (isWPList && p.workPackages?.length > 0) {
         // Master Table
         const allWPs = p.workPackages.map((wp, i) => normalizeWorkPackage(wp, i, logicMode));
-        docChildren.push(createWorkPackageTable(allWPs, getCurrencySymbol(p.settings?.currency), logicMode));
+        docChildren.push(createWorkPackageTable(allWPs, getCurrencySymbol(p.settings?.currency), logicMode, p.budget));
       } else if (isWP && section.wpIdx !== undefined) {
         // Individual WP Detail: Narrative is already above, add activities/deliverables here
         const wpData = p.workPackages?.[section.wpIdx];
@@ -810,21 +828,45 @@ export async function generateDocx(proposal: FullProposal): Promise<{ blob: Blob
           deliverables: []
         }, section.wpIdx, logicMode);
 
-        // Activities
+        // Activities / Tasks Detail
         if (wp.activities?.length > 0) {
           docChildren.push(new Paragraph({
-            children: [new TextRun({ text: "Planned Activities:", bold: true, font: FONT, size: 20, color: COLOR_PRIMARY })],
+            children: [new TextRun({ text: isMobility ? "Planned Activities:" : "Tasks & Resources:", bold: true, font: FONT, size: 20, color: COLOR_PRIMARY })],
             spacing: { before: 200, after: 100 }
           }));
+
           wp.activities.forEach(act => {
             docChildren.push(new Paragraph({
               children: [new TextRun({ text: `• ${act.name}`, bold: true, font: FONT, size: 18 })],
               spacing: { before: 100 }
             }));
+
+            // Lead and Participating Partners
+            if (act.leadPartner || (act.participatingPartners && act.participatingPartners.length > 0)) {
+              const partnersText = [];
+              if (act.leadPartner) partnersText.push(`Lead: ${act.leadPartner}`);
+              if (act.participatingPartners && act.participatingPartners.length > 0) {
+                partnersText.push(`Partners: ${act.participatingPartners.join(", ")}`);
+              }
+
+              docChildren.push(new Paragraph({
+                children: [new TextRun({ text: `  ${partnersText.join(" | ")}`, italics: true, font: FONT, size: 16, color: "666666" })],
+                spacing: { after: 40 }
+              }));
+            }
+
             if (act.description) {
               docChildren.push(new Paragraph({
                 children: [new TextRun({ text: `  ${act.description}`, font: FONT, size: 16, color: "444444" })],
                 spacing: { after: 100 }
+              }));
+            }
+
+            // Budget for activity
+            if (act.estimatedBudget > 0) {
+              docChildren.push(new Paragraph({
+                children: [new TextRun({ text: `  Estimated Cost: ${act.estimatedBudget.toLocaleString()} ${currency}`, font: FONT, size: 16, bold: true, color: "444444" })],
+                spacing: { after: 120 }
               }));
             }
           });
@@ -851,6 +893,10 @@ export async function generateDocx(proposal: FullProposal): Promise<{ blob: Blob
         }
       } else if (isRisk && p.risks && p.risks.length > 0) {
         docChildren.push(createRiskTable(p.risks));
+      } else if (section.type === 'milestones' && p.milestones && p.milestones.length > 0) {
+        docChildren.push(createMilestoneTable(p.milestones));
+      } else if (section.type === 'timeline' && p.timeline && p.timeline.length > 0) {
+        docChildren.push(createTimelineTable(p.timeline));
       }
 
       // Optional: spacing after section
@@ -1282,7 +1328,7 @@ function createMobilityBudgetSection(budget: any[], currency: string, activities
         new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: itemCounter.toString(), bold: true, font: FONT, size: 14 })] })], shading: { fill: "F9F9F9" } }),
         new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.item, bold: true, font: FONT, size: 14 })] })], shading: { fill: "F9F9F9" } }),
         new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Category Total", italics: true, font: FONT, size: 14 })] })], shading: { fill: "F9F9F9" } }),
-        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.cost.toLocaleString(), bold: true, font: FONT, size: 14 })], alignment: AlignmentType.RIGHT })], shading: { fill: "F9F9F9" } }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (item.cost || 0).toLocaleString(), bold: true, font: FONT, size: 14 })], alignment: AlignmentType.RIGHT })], shading: { fill: "F9F9F9" } }),
       ]
     }));
     itemCounter++;
@@ -1335,9 +1381,71 @@ function createRiskTable(risks: any[]): Table {
       }),
       ...risks.map(r => new TableRow({
         children: [
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: r.risk, bold: true, font: FONT, size: BODY_SIZE })] })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: r.impact, font: FONT, size: BODY_SIZE })], alignment: AlignmentType.CENTER })] }),
-          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: r.mitigation, font: FONT, size: BODY_SIZE })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: r.risk, bold: true, font: FONT, size: 18 })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: r.impact, font: FONT, size: 18 })], alignment: AlignmentType.CENTER })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: r.mitigation, font: FONT, size: 18 })] })] }),
+        ]
+      }))
+    ],
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "EEEEEE" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "EEEEEE" },
+    }
+  });
+}
+
+function createMilestoneTable(milestones: any[]): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          createTableHeaderCell("Milestone"),
+          createTableHeaderCell("WP"),
+          createTableHeaderCell("Expected Date"),
+        ]
+      }),
+      ...milestones.map(m => new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: m.milestone, bold: true, font: FONT, size: 18 })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: m.workPackage || "-", font: FONT, size: 18 })], alignment: AlignmentType.CENTER })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: m.dueDate || "-", font: FONT, size: 18 })], alignment: AlignmentType.CENTER })] }),
+        ]
+      }))
+    ],
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "EEEEEE" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "EEEEEE" },
+    }
+  });
+}
+
+function createTimelineTable(timeline: any[]): Table {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          createTableHeaderCell("Phase/Stage"),
+          createTableHeaderCell("Start"),
+          createTableHeaderCell("End"),
+          createTableHeaderCell("Key Activities"),
+        ]
+      }),
+      ...timeline.map(t => new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: t.phase, bold: true, font: FONT, size: 18 })] })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `M${t.startMonth}`, font: FONT, size: 18 })], alignment: AlignmentType.CENTER })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `M${t.endMonth}`, font: FONT, size: 18 })], alignment: AlignmentType.CENTER })] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: (t.activities || []).join(", "), font: FONT, size: 16 })] })] }),
         ]
       }))
     ],

@@ -7,7 +7,7 @@ import { loadFullProposal, saveToSupabase } from './proposal_service.ts';
 import { analyzeUrl } from './ideation_service.ts';
 import { generateProposalFull } from './proposal_generator_service.ts';
 import { listPartners, getPartner, upsertPartner } from './partner_service.ts';
-import { importPartnerPdf } from './pdf_parser_service.ts';
+// import { importPartnerPdf } from './pdf_parser_service.ts';
 
 Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -248,6 +248,28 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify(data), { headers: corsHeaders });
         }
 
+        if (segments.includes('import-partner-pdf')) {
+            if (method === 'GET') {
+                return new Response(JSON.stringify({
+                    status: 'operational',
+                    route: 'import-partner-pdf',
+                    message: 'Endpoint is active. Use POST with multipart/form-data (file) to import partners.'
+                }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+            if (method !== 'POST') {
+                return new Response(JSON.stringify({ error: 'Must be POST', method, segments }), { status: 405, headers: corsHeaders });
+            }
+
+            const { importPartnerPdf } = await import('./pdf_parser_service.ts');
+            const formData = await req.formData();
+            const file = formData.get('file') as File;
+            if (!file) return new Response(JSON.stringify({ error: 'No file provided' }), { status: 400, headers: corsHeaders });
+
+            console.log(`[DEBUG] Importing partner PDF: ${file.name} (${file.size} bytes)`);
+            const data = await importPartnerPdf(file);
+            return new Response(JSON.stringify(data), { headers: corsHeaders });
+        }
+
         // --- 5.5. ANNEXES MANAGEMENT ---
         if (segments.includes('annexes')) {
             const { listAnnexes, getAnnex, createAnnex, updateAnnex, deleteAnnex } = await import('./annex_service.ts');
@@ -359,7 +381,18 @@ Deno.serve(async (req) => {
 
         return new Response(JSON.stringify({ error: 'Route not found', path, method, segments }), { status: 404, headers: corsHeaders });
     } catch (error: any) {
-        console.error(`[ERROR] ${path}:`, error);
-        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        console.error(`[CRITICAL ERROR] ${path}:`, error);
+        return new Response(JSON.stringify({
+            error: error.message || 'Internal server error',
+            stack: error.stack,
+            type: error.name,
+            path: path
+        }), {
+            status: 500,
+            headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+            }
+        });
     }
 });

@@ -267,7 +267,7 @@ STRICT JSON OUTPUT:
       "description": "...",
       "duration": "...",
       "isMobility": ${isMobility},
-      "activityType": "${isMobility ? 'e.g., job_shadowing, courses, etc.' : 'standard'}",
+      "activityType": ${isMobility ? '"e.g., job_shadowing, courses, etc."' : 'null'},
       "activities": [{"name": "Task", "description": "..."}],
       "deliverables": ["..."]
     }

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 
 import {
     ResponsiveSectionContent,
@@ -98,8 +97,8 @@ export function ViewerTabs({
                 </div>
             </TabsContent>
 
-            <TabsContent value="budget" className="mt-0">
-                <div className="max-w-7xl mx-auto space-y-8">
+            <TabsContent value="budget" className="mt-0 focus-visible:outline-none">
+                <div className="max-w-7xl mx-auto space-y-6">
                     {isMobility ? (
                         <MobilityBudgetSection
                             budget={proposal.budget || []}
@@ -107,9 +106,14 @@ export function ViewerTabs({
                             mobilityMetadata={proposal.mobilityMetadata}
                             activities={proposal.workPackages || []}
                             proposalId={proposalId || proposal.id}
+                            limit={budgetLimit}
+                            onRebalance={onRebalance}
                             onUpdateItem={onUpdateBudgetItem}
                             onAddItem={onAddBudgetItem}
                             onRemoveItem={onRemoveBudgetItem}
+                            onUpdateSubItem={onUpdateSubBudgetItem}
+                            onAddSubItem={onAddSubBudgetItem}
+                            onRemoveSubItem={onRemoveSubBudgetItem}
                         />
                     ) : (
                         <DynamicBudgetSection

@@ -135,13 +135,25 @@ export const generateProposalFull = async (params: any) => {
         console.log(`[PROPOSAL] Budget from expertKnowledge: ${targetBudget}`);
     }
 
+    if (!targetBudget && fundingScheme?.budget_rules?.type === 'lump_sum' && fundingScheme?.budget_rules?.options) {
+        const options = fundingScheme.budget_rules.options;
+        if (Array.isArray(options) && options.length > 0) {
+            targetBudget = Math.max(...options.map(Number));
+            console.log(`[PROPOSAL] Using max lump sum option as targetBudget: ${targetBudget}`);
+        }
+    }
+
     if (!targetBudget || targetBudget < 1000) {
         console.log(`[PROPOSAL] No clear budget constraint found. Setting targetBudget to 0 for dynamic calculation.`);
         targetBudget = 0;
     }
 
-    console.log(`[PROPOSAL] FINAL Rebalancing budget to: ${targetBudget}`);
-    rebalanceBudget(proposal, targetBudget);
+    if (targetBudget > 0) {
+        console.log(`[PROPOSAL] FINAL Rebalancing budget to: ${targetBudget}`);
+        rebalanceBudget(proposal, targetBudget);
+    } else {
+        console.log(`[PROPOSAL] Keeping original AI-generated budget (no target budget constraint found).`);
+    }
 
     console.log(`[PROPOSAL] Persisting proposal ${proposal.id} (Logic Mode: ${logicMode})`);
     await KV.set(`proposal-${proposal.id}`, proposal);

@@ -18,7 +18,7 @@ interface ProposalStepProps {
     onViewProposal?: (id: string) => void;
 }
 
-export function ProposalStep({
+export function StandardProposalStep({
     selectedIdea,
     analysisResult,
     selectedPartners,
@@ -205,70 +205,12 @@ export function ProposalStep({
                 </DialogContent>
             </Dialog>
 
-            {/* Mobility Metadata Quick View */}
-            {(proposal.logic_mode === 'mobility' || (proposal.fundingScheme as any)?.logic_mode === 'mobility') && (
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-4 rounded-2xl mb-8 flex items-center justify-between shadow-lg shadow-indigo-200 text-white">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
-                            <Sparkles className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold uppercase tracking-widest opacity-80">Project Archetype</h3>
-                            <p className="text-xl font-black">Erasmus+ Mobility Mode Activated</p>
-                        </div>
-                    </div>
-                    <div className="flex gap-4">
-                        <div className="text-right">
-                            <h4 className="text-[10px] font-bold uppercase opacity-70">Focus Area</h4>
-                            <p className="font-bold">{proposal.mobilityMetadata?.fieldOfApplication || 'Education & Training'}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {proposal.mobilityMetadata && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <Card className="bg-blue-50/50 border-blue-100 shadow-sm">
-                        <CardHeader className="p-3 pb-1">
-                            <CardTitle className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Field of Application</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-3 pt-0">
-                            <p className="text-sm font-bold text-blue-900">{proposal.mobilityMetadata.fieldOfApplication || 'Not specified'}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-indigo-50/50 border-indigo-100 shadow-sm">
-                        <CardHeader className="p-3 pb-1">
-                            <CardTitle className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">National Agency</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-3 pt-0">
-                            <p className="text-sm font-bold text-indigo-900">{proposal.mobilityMetadata.nationalAgency || 'Not specified'}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-purple-50/50 border-purple-100 shadow-sm">
-                        <CardHeader className="p-3 pb-1">
-                            <CardTitle className="text-[9px] font-bold text-purple-400 uppercase tracking-widest">Project Language</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-3 pt-0">
-                            <p className="text-sm font-bold text-purple-900">{proposal.mobilityMetadata.language || 'English'}</p>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-emerald-50/50 border-emerald-100 shadow-sm">
-                        <CardHeader className="p-3 pb-1">
-                            <CardTitle className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Logic Mode</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-3 pt-0">
-                            <p className="text-sm font-bold text-emerald-900 capitalize">{proposal.logic_mode || 'Mobility'}</p>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
-
             {/* Quick Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                     { label: 'Budget', value: `€${formatBudgetTotal(proposal.budget || [])}`, color: 'text-blue-600' },
                     {
-                        label: (proposal.fundingScheme?.logic_mode === 'mobility' || (proposal as any).logic_mode === 'mobility') ? 'Mobility Activities' : 'Work Packages',
+                        label: 'Work Packages',
                         value: proposal.workPackages?.length || 0,
                         color: 'text-indigo-600'
                     },
@@ -343,9 +285,7 @@ export function ProposalStep({
             {proposal.budget && proposal.budget.length > 0 && (
                 <Card className="bg-white border-slate-200 shadow-lg shadow-slate-200/50 overflow-hidden">
                     <CardHeader className="bg-slate-50 border-b border-slate-100 px-6 py-4">
-                        <CardTitle className="text-lg font-bold text-slate-800">
-                            {(proposal.fundingScheme?.logic_mode === 'mobility' || (proposal as any).logic_mode === 'mobility') ? 'Financial Plan Breakdown' : 'Budget Overview'}
-                        </CardTitle>
+                        <CardTitle className="text-lg font-bold text-slate-800">Budget Overview</CardTitle>
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">

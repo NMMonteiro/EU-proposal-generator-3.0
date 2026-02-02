@@ -1,19 +1,25 @@
-import { getGeminiModel, getFileManager } from './ai_service.ts';
+import { getGeminiModel } from './ai_service.ts';
 import { extractJSON } from './utils.ts';
 
-export const importPartnerPdf = async (file: File) => {
-    const arrayBuffer = await file.arrayBuffer();
-    const tempFileName = `partner-${Date.now()}.pdf`;
-    const tempFilePath = `/tmp/${tempFileName}`;
-    await Deno.writeFile(tempFilePath, new Uint8Array(arrayBuffer));
+// Helper to convert ArrayBuffer to Base64 in Deno environment
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
 
-    const fileManager = getFileManager();
-    const uploadResponse = await fileManager.uploadFile(tempFilePath, {
-        mimeType: 'application/pdf',
-        displayName: file.name,
-    });
+export const importPartnerPdf = async (file: File) => {
+    console.log(`[DEBUG] importPartnerPdf started for file: ${file.name}, size: ${file.size}`);
+    const arrayBuffer = await file.arrayBuffer();
+    const base64Data = arrayBufferToBase64(arrayBuffer);
+    console.log(`[DEBUG] Base64 conversion complete. Length: ${base64Data.length}`);
 
     const model = getGeminiModel({ temperature: 0.1, maxOutputTokens: 4096 });
+    console.log(`[DEBUG] Model initialized. calling generateContent...`);
 
     const prompt = `You are an expert at extracting structured data from EU Partner Information Forms (PIFs).
 
@@ -72,7 +78,7 @@ IMPORTANT EXTRACTION RULES:
 Return ONLY the JSON object, no additional text or markdown formatting.`;
 
     const result = await model.generateContent([
-        { fileData: { mimeType: uploadResponse.file.mimeType, fileUri: uploadResponse.file.uri } },
+        { inlineData: { mimeType: 'application/pdf', data: base64Data } },
         { text: prompt }
     ]);
 
@@ -111,19 +117,11 @@ Return ONLY the JSON object, no additional text or markdown formatting.`;
  */
 export const importLibraryPdf = async (file: File) => {
     const arrayBuffer = await file.arrayBuffer();
-    const tempFileName = `library-${Date.now()}.pdf`;
-    const tempFilePath = `/tmp/${tempFileName}`;
-    await Deno.writeFile(tempFilePath, new Uint8Array(arrayBuffer));
-
-    const fileManager = getFileManager();
-    const uploadResponse = await fileManager.uploadFile(tempFilePath, {
-        mimeType: 'application/pdf',
-        displayName: file.name,
-    });
+    const base64Data = arrayBufferToBase64(arrayBuffer);
 
     const model = getGeminiModel({ temperature: 0.1 });
     const result = await model.generateContent([
-        { fileData: { mimeType: uploadResponse.file.mimeType, fileUri: uploadResponse.file.uri } },
+        { inlineData: { mimeType: 'application/pdf', data: base64Data } },
         { text: "Extract the full text of this document. Focus on the structure of application sections, labels, and specific instructions for applicants." }
     ]);
 
@@ -138,15 +136,7 @@ export const importLibraryPdf = async (file: File) => {
  */
 export const importExamplePdf = async (file: File) => {
     const arrayBuffer = await file.arrayBuffer();
-    const tempFileName = `example-${Date.now()}.pdf`;
-    const tempFilePath = `/tmp/${tempFileName}`;
-    await Deno.writeFile(tempFilePath, new Uint8Array(arrayBuffer));
-
-    const fileManager = getFileManager();
-    const uploadResponse = await fileManager.uploadFile(tempFilePath, {
-        mimeType: 'application/pdf',
-        displayName: file.name,
-    });
+    const base64Data = arrayBufferToBase64(arrayBuffer);
 
     const model = getGeminiModel({ temperature: 0.2 });
     const prompt = `You are a Grant Evaluator. Extract the full technical content of this successful proposal.
@@ -158,7 +148,7 @@ export const importExamplePdf = async (file: File) => {
     `;
 
     const result = await model.generateContent([
-        { fileData: { mimeType: uploadResponse.file.mimeType, fileUri: uploadResponse.file.uri } },
+        { inlineData: { mimeType: 'application/pdf', data: base64Data } },
         { text: prompt }
     ]);
 
