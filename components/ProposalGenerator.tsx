@@ -6,6 +6,7 @@ import { MobilityIdeasStep } from './MobilityIdeasStep';
 import { PartnerSelectionModal } from './PartnerSelectionModal';
 import { StandardProposalStep } from './StandardProposalStep';
 import { MobilityProposalStep } from './MobilityProposalStep';
+import { ProgressSteps, type StepItem } from './patterns';
 import type { AnalysisResult, Idea, FullProposal } from '../types/proposal';
 
 type Step = 'scheme-selection' | 'url-input' | 'ideas' | 'partners' | 'proposal';
@@ -91,8 +92,20 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
     setProposal(null);
   };
 
+  const steps: StepItem[] = [
+    { id: 'scheme-selection', label: 'Funding', description: 'Select Scheme' },
+    { id: 'url-input', label: 'Context', description: 'Project Input' },
+    { id: 'ideas', label: 'Concept', description: 'Generate Ideas' },
+    { id: 'partners', label: 'Consortium', description: 'Select Partners' },
+    { id: 'proposal', label: 'Finalize', description: 'View Proposal' },
+  ];
+
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <ProgressSteps steps={steps} currentStepId={currentStep} />
+      </div>
+
       {currentStep === 'scheme-selection' && (
         <SchemeSelectorStep onSelect={handleSchemeSelect} />
       )}

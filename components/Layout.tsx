@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
+import { Breadcrumbs } from './patterns';
 
 export function Layout() {
     const location = useLocation();
@@ -158,6 +159,7 @@ export function Layout() {
             {/* Main Content */}
             <main className="flex-1 md:min-h-screen pt-16 md:pt-0 overflow-x-hidden">
                 <div className="container mx-auto max-w-7xl animate-in fade-in duration-500">
+                    <Breadcrumbs className="mb-6" />
                     <Outlet />
                 </div>
             </main>

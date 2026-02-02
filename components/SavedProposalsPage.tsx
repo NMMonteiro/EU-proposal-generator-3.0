@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import { serverUrl, publicAnonKey } from '../utils/supabase/info';
 import type { FullProposal } from '../types/proposal';
+import { ConfirmDialog } from './patterns';
+
 
 interface SavedProposalsPageProps {
   onViewProposal: (id: string) => void;
@@ -16,7 +18,9 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'az' | 'za'>('newest');
+
   const [filterMode, setFilterMode] = useState<'all' | 'standard' | 'mobility'>('all');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProposals();
@@ -45,13 +49,15 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this proposal?')) {
-      return;
-    }
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteId) return;
 
     try {
-      const response = await fetch(`${serverUrl}/proposals/${id}`, {
+      const response = await fetch(`${serverUrl}/proposals/${deleteId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${publicAnonKey}`,
@@ -62,7 +68,7 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
         throw new Error('Failed to delete proposal');
       }
 
-      setProposals(proposals.filter(p => p.id !== id));
+      setProposals(proposals.filter(p => p.id !== deleteId));
       toast.success('Proposal deleted');
     } catch (error: any) {
       console.error('Delete error:', error);
@@ -211,7 +217,7 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
                     Open Proposal
                   </Button>
                   <Button
-                    onClick={() => handleDelete(proposal.id!)}
+                    onClick={() => handleDeleteClick(proposal.id!)}
                     variant="ghost"
                     className="flex-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl"
                     size="sm"
@@ -224,6 +230,17 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
           ))}
         </div>
       )}
+
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={executeDelete}
+        title="Delete Proposal"
+        description="Are you sure you want to permanently delete this proposal? This action cannot be undone."
+        variant="destructive"
+        confirmLabel="Delete Proposal"
+      />
     </div>
   );
 }

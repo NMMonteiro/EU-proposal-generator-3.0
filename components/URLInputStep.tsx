@@ -17,6 +17,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { AnalysisResult } from '../types/proposal';
 import type { FundingScheme } from '../types/funding-scheme';
+import { InfoTooltip } from './patterns';
 
 interface URLInputStepProps {
   onSubmit: (result: AnalysisResult, url: string, userPrompt: string, fundingSchemeId: string | null) => void;
@@ -175,6 +176,7 @@ export function URLInputStep({ onSubmit, onBack, initialSchemeId }: URLInputStep
                 <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-indigo-600" />
                   PROJECT DESCRIPTION / CALL TEXT (MANDATORY)
+                  <InfoTooltip content="Paste the specific text from the EU funding call or your project concept note. The AI uses this to match objectives and generating specific content." />
                 </label>
                 <Textarea
                   placeholder="Paste the full funding call text here, or describe your project idea in detail. Include specific focus areas, desired impact, and partner requirements..."
@@ -195,6 +197,7 @@ export function URLInputStep({ onSubmit, onBack, initialSchemeId }: URLInputStep
                 <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                   <Globe className="h-4 w-4 text-slate-400" />
                   SUPPORTING URL (OPTIONAL)
+                  <InfoTooltip content="Link to the official Funding & Tenders portal page. The system will crawl this to extract budget rules and technical constraints." />
                 </label>
                 <div className="relative group">
                   <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
@@ -264,7 +267,10 @@ export function URLInputStep({ onSubmit, onBack, initialSchemeId }: URLInputStep
               </div>
 
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Switch Template</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  Switch Template
+                  <InfoTooltip content="Changing the template alters the sections, budget rules, and logic mode (Mobility vs Standard) used for generation." />
+                </label>
                 <select
                   value={selectedSchemeId || ''}
                   onChange={(e) => setSelectedSchemeId(e.target.value || null)}
