@@ -7,10 +7,11 @@ interface SkeletonProps {
 export function Skeleton({ className = '' }: SkeletonProps) {
     return (
         <div
-            className={`animate-pulse bg-slate-200 rounded ${className}`}
+            className={`animate-pulse relative overflow-hidden bg-slate-200/60 rounded ${className}`}
             role="status"
             aria-label="Loading..."
         >
+            <div className="shimmer absolute inset-0" />
             <span className="sr-only">Loading...</span>
         </div>
     );
@@ -18,13 +19,13 @@ export function Skeleton({ className = '' }: SkeletonProps) {
 
 export function ProposalCardSkeleton() {
     return (
-        <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm">
-            <Skeleton className="h-6 w-3/4 mb-4" />
-            <Skeleton className="h-4 w-1/2 mb-2" />
-            <Skeleton className="h-4 w-2/3 mb-4" />
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm premium-card">
+            <Skeleton className="h-6 w-3/4 mb-4 rounded-lg" />
+            <Skeleton className="h-4 w-1/2 mb-2 rounded-md" />
+            <Skeleton className="h-4 w-2/3 mb-4 rounded-md" />
             <div className="flex gap-2 mt-4">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-9 w-20 rounded-xl" />
+                <Skeleton className="h-9 w-24 rounded-xl" />
             </div>
         </div>
     );
@@ -32,14 +33,14 @@ export function ProposalCardSkeleton() {
 
 export function PartnerCardSkeleton() {
     return (
-        <div className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm">
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm premium-card">
             <div className="flex items-start gap-4">
                 <Skeleton className="w-12 h-12 rounded-full flex-shrink-0" />
                 <div className="flex-1">
-                    <Skeleton className="h-5 w-2/3 mb-2" />
-                    <Skeleton className="h-4 w-1/2 mb-3" />
-                    <Skeleton className="h-3 w-full mb-2" />
-                    <Skeleton className="h-3 w-4/5" />
+                    <Skeleton className="h-5 w-2/3 mb-2 rounded-md" />
+                    <Skeleton className="h-4 w-1/2 mb-3 rounded-md" />
+                    <Skeleton className="h-3 w-full mb-2 rounded-sm" />
+                    <Skeleton className="h-3 w-4/5 rounded-sm" />
                 </div>
             </div>
         </div>

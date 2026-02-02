@@ -34,7 +34,11 @@ export function ProgressSteps({ steps, currentStepId, className }: ProgressSteps
                     const isLast = index === steps.length - 1;
 
                     return (
-                        <li key={step.label} className={cn("relative flex items-center", isLast ? "flex-none" : "flex-1")}>
+                        <li
+                            key={step.label}
+                            className={cn("relative flex items-center", isLast ? "flex-none" : "flex-1")}
+                            aria-current={isCurrent ? "step" : undefined}
+                        >
                             {/* Step indicator */}
                             <div className="group flex items-center">
                                 <span className="flex items-center px-6 py-4 text-sm font-medium">

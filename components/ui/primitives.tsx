@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'secondary' | 'destructive' | 'outline' | 'ghost', asChild?: boolean }>(({ className, variant = 'default', asChild, ...props }, ref) => {
   const baseStyles = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2";
   const variants = {
-    default: "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90 shadow-[0_0_15px_rgba(59,130,246,0.5)] border border-primary/20",
+    default: "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90 glow-button border border-primary/20",
     secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-white/5",
     destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
     outline: "border border-input bg-transparent hover:bg-accent/10 hover:text-accent text-foreground hover:border-accent/50",
@@ -22,7 +22,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
 });
 
 export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={`rounded-xl border border-border bg-card text-card-foreground shadow-sm backdrop-blur-sm ${className}`} {...props} />
+  <div ref={ref} className={`rounded-xl border border-border bg-card text-card-foreground shadow-sm backdrop-blur-sm premium-card ${className}`} {...props} />
 ));
 
 export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (

@@ -23,7 +23,7 @@ export function EmptyState({
 }: EmptyStateProps) {
     return (
         <div
-            className={`flex flex-col items-center justify-center py-12 px-4 text-center ${className}`}
+            className={`flex flex-col items-center justify-center py-12 px-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-500 ${className}`}
             role="status"
             aria-live="polite"
         >

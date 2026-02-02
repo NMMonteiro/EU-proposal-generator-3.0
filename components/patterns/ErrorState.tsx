@@ -65,11 +65,11 @@ export function ErrorState({
 
     return (
         <div
-            className={`flex flex-col items-center justify-center py-12 px-4 ${className}`}
+            className={`flex flex-col items-center justify-center py-12 px-4 animate-in fade-in slide-in-from-top-4 duration-500 ${className}`}
             role="alert"
             aria-live="assertive"
         >
-            <div className={`w-full max-w-md rounded-lg border ${config.borderColor} ${config.bgColor} p-6 shadow-sm`}>
+            <div className={`w-full max-w-md rounded-2xl border ${config.borderColor} ${config.bgColor} p-6 shadow-lg shadow-slate-200/50 backdrop-blur-sm`}>
                 <div className="flex items-start gap-4">
                     <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm`}>
                         <Icon className={`w-6 h-6 ${config.iconColor}`} aria-hidden="true" />

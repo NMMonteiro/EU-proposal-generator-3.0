@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import { serverUrl, publicAnonKey } from '../utils/supabase/info';
 import type { FullProposal } from '../types/proposal';
-import { ConfirmDialog } from './patterns';
+import { ConfirmDialog, EmptyState } from './patterns';
 
 
 interface SavedProposalsPageProps {
@@ -171,18 +171,24 @@ export function SavedProposalsPage({ onViewProposal }: SavedProposalsPageProps) 
       </div>
 
       {filteredProposals.length === 0 ? (
-        <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200">
-          <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Search className="h-8 w-8 text-slate-300" />
-          </div>
-          <p className="text-slate-500 font-medium">
-            {searchQuery ? 'No proposals match your search criteria' : 'You haven\'t saved any proposals yet'}
-          </p>
-        </div>
+        <EmptyState
+          icon={Search}
+          title={searchQuery ? 'No matches found' : 'No proposals yet'}
+          description={searchQuery ? 'Try adjusting your search criteria or filters.' : 'Your generated proposals will appear here once you save them.'}
+          action={searchQuery ? {
+            label: 'Clear Search',
+            onClick: () => setSearchQuery('')
+          } : undefined}
+          className="bg-white rounded-3xl border border-dashed border-slate-200"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProposals.map((proposal) => (
-            <Card key={proposal.id} className="bg-white border-slate-200 hover:border-blue-400 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 rounded-2xl overflow-hidden group">
+          {filteredProposals.map((proposal, index) => (
+            <Card
+              key={proposal.id}
+              className="bg-white border-slate-200 hover:border-blue-400 hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 rounded-2xl overflow-hidden group animate-in fade-in slide-in-from-bottom-4"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
               <CardHeader className="bg-slate-50/50 border-b border-slate-50 px-6 py-5 group-hover:bg-blue-50/30 transition-colors">
                 <CardTitle className="text-base font-bold text-slate-900 line-clamp-2 leading-snug tracking-tight">{proposal.title}</CardTitle>
                 <CardDescription className="line-clamp-1 text-slate-500 font-medium text-xs mt-1">

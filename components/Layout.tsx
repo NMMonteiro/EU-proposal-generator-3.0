@@ -134,6 +134,9 @@ export function Layout() {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 flex">
+            <a href="#main-content" className="skip-link">
+                Skip to main content
+            </a>
             {/* Desktop Sidebar */}
             <div className="hidden md:block w-64 shrink-0">
                 <div className="fixed w-64 h-full">
@@ -157,7 +160,7 @@ export function Layout() {
             </div>
 
             {/* Main Content */}
-            <main className="flex-1 md:min-h-screen pt-16 md:pt-0 overflow-x-hidden">
+            <main id="main-content" className="flex-1 md:min-h-screen pt-16 md:pt-0 overflow-x-hidden focus:outline-none" tabIndex={-1}>
                 <div className="container mx-auto max-w-7xl animate-in fade-in duration-500">
                     <Breadcrumbs className="mb-6" />
                     <Outlet />

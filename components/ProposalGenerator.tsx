@@ -107,84 +107,94 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
       </div>
 
       {currentStep === 'scheme-selection' && (
-        <SchemeSelectorStep onSelect={handleSchemeSelect} />
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <SchemeSelectorStep onSelect={handleSchemeSelect} />
+        </div>
       )}
 
       {currentStep === 'url-input' && (
-        <URLInputStep
-          onSubmit={handleUrlSubmit}
-          onBack={handleBackToScheme}
-          initialSchemeId={selectedSchemeId}
-        />
+        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+          <URLInputStep
+            onSubmit={handleUrlSubmit}
+            onBack={handleBackToScheme}
+            initialSchemeId={selectedSchemeId}
+          />
+        </div>
       )}
 
       {currentStep === 'ideas' && analysisResult && (
-        logicMode === 'mobility' ? (
-          <MobilityIdeasStep
-            analysisResult={analysisResult}
-            sourceUrl={sourceUrl}
-            userPrompt={userPrompt}
-            onSelectIdea={handleSelectIdea}
-            onBack={handleBackToUrl}
-          />
-        ) : (
-          <StandardIdeasStep
-            analysisResult={analysisResult}
-            sourceUrl={sourceUrl}
-            userPrompt={userPrompt}
-            onSelectIdea={handleSelectIdea}
-            onBack={handleBackToUrl}
-          />
-        )
+        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+          {logicMode === 'mobility' ? (
+            <MobilityIdeasStep
+              analysisResult={analysisResult}
+              sourceUrl={sourceUrl}
+              userPrompt={userPrompt}
+              onSelectIdea={handleSelectIdea}
+              onBack={handleBackToUrl}
+            />
+          ) : (
+            <StandardIdeasStep
+              analysisResult={analysisResult}
+              sourceUrl={sourceUrl}
+              userPrompt={userPrompt}
+              onSelectIdea={handleSelectIdea}
+              onBack={handleBackToUrl}
+            />
+          )}
+        </div>
       )}
 
       {currentStep === 'partners' && selectedIdea && (
-        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Step 3: Select Partners</h2>
-            <p className="text-slate-500">Select the organizations that will participate in this project.</p>
-          </div>
+        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+          <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Step 3: Select Partners</h2>
+              <p className="text-slate-500">Select the organizations that will participate in this project.</p>
+            </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-2xl w-full text-center space-y-6 shadow-xl shadow-slate-200/50 transition-all">
-            <p className="text-slate-600 leading-relaxed font-medium">
-              Click the button below to browse and select partners from your database.
-              The AI will use their profiles to tailor the technical and consortium sections.
-            </p>
-            <PartnerSelectionModal
-              isOpen={true}
-              onClose={handleBackToIdeas}
-              onConfirm={handlePartnersConfirmed}
-              selectedIdeaTitle={selectedIdea.title}
-              proposalContext={selectedIdea.description}
-            />
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-2xl w-full text-center space-y-6 shadow-xl shadow-slate-200/50 transition-all">
+              <p className="text-slate-600 leading-relaxed font-medium">
+                Click the button below to browse and select partners from your database.
+                The AI will use their profiles to tailor the technical and consortium sections.
+              </p>
+              <PartnerSelectionModal
+                isOpen={true}
+                onClose={handleBackToIdeas}
+                onConfirm={handlePartnersConfirmed}
+                selectedIdeaTitle={selectedIdea.title}
+                proposalContext={selectedIdea.description}
+              />
+            </div>
           </div>
         </div>
       )}
 
       {currentStep === 'proposal' && selectedIdea && analysisResult && (
-        logicMode === 'mobility' ? (
-          <MobilityProposalStep
-            selectedIdea={selectedIdea}
-            analysisResult={{ ...analysisResult, logic_mode: 'mobility' }} // Force it down
-            selectedPartners={selectedPartners}
-            userPrompt={userPrompt}
-            selectedSchemeId={selectedSchemeId}
-            onProposalGenerated={handleProposalGenerated}
-            onBack={handleBackToPartners}
-            onViewProposal={onViewProposal}
-          />
-        ) : (
-          <StandardProposalStep
-            selectedIdea={selectedIdea}
-            analysisResult={analysisResult}
-            selectedPartners={selectedPartners}
-            userPrompt={userPrompt}
-            selectedSchemeId={selectedSchemeId}
-            onProposalGenerated={handleProposalGenerated}
-            onBack={handleBackToPartners}
-            onViewProposal={onViewProposal}
-          />
-        )
+        <div className="animate-in fade-in zoom-in-95 duration-500">
+          {logicMode === 'mobility' ? (
+            <MobilityProposalStep
+              selectedIdea={selectedIdea}
+              analysisResult={{ ...analysisResult, logic_mode: 'mobility' }} // Force it down
+              selectedPartners={selectedPartners}
+              userPrompt={userPrompt}
+              selectedSchemeId={selectedSchemeId}
+              onProposalGenerated={handleProposalGenerated}
+              onBack={handleBackToPartners}
+              onViewProposal={onViewProposal}
+            />
+          ) : (
+            <StandardProposalStep
+              selectedIdea={selectedIdea}
+              analysisResult={analysisResult}
+              selectedPartners={selectedPartners}
+              userPrompt={userPrompt}
+              selectedSchemeId={selectedSchemeId}
+              onProposalGenerated={handleProposalGenerated}
+              onBack={handleBackToPartners}
+              onViewProposal={onViewProposal}
+            />
+          )}
+        </div>
       )}
     </div>
   );
