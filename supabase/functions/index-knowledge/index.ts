@@ -97,18 +97,39 @@ serve(async (req) => {
       throw new Error('AI returned malformed data format')
     }
 
-    console.log(`[INDEX] Inserting ${chunks.length} chunks into database...`)
+    console.log(`[INDEX] Generating embeddings for ${chunks.length} chunks...`)
+    const embeddingModel = genAI.getGenerativeModel({ model: 'text-embedding-004' })
+
+    const enrichedChunks = await Promise.all(chunks.map(async (chunk) => {
+      try {
+        const embResult = await embeddingModel.embedContent(chunk.content)
+        return {
+          source_name: sourceName,
+          content: chunk.content,
+          embedding: embResult.embedding.values,
+          metadata: {
+            type: chunk.type,
+            keywords: chunk.keywords,
+            source_id: fileUrl
+          }
+        }
+      } catch (e) {
+        console.warn(`[INDEX] Embedding failed for a chunk, skipping embedding field for this one.`)
+        return {
+          source_name: sourceName,
+          content: chunk.content,
+          metadata: {
+            type: chunk.type,
+            keywords: chunk.keywords,
+            source_id: fileUrl
+          }
+        }
+      }
+    }))
+
     const { error: insertError } = await supabaseClient
       .from('global_knowledge')
-      .insert(chunks.map(chunk => ({
-        source_name: sourceName,
-        content: chunk.content,
-        metadata: {
-          type: chunk.type,
-          keywords: chunk.keywords,
-          source_id: fileUrl
-        }
-      })))
+      .insert(enrichedChunks)
 
     if (insertError) {
       console.error('[INDEX] Database Insert Failed:', insertError)

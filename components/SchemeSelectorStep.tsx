@@ -3,7 +3,7 @@ import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { LucideIcon, Sparkles, GraduationCap, Users, Globe, BookOpen, Calculator, Rocket, Search, X } from 'lucide-react';
-import { supabase } from '../utils/supabase';
+import { serverUrl } from '../utils/supabase/info';
 
 interface FundingScheme {
   id: string;
@@ -34,14 +34,17 @@ export function SchemeSelectorStep({ onSelect }: SchemeSelectorStepProps) {
 
   useEffect(() => {
     async function fetchSchemes() {
-      const { data, error } = await supabase
-        .from('funding_schemes')
-        .select('id, name, description, logic_mode')
-        .eq('is_active', true)
-        .order('is_default', { ascending: false });
-
-      if (data) setSchemes(data);
-      setLoading(false);
+      try {
+        const res = await fetch(`${serverUrl}/funding-schemes`);
+        if (!res.ok) throw new Error('Failed to fetch schemes');
+        const data = await res.json();
+        // Only show active schemes in the selector step
+        setSchemes((data || []).filter((s: any) => s.is_active));
+      } catch (err) {
+        console.error('Error fetching schemes:', err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchSchemes();
   }, []);

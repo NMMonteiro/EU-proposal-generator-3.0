@@ -1,4 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { embedText } from './ai_service.ts';
 
 export interface KnowledgeChunk {
     content: string;
@@ -20,42 +21,43 @@ export class KnowledgeRetriever {
     }
 
     /**
-     * Retrieves relevant intelligence chunks based on provided keywords
+     * Retrieves relevant intelligence chunks based on semantic similarity
      */
-    async getRelevantKnowledge(keywords: string[], limit: number = 5): Promise<{ content: string; sources: string[] }> {
+    async getRelevantKnowledge(query: string, limit: number = 8): Promise<{ content: string; sources: string[] }> {
         try {
-            if (!keywords || keywords.length === 0) return { content: '', sources: [] };
+            if (!query) return { content: '', sources: [] };
 
-            console.log(`[RAG] Searching knowledge for: ${keywords.join(', ')}`);
+            console.log(`[RAG] Semantic search for: "${query.substring(0, 50)}..."`);
 
-            // Loop through keywords to avoid complex OR strings that break PostgREST
-            const results: any[] = [];
-            for (const kw of keywords.slice(0, 5)) { // Limit to top 5 keywords for speed
-                const { data, error } = await this.supabase
-                    .from('global_knowledge')
-                    .select('source_name, content, metadata')
-                    .ilike('content', `%${kw}%`)
-                    .limit(3);
+            // 1. Generate embedding for query
+            const embedding = await embedText(query);
 
-                if (data) results.push(...data);
-                if (error) console.warn(`[RAG] Keyword ${kw} failed:`, error.message);
+            // 2. Search using vector similarity RPC
+            const { data: results, error } = await this.supabase.rpc('match_knowledge', {
+                query_embedding: embedding,
+                match_threshold: 0.35, // Adjust based on required precision
+                match_count: limit
+            });
+
+            if (error) {
+                console.warn('[RAG] Vector search failed, falling back to keyword search:', error.message);
+                // Fallback to keyword search if RPC fails
+                return this.getFallbackKnowledge(query, limit);
             }
 
-            if (results.length === 0) {
-                console.log('[RAG] No relevant chunks found in library.');
+            if (!results || results.length === 0) {
+                console.log('[RAG] No semantic matches found.');
                 return { content: '', sources: [] };
             }
 
-            // Deduplicate results by content
-            const uniqueResults = Array.from(new Map(results.map(item => [item.content, item])).values());
-            console.log(`[RAG] Found ${uniqueResults.length} unique intelligence chunks.`);
+            console.log(`[RAG] Found ${results.length} semantic matches.`);
 
-            const content = uniqueResults.map(chunk => `
---- EXPERT KNOWLEDGE: ${chunk.source_name} (${chunk.metadata?.type || 'Guideline'}) ---
+            const content = results.map((chunk: any) => `
+### EXPERT DIRECTIVE: ${chunk.source_name} (${chunk.metadata?.type || 'Guideline'}) [Sim: ${(chunk.similarity * 100).toFixed(1)}%]
 ${chunk.content}
 `).join('\n');
 
-            const sources = Array.from(new Set(uniqueResults.map(r => r.source_name)));
+            const sources = Array.from(new Set(results.map((r: any) => String(r.source_name))));
 
             return { content, sources };
 
@@ -63,6 +65,26 @@ ${chunk.content}
             console.error('[RAG] Failed to retrieve knowledge:', e);
             return { content: '', sources: [] };
         }
+    }
+
+    private async getFallbackKnowledge(query: string, limit: number): Promise<{ content: string; sources: string[] }> {
+        const keywords = KnowledgeRetriever.extractSmartKeywords(query);
+        const results: any[] = [];
+        for (const kw of keywords.slice(0, 3)) {
+            const { data } = await this.supabase
+                .from('global_knowledge')
+                .select('source_name, content, metadata')
+                .ilike('content', `%${kw}%`)
+                .limit(2);
+            if (data) results.push(...data);
+        }
+
+        const content = results.map(chunk => `
+--- [KEYWORD MATCH] EXPERT KNOWLEDGE: ${chunk.source_name} ---
+${chunk.content}
+`).join('\n');
+        const sources = Array.from(new Set(results.map(r => r.source_name)));
+        return { content, sources };
     }
 
     /**

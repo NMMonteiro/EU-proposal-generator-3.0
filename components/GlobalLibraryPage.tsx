@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Book,
     Upload,
@@ -22,7 +22,9 @@ export function GlobalLibraryPage() {
     const [knowledge, setKnowledge] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         loadKnowledge();
@@ -31,13 +33,23 @@ export function GlobalLibraryPage() {
     const loadKnowledge = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('global_knowledge')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setKnowledge(data || []);
+            const response = await fetch(`${functionsUrl}/knowledge`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${publicAnonKey}`,
+                    'apikey': publicAnonKey
+                }
+            });
+            if (!response.ok) throw new Error('Network response was not ok');
+            const data = await response.json();
+            
+            const sortedData = (data || []).sort((a: any, b: any) => {
+                const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return timeB - timeA;
+            });
+            
+            setKnowledge(sortedData);
         } catch (error: any) {
             toast.error('Failed to load library knowledge');
             console.error(error);
@@ -48,53 +60,69 @@ export function GlobalLibraryPage() {
 
     const handleSync = async () => {
         setIsSyncing(true);
-        toast.info('Scanning storage for new guidelines...');
+        toast.info('Scanning and synchronizing local guidelines...');
 
         try {
-            // 1. List files in the bucket
-            const { data: files, error: listError } = await supabase.storage.from('global-library').list();
-            if (listError) throw listError;
-
-            if (!files || files.length === 0) {
-                toast.error('No PDF files found in the "global-library" bucket.');
-                return;
-            }
-
-            toast.info(`Found ${files.length} files. Starting deep analysis with Gemini 2.0...`);
-
-            // 2. Index each file
-            let totalChunks = 0;
-            for (const file of files) {
-                if (file.name === '.emptyFolderPlaceholder') continue;
-
-                toast.loading(`Analyzing ${file.name}...`, { id: 'sync-progress' });
-
-                const response = await fetch(`${functionsUrl}/index-knowledge`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${publicAnonKey}`,
-                        'apikey': publicAnonKey
-                    },
-                    body: JSON.stringify({
-                        fileUrl: file.name,
-                        sourceName: file.name.replace('.pdf', '')
-                    })
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    totalChunks += result.count;
+            const response = await fetch(`${functionsUrl}/knowledge/sync`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${publicAnonKey}`,
+                    'apikey': publicAnonKey
                 }
-            }
+            });
 
-            toast.success(`Sync complete! Extracted ${totalChunks} intelligence chunks.`, { id: 'sync-progress' });
-            await loadKnowledge();
+            if (!response.ok) throw new Error('Sync endpoint returned an error');
+            const result = await response.json();
+            if (result.success) {
+                toast.success(result.message);
+                await loadKnowledge();
+            } else {
+                toast.error(result.error || 'Sync failed');
+            }
         } catch (error: any) {
             console.error('Sync failed:', error);
             toast.error(`Sync failed: ${error.message}`);
         } finally {
             setIsSyncing(false);
+        }
+    };
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        const toastId = toast.loading(`Uploading and parsing ${file.name}...`);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`${functionsUrl}/import-library-pdf`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${publicAnonKey}`,
+                    'apikey': publicAnonKey
+                },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Upload failed');
+            const result = await response.json();
+            
+            if (result.success) {
+                toast.success(result.message || `Indexed ${result.count} chunks from ${file.name}!`, { id: toastId });
+                await loadKnowledge();
+            } else {
+                toast.error(result.error || 'Failed to index playbook', { id: toastId });
+            }
+        } catch (error: any) {
+            console.error('Upload failed:', error);
+            toast.error(`Upload error: ${error.message}`, { id: toastId });
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -124,6 +152,26 @@ export function GlobalLibraryPage() {
                     </p>
                 </div>
                 <div className="flex gap-3">
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept=".pdf"
+                        onChange={handleFileUpload}
+                    />
+                    <Button
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="border-slate-200 text-slate-600 hover:bg-slate-50"
+                    >
+                        {isUploading ? (
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                            <Upload className="w-4 h-4 mr-2" />
+                        )}
+                        Upload Playbook
+                    </Button>
                     <Button
                         variant="outline"
                         onClick={loadKnowledge}

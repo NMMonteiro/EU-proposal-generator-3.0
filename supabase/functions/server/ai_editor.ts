@@ -24,6 +24,8 @@ export async function handleAiEdit(params: any) {
     TASK:
     Rewrite this section based on the instruction. 
     Maintain professional, persuasive, and data-driven language.
+    CRITICAL: Avoid generic fluff (e.g. "We will do this because it is important"). Use specific, quantified methodology.
+    Use specific EU terminology.
     Ensure the output is in HTML format (use <p>, <h3>, <ul>, <li> as appropriate).
     Do NOT include any other text, just the new content.
     
@@ -66,7 +68,7 @@ export async function handleCopilotChat(params: any) {
     const { KnowledgeRetriever } = await import('./knowledge_retriever.ts');
     const retriever = new KnowledgeRetriever();
     const smartKeywords = KnowledgeRetriever.extractSmartKeywords(`${proposal.fundingScheme?.name || ''} ${message}`);
-    const expertKnowledge = await retriever.getRelevantKnowledge(smartKeywords, 3);
+    const expertKnowledge = await retriever.getRelevantKnowledge(smartKeywords.join(' '), 3);
 
     const logicMode = proposal.logic_mode || proposal.fundingScheme?.logic_mode || (proposal.mobilityMetadata ? 'mobility' : 'standard');
     const mobilityRules = proposal.fundingScheme?.template_json?.mobilityRules;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
+import { serverUrl } from '../utils/supabase/info';
 import { FundingScheme, FundingSchemeTemplate } from '../types/funding-scheme';
 import { TemplateEditor } from './TemplateEditor';
 import { LogoUpload } from './LogoUpload';
@@ -23,6 +23,7 @@ import {
     Info,
     Brain
 } from 'lucide-react';
+import { ExpertIntelligenceView } from './patterns';
 import { toast } from 'sonner';
 
 export function FundingSchemeCRUD() {
@@ -71,12 +72,9 @@ export function FundingSchemeCRUD() {
     const loadSchemes = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('funding_schemes')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const res = await fetch(`${serverUrl}/funding-schemes`);
+            if (!res.ok) throw new Error('Failed to fetch schemes');
+            const data = await res.json();
             setSchemes(data || []);
         } catch (error) {
             console.error('Error loading schemes:', error);
@@ -147,35 +145,37 @@ export function FundingSchemeCRUD() {
 
             if (editingScheme) {
                 // Update existing scheme
-                const { error } = await supabase
-                    .from('funding_schemes')
-                    .update({
-                        name: formData.name,
-                        description: formData.description,
-                        logo_url: formData.logo_url,
-                        is_default: formData.is_default,
-                        is_active: formData.is_active,
-                        template_json: formData.template_json,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', editingScheme.id);
-
-                if (error) throw error;
-                toast.success('Funding scheme updated successfully');
-            } else {
-                // Create new scheme
-                const { error } = await supabase
-                    .from('funding_schemes')
-                    .insert({
+                const res = await fetch(`${serverUrl}/funding-schemes/${editingScheme.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         name: formData.name,
                         description: formData.description,
                         logo_url: formData.logo_url,
                         is_default: formData.is_default,
                         is_active: formData.is_active,
                         template_json: formData.template_json
-                    });
+                    })
+                });
 
-                if (error) throw error;
+                if (!res.ok) throw new Error('Failed to update funding scheme');
+                toast.success('Funding scheme updated successfully');
+            } else {
+                // Create new scheme
+                const res = await fetch(`${serverUrl}/funding-schemes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: formData.name,
+                        description: formData.description,
+                        logo_url: formData.logo_url,
+                        is_default: formData.is_default,
+                        is_active: formData.is_active,
+                        template_json: formData.template_json
+                    })
+                });
+
+                if (!res.ok) throw new Error('Failed to create funding scheme');
                 toast.success('Funding scheme created successfully');
             }
 
@@ -193,12 +193,11 @@ export function FundingSchemeCRUD() {
         }
 
         try {
-            const { error } = await supabase
-                .from('funding_schemes')
-                .delete()
-                .eq('id', id);
+            const res = await fetch(`${serverUrl}/funding-schemes/${id}`, {
+                method: 'DELETE'
+            });
 
-            if (error) throw error;
+            if (!res.ok) throw new Error('Failed to delete scheme');
             toast.success('Funding scheme deleted successfully');
             loadSchemes();
         } catch (error: any) {
@@ -209,20 +208,13 @@ export function FundingSchemeCRUD() {
 
     const handleToggleDefault = async (scheme: FundingScheme) => {
         try {
-            // If setting as default, unset all others first
-            if (!scheme.is_default) {
-                await supabase
-                    .from('funding_schemes')
-                    .update({ is_default: false })
-                    .neq('id', scheme.id);
-            }
+            const res = await fetch(`${serverUrl}/funding-schemes/${scheme.id}/toggle-default`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isDefault: !scheme.is_default })
+            });
 
-            const { error } = await supabase
-                .from('funding_schemes')
-                .update({ is_default: !scheme.is_default })
-                .eq('id', scheme.id);
-
-            if (error) throw error;
+            if (!res.ok) throw new Error('Failed to update default status');
             toast.success(scheme.is_default ? 'Removed as default' : 'Set as default scheme');
             loadSchemes();
         } catch (error: any) {
@@ -233,12 +225,13 @@ export function FundingSchemeCRUD() {
 
     const handleToggleActive = async (scheme: FundingScheme) => {
         try {
-            const { error } = await supabase
-                .from('funding_schemes')
-                .update({ is_active: !scheme.is_active })
-                .eq('id', scheme.id);
+            const res = await fetch(`${serverUrl}/funding-schemes/${scheme.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: !scheme.is_active })
+            });
 
-            if (error) throw error;
+            if (!res.ok) throw new Error('Failed to update active status');
             toast.success(scheme.is_active ? 'Scheme deactivated' : 'Scheme activated');
             loadSchemes();
         } catch (error: any) {
@@ -523,59 +516,70 @@ export function FundingSchemeCRUD() {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex gap-2">
+                                <div className="flex flex-col gap-2 min-w-[140px]">
                                     <button
                                         onClick={() => handleEnrich(scheme.id)}
                                         disabled={enrichingId === scheme.id}
-                                        className={`p-2 rounded-lg transition ${scheme.expert_rules ? 'bg-blue-50 text-blue-600' : 'hover:bg-muted text-muted-foreground'}`}
-                                        title={scheme.expert_rules ? 'Re-enrich with AI' : 'Enrich with Global Library Knowledge'}
+                                        className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${scheme.expert_rules
+                                                ? 'bg-blue-50/50 border-blue-100 text-blue-600 hover:bg-blue-50'
+                                                : 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-100'
+                                            }`}
                                     >
                                         {enrichingId === scheme.id ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <Loader2 className="h-3 w-3 animate-spin" />
                                         ) : (
-                                            <Sparkles className={`h-4 w-4 ${scheme.expert_rules ? 'fill-blue-600' : ''}`} />
+                                            <Sparkles className={`h-3 w-3 ${scheme.expert_rules ? 'fill-blue-600' : 'fill-white'}`} />
                                         )}
+                                        {scheme.expert_rules ? 'Re-Enrich' : 'Enrich for AI'}
                                     </button>
-                                    <button
-                                        onClick={() => handleToggleDefault(scheme)}
-                                        className="p-2 hover:bg-muted rounded-lg transition"
-                                        title={scheme.is_default ? 'Remove as default' : 'Set as default'}
-                                    >
-                                        <Star className={`h-4 w-4 ${scheme.is_default ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleToggleActive(scheme)}
-                                        className="p-2 hover:bg-muted rounded-lg transition"
-                                        title={scheme.is_active ? 'Deactivate' : 'Activate'}
-                                    >
-                                        {scheme.is_active ? (
-                                            <Eye className="h-4 w-4 text-muted-foreground" />
-                                        ) : (
-                                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={() => handleEdit(scheme)}
-                                        className="p-2 hover:bg-muted rounded-lg transition"
-                                        title="Edit"
-                                    >
-                                        <Edit2 className="h-4 w-4 text-muted-foreground" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(scheme.id, scheme.name)}
-                                        className="p-2 hover:bg-destructive/10 rounded-lg transition"
-                                        title="Delete"
-                                    >
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </button>
-                                    <button
-                                        onClick={() => setViewPlaybookId(viewPlaybookId === scheme.id ? null : scheme.id)}
-                                        disabled={!scheme.expert_rules}
-                                        className={`p-2 rounded-lg transition ${viewPlaybookId === scheme.id ? 'bg-slate-100' : 'hover:bg-muted'} ${!scheme.expert_rules ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                        title="View Expert Intelligence"
-                                    >
-                                        {viewPlaybookId === scheme.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </button>
+
+                                    <div className="flex gap-1 justify-end">
+                                        <button
+                                            onClick={() => handleToggleDefault(scheme)}
+                                            className="p-1.5 hover:bg-muted rounded-md transition"
+                                            title={scheme.is_default ? 'Remove as default' : 'Set as default'}
+                                        >
+                                            <Star className={`h-4 w-4 ${scheme.is_default ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground'}`} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleToggleActive(scheme)}
+                                            className="p-1.5 hover:bg-muted rounded-md transition"
+                                            title={scheme.is_active ? 'Deactivate' : 'Activate'}
+                                        >
+                                            {scheme.is_active ? (
+                                                <Eye className="h-4 w-4 text-muted-foreground" />
+                                            ) : (
+                                                <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => handleEdit(scheme)}
+                                            className="p-1.5 hover:bg-muted rounded-md transition"
+                                            title="Edit"
+                                        >
+                                            <Edit2 className="h-4 w-4 text-muted-foreground" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(scheme.id, scheme.name)}
+                                            className="p-1.5 hover:bg-destructive/10 rounded-md transition"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </button>
+                                    </div>
+
+                                    {scheme.expert_rules && (
+                                        <button
+                                            onClick={() => setViewPlaybookId(viewPlaybookId === scheme.id ? null : scheme.id)}
+                                            className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-black tracking-tight transition-all border ${viewPlaybookId === scheme.id
+                                                    ? 'bg-slate-900 border-slate-900 text-white'
+                                                    : 'bg-white border-slate-200 text-slate-900 hover:border-slate-900'
+                                                }`}
+                                        >
+                                            {viewPlaybookId === scheme.id ? <EyeOff className="h-3 w-3" /> : <Brain className="h-3 w-3" />}
+                                            {viewPlaybookId === scheme.id ? 'Close Details' : 'Show Playbook'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
 
@@ -590,154 +594,10 @@ export function FundingSchemeCRUD() {
                                         <span className="text-xs text-blue-500 font-medium px-2 py-0.5 bg-blue-50 rounded-full">Synthesized from Global Library</span>
                                     </div>
 
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {(() => {
-                                            const rules = scheme.expert_rules;
-
-                                            // Handle array format (preferred)
-                                            if (Array.isArray(rules)) {
-                                                return rules.map((rule: any, i: number) => (
-                                                    <div key={i} className="p-4 bg-gradient-to-br from-white to-blue-50/30 border border-blue-100 rounded-xl shadow-sm">
-                                                        <div className="flex items-start gap-3">
-                                                            <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-sm font-bold">
-                                                                {i + 1}
-                                                            </div>
-                                                            <div className="flex-1 space-y-2">
-                                                                <p className="text-sm font-bold text-slate-900 leading-tight">
-                                                                    {rule.rule || rule.topic || rule.label || `Directive ${i + 1}`}
-                                                                </p>
-                                                                <p className="text-xs text-slate-600 leading-relaxed">
-                                                                    {rule.guidance || rule.description || rule.content || 'No details provided'}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ));
-                                            }
-
-                                            // Handle object format (legacy structure with sections)
-                                            return Object.entries(rules).map(([key, val]: [string, any]) => {
-                                                const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-                                                if (!val || (Array.isArray(val) && val.length === 0)) return null;
-
-                                                // Render arrays as lists
-                                                if (Array.isArray(val)) {
-                                                    return (
-                                                        <div key={key} className="space-y-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                                                                <h6 className="text-sm font-bold text-blue-900">{label}</h6>
-                                                            </div>
-                                                            <div className="bg-white border border-blue-100 rounded-xl overflow-hidden shadow-sm">
-                                                                <ul className="divide-y divide-slate-50">
-                                                                    {val.map((item, i) => (
-                                                                        <li key={i} className="p-3 text-xs text-slate-700 flex items-start gap-3 hover:bg-blue-50/30 transition-colors">
-                                                                            <div className="h-1.5 w-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                                                            <span className="leading-relaxed">
-                                                                                {typeof item === 'string' ? item : (
-                                                                                    typeof item === 'object' && item !== null ? (
-                                                                                        <span className="font-medium">
-                                                                                            {item.rule || item.topic || item.label}: {item.guidance || item.description || JSON.stringify(item)}
-                                                                                        </span>
-                                                                                    ) : String(item)
-                                                                                )}
-                                                                            </span>
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                // Render objects as key-value cards
-                                                if (typeof val === 'object' && val !== null) {
-                                                    // Check if this is a phase object (has activities/deliverables/description)
-                                                    const isPhase = val.activities || val.deliverables || val.description;
-
-                                                    if (isPhase) {
-                                                        return (
-                                                            <div key={key} className="space-y-3">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                                                                    <h6 className="text-sm font-bold text-blue-900">{label}</h6>
-                                                                </div>
-                                                                <div className="bg-gradient-to-br from-white to-blue-50/20 border border-blue-100 rounded-xl p-4 shadow-sm space-y-3">
-                                                                    {val.description && (
-                                                                        <p className="text-xs text-slate-700 leading-relaxed italic border-l-2 border-blue-300 pl-3">
-                                                                            {val.description}
-                                                                        </p>
-                                                                    )}
-                                                                    {val.activities && Array.isArray(val.activities) && val.activities.length > 0 && (
-                                                                        <div className="space-y-2">
-                                                                            <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Activities</p>
-                                                                            <ul className="space-y-1.5">
-                                                                                {val.activities.map((activity: string, i: number) => (
-                                                                                    <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                                                                                        <span className="text-blue-500 font-bold shrink-0">{i + 1}.</span>
-                                                                                        <span className="leading-relaxed">{activity}</span>
-                                                                                    </li>
-                                                                                ))}
-                                                                            </ul>
-                                                                        </div>
-                                                                    )}
-                                                                    {val.deliverables && Array.isArray(val.deliverables) && val.deliverables.length > 0 && (
-                                                                        <div className="space-y-2">
-                                                                            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Deliverables</p>
-                                                                            <ul className="space-y-1.5">
-                                                                                {val.deliverables.map((deliverable: string, i: number) => (
-                                                                                    <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                                                                                        <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                                                                                        <span className="leading-relaxed">{deliverable}</span>
-                                                                                    </li>
-                                                                                ))}
-                                                                            </ul>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    }
-
-                                                    // Regular object display
-                                                    return (
-                                                        <div key={key} className="space-y-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                                                                <h6 className="text-sm font-bold text-blue-900">{label}</h6>
-                                                            </div>
-                                                            <div className="bg-white border border-blue-100 rounded-xl p-4 shadow-sm space-y-2">
-                                                                {Object.entries(val).map(([subKey, subVal]: [string, any]) => (
-                                                                    <div key={subKey} className="flex justify-between items-start gap-4 pb-2 border-b border-slate-50 last:border-0 last:pb-0">
-                                                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                                                            {subKey.replace(/_/g, ' ')}
-                                                                        </span>
-                                                                        <span className="text-xs text-slate-700 text-right max-w-[70%] leading-relaxed">
-                                                                            {typeof subVal === 'string' ? subVal : JSON.stringify(subVal)}
-                                                                        </span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                // Render strings
-                                                return (
-                                                    <div key={key} className="space-y-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                                                            <h6 className="text-sm font-bold text-blue-900">{label}</h6>
-                                                        </div>
-                                                        <div className="bg-white border border-blue-100 rounded-xl p-4 shadow-sm">
-                                                            <p className="text-xs text-slate-700 leading-relaxed">{String(val)}</p>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            });
-                                        })()}
-                                    </div>
+                                    <ExpertIntelligenceView
+                                        data={scheme.expert_rules}
+                                        source="Synthesized from Global Library"
+                                    />
                                 </div>
                             )}
                         </div>

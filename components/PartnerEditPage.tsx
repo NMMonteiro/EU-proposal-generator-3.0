@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Save, X, Upload, Building2, Globe, Trash2 } from 'lucide-react';
+import { Loader2, Save, X, Upload, Building2, Globe, Trash2, Brain } from 'lucide-react';
 import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ export function PartnerEditPage({ partnerId, onBack }: PartnerEditPageProps) {
     const [saving, setSaving] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<'logo' | 'pdf' | null>(null);
+    const [isMinimal, setIsMinimal] = useState(true);
 
     const isNew = partnerId === 'new';
 
@@ -191,10 +192,47 @@ export function PartnerEditPage({ partnerId, onBack }: PartnerEditPageProps) {
                         {isNew ? 'Add a new consortium partner' : 'Update partner information'}
                     </p>
                 </div>
-                <Button variant="outline" onClick={onBack}>
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={onBack}>
+                        <X className="h-4 w-4 mr-2" />
+                        Cancel
+                    </Button>
+                </div>
+            </div>
+
+            {/* Adaptable / Flexible Form View Toggle */}
+            <div className="flex items-center justify-between bg-slate-50 border border-slate-200/80 p-3 rounded-2xl">
+                <div className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-indigo-600 animate-pulse" />
+                    <div>
+                        <span className="text-sm font-semibold text-slate-800">Form Layout Mode:</span>
+                        <p className="text-xs text-slate-500 font-medium">Toggle between minimalist view or comprehensive legal PIF details</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-200/60 p-1 rounded-xl">
+                    <button
+                        type="button"
+                        onClick={() => setIsMinimal(true)}
+                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                            isMinimal 
+                                ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' 
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-300/30'
+                        }`}
+                    >
+                        Minimalist Profile
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setIsMinimal(false)}
+                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                            !isMinimal 
+                                ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/20' 
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-300/30'
+                        }`}
+                    >
+                        Full PIF Form
+                    </button>
+                </div>
             </div>
 
             <Card>
@@ -230,27 +268,31 @@ export function PartnerEditPage({ partnerId, onBack }: PartnerEditPageProps) {
                                 placeholder="UoE"
                             />
                         </div>
+                        {!isMinimal && (
+                            <div>
+                                <Label>PIC Number</Label>
+                                <Input
+                                    value={partner.pic || ''}
+                                    onChange={(e) => updateField('pic', e.target.value)}
+                                    placeholder="999888777"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {!isMinimal && (
                         <div>
-                            <Label>PIC Number</Label>
+                            <Label>OID (Organisation ID)</Label>
                             <Input
-                                value={partner.pic || ''}
-                                onChange={(e) => updateField('pic', e.target.value)}
-                                placeholder="999888777"
+                                value={partner.organisationId || ''}
+                                onChange={(e) => updateField('organisationId', e.target.value)}
+                                placeholder="E12345678"
                             />
                         </div>
-                    </div>
+                    )}
 
-                    <div>
-                        <Label>OID (Organisation ID)</Label>
-                        <Input
-                            value={partner.organisationId || ''}
-                            onChange={(e) => updateField('organisationId', e.target.value)}
-                            placeholder="E12345678"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className={isMinimal ? "col-span-2" : "col-span-1"}>
                             <Label>Country</Label>
                             <Input
                                 value={partner.country || ''}
@@ -258,7 +300,17 @@ export function PartnerEditPage({ partnerId, onBack }: PartnerEditPageProps) {
                                 placeholder="Portugal"
                             />
                         </div>
-                        <div>
+                        {isMinimal && (
+                            <div>
+                                <Label>City</Label>
+                                <Input
+                                    value={partner.city || ''}
+                                    onChange={(e) => updateField('city', e.target.value)}
+                                    placeholder="Lisbon"
+                                />
+                            </div>
+                        )}
+                        <div className={isMinimal ? "col-span-1" : "col-span-2"}>
                             <Label>Organization Type</Label>
                             <Select
                                 value={partner.organizationType || ''}
@@ -280,82 +332,86 @@ export function PartnerEditPage({ partnerId, onBack }: PartnerEditPageProps) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center space-x-2 pt-2">
-                            <Checkbox
-                                id="isPublicBody"
-                                checked={partner.isPublicBody || false}
-                                onCheckedChange={(checked) => updateField('isPublicBody', checked === true)}
-                            />
-                            <label htmlFor="isPublicBody" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Public Body?
-                            </label>
-                        </div>
-                        <div className="flex items-center space-x-2 pt-2">
-                            <Checkbox
-                                id="isNonProfit"
-                                checked={partner.isNonProfit || false}
-                                onCheckedChange={(checked) => updateField('isNonProfit', checked === true)}
-                            />
-                            <label htmlFor="isNonProfit" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Non-Profit?
-                            </label>
-                        </div>
-                    </div>
+                    {!isMinimal && (
+                        <>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <Checkbox
+                                        id="isPublicBody"
+                                        checked={partner.isPublicBody || false}
+                                        onCheckedChange={(checked) => updateField('isPublicBody', checked === true)}
+                                    />
+                                    <label htmlFor="isPublicBody" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        Public Body?
+                                    </label>
+                                </div>
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <Checkbox
+                                        id="isNonProfit"
+                                        checked={partner.isNonProfit || false}
+                                        onCheckedChange={(checked) => updateField('isNonProfit', checked === true)}
+                                    />
+                                    <label htmlFor="isNonProfit" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        Non-Profit?
+                                    </label>
+                                </div>
+                            </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>VAT Number</Label>
-                            <Input
-                                value={partner.vatNumber || ''}
-                                onChange={(e) => updateField('vatNumber', e.target.value)}
-                                placeholder="PT123456789"
-                            />
-                        </div>
-                        <div>
-                            <Label>Business Registration ID</Label>
-                            <Input
-                                value={partner.businessId || ''}
-                                onChange={(e) => updateField('businessId', e.target.value)}
-                                placeholder="REG-123456"
-                            />
-                        </div>
-                    </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>VAT Number</Label>
+                                    <Input
+                                        value={partner.vatNumber || ''}
+                                        onChange={(e) => updateField('vatNumber', e.target.value)}
+                                        placeholder="PT123456789"
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Business Registration ID</Label>
+                                    <Input
+                                        value={partner.businessId || ''}
+                                        onChange={(e) => updateField('businessId', e.target.value)}
+                                        placeholder="REG-123456"
+                                    />
+                                </div>
+                            </div>
 
-                    <div className="space-y-4">
-                        <Label>Legal Address</Label>
-                        <Input
-                            value={partner.legalAddress || ''}
-                            onChange={(e) => updateField('legalAddress', e.target.value)}
-                            placeholder="Street Name, No. 123"
-                        />
-                        <div className="grid grid-cols-3 gap-4">
-                            <div>
-                                <Label>Postcode</Label>
+                            <div className="space-y-4">
+                                <Label>Legal Address</Label>
                                 <Input
-                                    value={partner.postcode || ''}
-                                    onChange={(e) => updateField('postcode', e.target.value)}
-                                    placeholder="1000-001"
+                                    value={partner.legalAddress || ''}
+                                    onChange={(e) => updateField('legalAddress', e.target.value)}
+                                    placeholder="Street Name, No. 123"
                                 />
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <Label>Postcode</Label>
+                                        <Input
+                                            value={partner.postcode || ''}
+                                            onChange={(e) => updateField('postcode', e.target.value)}
+                                            placeholder="1000-001"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>City</Label>
+                                        <Input
+                                            value={partner.city || ''}
+                                            onChange={(e) => updateField('city', e.target.value)}
+                                            placeholder="Lisbon"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Region</Label>
+                                        <Input
+                                            value={partner.region || ''}
+                                            onChange={(e) => updateField('region', e.target.value)}
+                                            placeholder="Lisboa"
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <Label>City</Label>
-                                <Input
-                                    value={partner.city || ''}
-                                    onChange={(e) => updateField('city', e.target.value)}
-                                    placeholder="Lisbon"
-                                />
-                            </div>
-                            <div>
-                                <Label>Region</Label>
-                                <Input
-                                    value={partner.region || ''}
-                                    onChange={(e) => updateField('region', e.target.value)}
-                                    placeholder="Lisboa"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                        </>
+                    )}
 
                     <div>
                         <Label>Role in Project</Label>
@@ -405,111 +461,117 @@ export function PartnerEditPage({ partnerId, onBack }: PartnerEditPageProps) {
                         </div>
                     </div>
 
-                    <div>
-                        <Label>Department/Unit</Label>
-                        <Input
-                            value={partner.department || ''}
-                            onChange={(e) => updateField('department', e.target.value)}
-                            placeholder="Department of Innovation / R&D Unit"
-                        />
-                    </div>
+                    {!isMinimal && (
+                        <>
+                            <div>
+                                <Label>Department/Unit</Label>
+                                <Input
+                                    value={partner.department || ''}
+                                    onChange={(e) => updateField('department', e.target.value)}
+                                    placeholder="Department of Innovation / R&D Unit"
+                                />
+                            </div>
 
-                    <div>
-                        <Label>Contact Person Name</Label>
-                        <Input
-                            value={partner.contactPersonName || ''}
-                            onChange={(e) => updateField('contactPersonName', e.target.value)}
-                            placeholder="John Doe"
-                        />
-                    </div>
+                            <div>
+                                <Label>Contact Person Name</Label>
+                                <Input
+                                    value={partner.contactPersonName || ''}
+                                    onChange={(e) => updateField('contactPersonName', e.target.value)}
+                                    placeholder="John Doe"
+                                />
+                            </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Contact Person Email</Label>
-                            <Input
-                                type="email"
-                                value={partner.contactPersonEmail || ''}
-                                onChange={(e) => updateField('contactPersonEmail', e.target.value)}
-                                placeholder="john.doe@example.com"
-                            />
-                        </div>
-                        <div>
-                            <Label>Contact Person Phone</Label>
-                            <Input
-                                type="tel"
-                                value={partner.contactPersonPhone || ''}
-                                onChange={(e) => updateField('contactPersonPhone', e.target.value)}
-                                placeholder="+351 123 456 789"
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Position</Label>
-                            <Input
-                                value={partner.contactPersonPosition || ''}
-                                onChange={(e) => updateField('contactPersonPosition', e.target.value)}
-                                placeholder="Project Manager"
-                            />
-                        </div>
-                        <div>
-                            <Label>Role/Department</Label>
-                            <Input
-                                value={partner.contactPersonRole || ''}
-                                onChange={(e) => updateField('contactPersonRole', e.target.value)}
-                                placeholder="Administrative / Technical"
-                            />
-                        </div>
-                    </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Contact Person Email</Label>
+                                    <Input
+                                        type="email"
+                                        value={partner.contactPersonEmail || ''}
+                                        onChange={(e) => updateField('contactPersonEmail', e.target.value)}
+                                        placeholder="john.doe@example.com"
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Contact Person Phone</Label>
+                                    <Input
+                                        type="tel"
+                                        value={partner.contactPersonPhone || ''}
+                                        onChange={(e) => updateField('contactPersonPhone', e.target.value)}
+                                        placeholder="+351 123 456 789"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Position</Label>
+                                    <Input
+                                        value={partner.contactPersonPosition || ''}
+                                        onChange={(e) => updateField('contactPersonPosition', e.target.value)}
+                                        placeholder="Project Manager"
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Role/Department</Label>
+                                    <Input
+                                        value={partner.contactPersonRole || ''}
+                                        onChange={(e) => updateField('contactPersonRole', e.target.value)}
+                                        placeholder="Administrative / Technical"
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Legal Representative</CardTitle>
-                    <CardDescription>The person authorized to sign for the organization</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Full Name</Label>
-                            <Input
-                                value={partner.legalRepName || ''}
-                                onChange={(e) => updateField('legalRepName', e.target.value)}
-                                placeholder="Jane Doe"
-                            />
+            {!isMinimal && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Legal Representative</CardTitle>
+                        <CardDescription>The person authorized to sign for the organization</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label>Full Name</Label>
+                                <Input
+                                    value={partner.legalRepName || ''}
+                                    onChange={(e) => updateField('legalRepName', e.target.value)}
+                                    placeholder="Jane Doe"
+                                />
+                            </div>
+                            <div>
+                                <Label>Position / Title</Label>
+                                <Input
+                                    value={partner.legalRepPosition || ''}
+                                    onChange={(e) => updateField('legalRepPosition', e.target.value)}
+                                    placeholder="CEO / Rector / Director"
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <Label>Position / Title</Label>
-                            <Input
-                                value={partner.legalRepPosition || ''}
-                                onChange={(e) => updateField('legalRepPosition', e.target.value)}
-                                placeholder="CEO / Rector / Director"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label>Email</Label>
+                                <Input
+                                    type="email"
+                                    value={partner.legalRepEmail || ''}
+                                    onChange={(e) => updateField('legalRepEmail', e.target.value)}
+                                    placeholder="jane.doe@example.com"
+                                />
+                            </div>
+                            <div>
+                                <Label>Phone</Label>
+                                <Input
+                                    type="tel"
+                                    value={partner.legalRepPhone || ''}
+                                    onChange={(e) => updateField('legalRepPhone', e.target.value)}
+                                    placeholder="+351 987 654 321"
+                                />
+                            </div>
                         </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Email</Label>
-                            <Input
-                                type="email"
-                                value={partner.legalRepEmail || ''}
-                                onChange={(e) => updateField('legalRepEmail', e.target.value)}
-                                placeholder="jane.doe@example.com"
-                            />
-                        </div>
-                        <div>
-                            <Label>Phone</Label>
-                            <Input
-                                type="tel"
-                                value={partner.legalRepPhone || ''}
-                                onChange={(e) => updateField('legalRepPhone', e.target.value)}
-                                placeholder="+351 987 654 321"
-                            />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            )}
 
             <Card>
                 <CardHeader>
@@ -528,16 +590,18 @@ export function PartnerEditPage({ partnerId, onBack }: PartnerEditPageProps) {
                         />
                     </div>
 
-                    <div>
-                        <Label>Staff Skills (Key Personnel)</Label>
-                        <Textarea
-                            value={partner.staffSkills || ''}
-                            onChange={(e) => updateField('staffSkills', e.target.value)}
-                            placeholder="Summarize the key personnel and their relevant technical/administrative skills..."
-                            rows={6}
-                            className="resize-y"
-                        />
-                    </div>
+                    {!isMinimal && (
+                        <div>
+                            <Label>Staff Skills (Key Personnel)</Label>
+                            <Textarea
+                                value={partner.staffSkills || ''}
+                                onChange={(e) => updateField('staffSkills', e.target.value)}
+                                placeholder="Summarize the key personnel and their relevant technical/administrative skills..."
+                                rows={6}
+                                className="resize-y"
+                            />
+                        </div>
+                    )}
 
                     <div>
                         <Label>Relevant Previous Projects</Label>
@@ -550,19 +614,21 @@ export function PartnerEditPage({ partnerId, onBack }: PartnerEditPageProps) {
                         />
                     </div>
 
-                    <div>
-                        <Label>Keywords (comma-separated)</Label>
-                        <Input
-                            value={partner.keywords?.join(', ') || ''}
-                            onChange={(e) => {
-                                const keywords = e.target.value.split(',')
-                                    .map(k => k.trim())
-                                    .filter(k => k !== '');
-                                updateField('keywords', keywords);
-                            }}
-                            placeholder="AI, sustainability, innovation"
-                        />
-                    </div>
+                    {!isMinimal && (
+                        <div>
+                            <Label>Keywords (comma-separated)</Label>
+                            <Input
+                                value={partner.keywords?.join(', ') || ''}
+                                onChange={(e) => {
+                                    const keywords = e.target.value.split(',')
+                                        .map(k => k.trim())
+                                        .filter(k => k !== '');
+                                    updateField('keywords', keywords);
+                                }}
+                                placeholder="AI, sustainability, innovation"
+                            />
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

@@ -15,13 +15,13 @@ export const enrichFundingScheme = async (schemeId: string) => {
 
     if (fetchError || !scheme) throw new Error('Scheme not found');
 
-    // 2. Retrieve relevant knowledge from Global Library
+    // 2. Retrieve relevant knowledge from Global Library (Semantic Vector Search)
     const retriever = new KnowledgeRetriever();
-    const query = `${scheme.name} ${scheme.description || ''} guidelines objectives criteria budget constraints`;
-    const smartKeywords = KnowledgeRetriever.extractSmartKeywords(query);
-    const relevantKnowledge = await retriever.getRelevantKnowledge(smartKeywords, 10);
+    const query = `${scheme.name} ${scheme.description || ''} official guidelines objectives scoring criteria budget constraints`;
+    const relevantKnowledge = await retriever.getRelevantKnowledge(query, 12);
 
     if (!relevantKnowledge.content) {
+        console.warn(`[ENRICH] No semantic matches in library for: ${scheme.name}`);
         return { message: 'No relevant knowledge found in library to enrich this scheme.' };
     }
 
@@ -127,7 +127,14 @@ export const syncSchemeFromContent = async (content: string, type: 'template' | 
 
         if (Object.keys(updates).length > 0) {
             await supabase.from('funding_schemes').update(updates).eq('id', data.matchedSchemeId);
-            return { success: true, schemeId: data.matchedSchemeId, message: "Scheme master updated." };
+
+            // Automation: Trigger enrichment in the background (fire and forget)
+            console.log(`[SYNC] Triggering automated enrichment for ${data.matchedSchemeId}...`);
+            enrichFundingScheme(data.matchedSchemeId).catch(err =>
+                console.error(`[SYNC] Automated enrichment failed: ${err.message}`)
+            );
+
+            return { success: true, schemeId: data.matchedSchemeId, message: "Scheme master updated and enrichment triggered." };
         }
     }
 

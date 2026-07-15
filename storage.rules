@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Restrict access specifically to partner logo and profile PDF assets
+    match /partner-assets/{allPaths=**} {
+      allow read: if true;
+      allow write: if true; // Temporary public uploads matching current anon permissions
+    }
+    
+    // Secure by default: block access to any other storage paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

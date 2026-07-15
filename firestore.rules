@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only allow operations on our specific app collections
+    match /proposals/{proposalId} {
+      allow read, write: if true; // Temporary public access matching the previous Supabase anon key logic
+    }
+    match /partners/{partnerId} {
+      allow read, write: if true;
+    }
+    match /funding_schemes/{schemeId} {
+      allow read: if true;
+      allow write: if true; // Required for populating/seeding schemes
+    }
+    match /global_knowledge/{knowledgeId} {
+      allow read: if true;
+      allow write: if true; // Required for local indexing script
+    }
+    
+    // Secure by default: block access to any other database paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

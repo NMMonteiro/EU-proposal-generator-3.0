@@ -11,6 +11,7 @@ import {
     MobilityActivitiesSection
 } from '../ProposalSections';
 import { AnnexesManager } from '../AnnexesManager';
+import { ExpertIntelligenceView } from '../patterns';
 import type { FullProposal } from '../../types/proposal';
 import type { DisplaySection } from '../../utils/proposal-assembly';
 
@@ -169,6 +170,18 @@ export function ViewerTabs({
                         annexes={proposal.annexes || []}
                         onUpdate={onAnnexesUpdate || (() => { })}
                     />
+                </div>
+            </TabsContent>
+
+            <TabsContent value="insights" className="mt-0">
+                <div className="max-w-5xl mx-auto space-y-8 pb-24 h-full">
+                    <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
+                        <ExpertIntelligenceView
+                            data={proposal.fundingScheme?.expert_rules}
+                            title="Expert Intelligence Playbook"
+                            source={`${proposal.fundingScheme?.name} Directives`}
+                        />
+                    </div>
                 </div>
             </TabsContent>
         </Tabs>

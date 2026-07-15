@@ -17,7 +17,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { AnalysisResult } from '../types/proposal';
 import type { FundingScheme } from '../types/funding-scheme';
-import { InfoTooltip } from './patterns';
+import { InfoTooltip, ExpertIntelligenceView } from './patterns';
 
 interface URLInputStepProps {
   onSubmit: (result: AnalysisResult, url: string, userPrompt: string, fundingSchemeId: string | null) => void;
@@ -379,168 +379,12 @@ export function URLInputStep({ onSubmit, onBack, initialSchemeId }: URLInputStep
                         ? selectedScheme.expert_rules.length > 0
                         : Object.keys(selectedScheme.expert_rules).length > 0;
 
-                      if (!hasRules) {
-                        return (
-                          <div className="p-10 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center text-center">
-                            <Sparkles className="h-8 w-8 text-indigo-300 mb-3" />
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Intelligence Playbook</p>
-                            <p className="text-[11px] text-slate-400 max-w-[200px] mt-1">The expert playbook for this scheme hasn't been synthesized from the knowledge library yet.</p>
-                            <Button
-                              onClick={handleEnrichScheme}
-                              disabled={enriching}
-                              variant="outline"
-                              className="mt-4 border-indigo-100 text-indigo-600 hover:bg-indigo-50 rounded-xl font-bold text-[10px] h-9"
-                            >
-                              {enriching ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Sparkles className="h-3 w-3 mr-2 text-indigo-500" />}
-                              SYNTHESIZE FROM GLOBAL LIBRARY
-                            </Button>
-                          </div>
-                        );
-                      }
-
-                      // Handle array format (preferred structure)
-                      if (Array.isArray(selectedScheme.expert_rules)) {
-                        return selectedScheme.expert_rules.map((rule: any, i: number) => (
-                          <div key={i} className="p-4 bg-gradient-to-br from-white to-indigo-50/30 border border-indigo-100 rounded-xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all">
-                            <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
-                                {i + 1}
-                              </div>
-                              <div className="flex-1 space-y-1.5">
-                                <p className="text-sm font-bold text-slate-900 leading-tight">
-                                  {rule.rule || rule.topic || rule.label || `Directive ${i + 1}`}
-                                </p>
-                                <p className="text-xs text-slate-600 leading-relaxed">
-                                  {rule.guidance || rule.description || rule.content || 'No details provided'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ));
-                      }
-
-                      // Handle object format (legacy/alternative structure)
-                      return Object.entries(selectedScheme.expert_rules).map(([key, val]: [string, any]) => {
-                        const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-                        // Skip empty values
-                        if (!val || (Array.isArray(val) && val.length === 0)) return null;
-
-                        // Render arrays as bullet lists
-                        if (Array.isArray(val)) {
-                          return (
-                            <div key={key} className="space-y-2">
-                              <div className="flex items-center gap-2 px-1">
-                                <div className="h-1 w-1 rounded-full bg-indigo-600" />
-                                <p className="text-xs font-bold text-indigo-900">{label}</p>
-                              </div>
-                              <div className="bg-white border border-indigo-100 rounded-xl overflow-hidden shadow-sm">
-                                <ul className="divide-y divide-slate-50">
-                                  {val.map((item, i) => (
-                                    <li key={i} className="p-3 text-xs text-slate-700 flex items-start gap-3 hover:bg-indigo-50/30 transition-colors">
-                                      <div className="h-1.5 w-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
-                                      <span className="leading-relaxed">
-                                        {typeof item === 'string' ? item : (
-                                          typeof item === 'object' && item !== null ? (
-                                            <span className="font-medium">
-                                              {item.rule || item.topic || item.label}: {item.guidance || item.description || JSON.stringify(item)}
-                                            </span>
-                                          ) : String(item)
-                                        )}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        // Render objects as structured cards
-                        if (typeof val === 'object' && val !== null) {
-                          // Check if this is a phase object (has activities/deliverables/description)
-                          const isPhase = val.activities || val.deliverables || val.description;
-
-                          if (isPhase) {
-                            return (
-                              <div key={key} className="space-y-3">
-                                <div className="flex items-center gap-2 px-1">
-                                  <div className="h-1.5 w-1.5 rounded-full bg-indigo-600" />
-                                  <h6 className="text-sm font-bold text-indigo-900">{label}</h6>
-                                </div>
-                                <div className="bg-gradient-to-br from-white to-indigo-50/20 border border-indigo-100 rounded-xl p-4 shadow-sm space-y-3">
-                                  {val.description && (
-                                    <p className="text-xs text-slate-700 leading-relaxed italic border-l-2 border-indigo-300 pl-3">
-                                      {val.description}
-                                    </p>
-                                  )}
-                                  {val.activities && Array.isArray(val.activities) && val.activities.length > 0 && (
-                                    <div className="space-y-2">
-                                      <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">Activities</p>
-                                      <ul className="space-y-1.5">
-                                        {val.activities.map((activity: string, i: number) => (
-                                          <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                                            <span className="text-indigo-500 font-bold shrink-0">{i + 1}.</span>
-                                            <span className="leading-relaxed">{activity}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  {val.deliverables && Array.isArray(val.deliverables) && val.deliverables.length > 0 && (
-                                    <div className="space-y-2">
-                                      <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Deliverables</p>
-                                      <ul className="space-y-1.5">
-                                        {val.deliverables.map((deliverable: string, i: number) => (
-                                          <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                                            <span className="leading-relaxed">{deliverable}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          // Regular object display
-                          return (
-                            <div key={key} className="space-y-2">
-                              <div className="flex items-center gap-2 px-1">
-                                <div className="h-1 w-1 rounded-full bg-indigo-600" />
-                                <p className="text-xs font-bold text-indigo-900">{label}</p>
-                              </div>
-                              <div className="bg-white border border-indigo-100 rounded-xl p-4 shadow-sm space-y-2">
-                                {Object.entries(val).map(([subKey, subVal]: [string, any]) => (
-                                  <div key={subKey} className="flex justify-between items-start gap-4 pb-2 border-b border-slate-50 last:border-0 last:pb-0">
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                                      {subKey.replace(/_/g, ' ')}
-                                    </span>
-                                    <span className="text-xs text-slate-700 text-right max-w-[70%] leading-relaxed">
-                                      {typeof subVal === 'string' ? subVal : JSON.stringify(subVal)}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        // Render strings as simple text blocks
-                        return (
-                          <div key={key} className="space-y-2">
-                            <div className="flex items-center gap-2 px-1">
-                              <div className="h-1 w-1 rounded-full bg-indigo-600" />
-                              <p className="text-xs font-bold text-indigo-900">{label}</p>
-                            </div>
-                            <div className="bg-white border border-indigo-100 rounded-xl p-4 shadow-sm">
-                              <p className="text-xs text-slate-700 leading-relaxed">{String(val)}</p>
-                            </div>
-                          </div>
-                        );
-                      });
+                      return (
+                        <ExpertIntelligenceView
+                          data={selectedScheme.expert_rules}
+                          source="Synthesized from Global Library"
+                        />
+                      );
                     })()}
                   </div>
                 </div>
@@ -549,28 +393,14 @@ export function URLInputStep({ onSubmit, onBack, initialSchemeId }: URLInputStep
               {/* Financial Architecture Section */}
               {selectedScheme?.budget_rules && (
                 <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-emerald-500 rounded-full" />
-                    Financial Architecture (KB Extracted)
-                  </h4>
-                  <div className="p-5 bg-emerald-50/30 border border-emerald-100 rounded-2xl">
-                    {typeof selectedScheme.budget_rules === 'object' && Object.keys(selectedScheme.budget_rules).length > 0 ? (
-                      <div className="space-y-3">
-                        {Object.entries(selectedScheme.budget_rules).map(([key, val]: [string, any]) => (
-                          <div key={key} className="flex justify-between items-start border-b border-emerald-100/50 pb-2 last:border-0 last:pb-0">
-                            <span className="text-[10px] font-bold text-emerald-700 uppercase">{key.replace(/_/g, ' ')}</span>
-                            <span className="text-xs text-slate-600 text-right max-w-[60%] font-medium">
-                              {Array.isArray(val) ? `${val.length} rules defined` : String(val)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-2 text-center">
-                        <p className="text-[11px] text-slate-500 italic">No specific financial constraints extracted yet. Using standard EU unit cost logic.</p>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1 h-5 bg-emerald-500 rounded-full" />
+                    <h4 className="text-sm font-bold text-slate-800">Financial Architecture (KB Extracted)</h4>
                   </div>
+                  <ExpertIntelligenceView
+                    data={selectedScheme.budget_rules}
+                    source="Budgets & Cost Eligibility"
+                  />
                 </div>
               )}
 
@@ -605,35 +435,14 @@ export function URLInputStep({ onSubmit, onBack, initialSchemeId }: URLInputStep
               {/* Evaluation Criteria Section */}
               {selectedScheme?.evaluation_criteria && (
                 <div className="space-y-4">
-                  <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-indigo-600 rounded-full" />
-                    Scoring Logic & Weighting
-                  </h4>
-                  <div className="p-5 bg-indigo-50/30 border border-indigo-100 rounded-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-5">
-                      <Target className="h-12 w-12" />
-                    </div>
-                    {typeof selectedScheme.evaluation_criteria === 'object' && Object.keys(selectedScheme.evaluation_criteria).length > 0 ? (
-                      <div className="grid grid-cols-1 gap-3">
-                        {Object.entries(selectedScheme.evaluation_criteria).map(([key, val]: [string, any]) => (
-                          <div key={key} className="space-y-1">
-                            <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-tighter">{key.replace(/_/g, ' ')}</p>
-                            <div className="text-[11px] text-slate-600 leading-relaxed font-medium">
-                              {typeof val === 'string' ? val : (
-                                <pre className="text-[9px] font-mono bg-white/50 p-2 rounded border border-indigo-50 mt-1">
-                                  {JSON.stringify(val, null, 2)}
-                                </pre>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-2 text-center text-[11px] text-indigo-400 italic">
-                        Scoring criteria are being retrieved dynamically via RAG for each narrative section.
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1 h-5 bg-indigo-600 rounded-full" />
+                    <h4 className="text-sm font-bold text-slate-800">Scoring Logic & Weighting</h4>
                   </div>
+                  <ExpertIntelligenceView
+                    data={selectedScheme.evaluation_criteria}
+                    source="Evaluation Strategy"
+                  />
                 </div>
               )}
 

@@ -1,4 +1,4 @@
-import { FileText, Users, Calendar, Euro, AlertTriangle, LayoutGrid, ChevronDown, Paperclip } from 'lucide-react';
+import { FileText, Users, Calendar, Euro, AlertTriangle, LayoutGrid, ChevronDown, Paperclip, Brain } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import type { DisplaySection } from '../../utils/proposal-assembly';
@@ -26,6 +26,7 @@ export function ViewerSidebar({
         { id: 'budget', label: 'Financial Plan', icon: Euro },
         { id: 'timeline', label: logicMode === 'mobility' ? 'Mobility Activities' : 'Work Plan', icon: Calendar },
         { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
+        { id: 'insights', label: 'Expert Insights', icon: Brain },
         { id: 'annexes', label: 'Annexes', icon: Paperclip },
     ];
 

@@ -7,6 +7,4 @@ export { ProgressSteps, type StepItem } from './ProgressSteps';
 export { InfoTooltip } from './InfoTooltip';
 export { StatusBadge, type StatusType } from './StatusBadge';
 export { ConfirmDialog } from './ConfirmDialog';
-
-
-
+export { ExpertIntelligenceView } from './ExpertIntelligenceView';

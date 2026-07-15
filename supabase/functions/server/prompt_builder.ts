@@ -130,6 +130,8 @@ export function buildProposalPrompt(
     label: string;
     description: string;
     aiPrompt?: string;
+    charLimit?: number;
+    wordLimit?: number;
   }
 
   const flattenSections = (sections: any[]): FlatSection[] => {
@@ -141,7 +143,9 @@ export function buildProposalPrompt(
         key: validKey,
         label: s.label || 'Untitled Section',
         description: s.description || '',
-        aiPrompt: s.aiPrompt
+        aiPrompt: s.aiPrompt,
+        charLimit: s.charLimit || s.characterLimit,
+        wordLimit: s.wordLimit
       });
       if (s.subsections && s.subsections.length > 0) {
         result = [...result, ...flattenSections(s.subsections)];
@@ -189,7 +193,26 @@ export function buildProposalPrompt(
     : JSON.stringify(expertRules, null, 2);
 
   const sectionInstructions = allSections.map((s) => {
-    let aiMsg = s.aiPrompt || 'REQUIRED DEPTH: Minimum 350 words. Use a structured, professional narrative with clear headings and bullet points where appropriate.';
+    const limitInfo = s.charLimit ? `MAX LIMIT: ${s.charLimit} characters.` : s.wordLimit ? `MAX LIMIT: ${s.wordLimit} words.` : 'REQUIRED DEPTH: Minimum 500 words.';
+    let aiMsg = s.aiPrompt || `${limitInfo} Use a structured, professional narrative with clear headings (<h3>), bullet points, and high-impact terminology. Avoid passive voice.`;
+
+    // Identify the "Logical Pillar" for this section (Relevance, Impact, Quality)
+    let pillar = "";
+    if (s.label.toLowerCase().includes('relevance') || s.label.toLowerCase().includes('context')) pillar = "RELEVANCE";
+    else if (s.label.toLowerCase().includes('impact') || s.label.toLowerCase().includes('dissemination')) pillar = "IMPACT & SUSTAINABILITY";
+    else if (s.label.toLowerCase().includes('design') || s.label.toLowerCase().includes('implementation') || s.label.toLowerCase().includes('work plan')) pillar = "QUALITY OF DESIGN";
+    else if (s.label.toLowerCase().includes('partnership') || s.label.toLowerCase().includes('team') || s.label.toLowerCase().includes('cooperation')) pillar = "QUALITY OF PARTNERSHIP";
+
+    if (pillar) {
+      aiMsg += `\nFOCUS ON EVALUATION PILLAR: [${pillar}]. Mirror the technical precision of a winning H2020 or Erasmus+ proposal.`;
+    }
+
+    if (pillar === "QUALITY OF PARTNERSHIP") {
+      aiMsg += `\nPARTNER MATRIX STRATEGY (MANDATORY):
+      1. Classify partners into archetypes: "Lead Applicant" (Coordination, WP1), "Technical Expert" (Toolkit/Curriculum), "SME/Industry" (Validation), "Transnational VET" (Mobility).
+      2. Assign task leadership based on this logic: Applicant leads Admin (WP1); Technical leads Intellectual Outputs (WP2/3); SMEs and Transnational partners lead Pilot/Mobility (WP4).
+      3. Define Coordination Mechanisms: "Project Steering Committee (PSC)" for decision making; "Digital Workspaces" (Asana/Teams) for daily work.`;
+    }
 
     // Check if there's an expert rule for this section or generic rules
     const relevantRule = Array.isArray(expertRules) && expertRules.find((r: any) =>
@@ -205,20 +228,23 @@ export function buildProposalPrompt(
     if (isMobility && (s.key === 'objectives' || s.label.toLowerCase().includes('objective'))) {
       const schGuidance = (fundingScheme?.name || '').toLowerCase().includes('sch') ? `
       SPECIFIC SCH GUIDANCE (KA122 - 4 MANDATORY OBJECTIVES):
-      1. Linguistic & Intercultural: Communication, European dimension.
-      2. Strategic Internationalization: Institutional growth, partnerships.
-      3. Inclusion & Diversity: Equal access, support for fewer opportunities.
-      4. Professional excellence: Innovation, new methodologies for staff.` : '';
+      1. Linguistic & Intercultural: Focus on staff/learner language proficiency and European awareness.
+      2. Strategic Internationalization: Focus on institutional capacity and cross-border networking.
+      3. Inclusion & Diversity: Detail specific measures for participants with fewer opportunities (economic, social, physical).
+      4. Professional excellence: Innovation in pedagogy and staff professional development.` : '';
 
-      aiMsg = `Define exactly 4 project objectives. ${schGuidance}
-      Use <h3>Objective X: Title</h3> format. For each, provide a deep analysis of current gaps, planned outcomes, and 3-5 concrete KPIs.`;
+      aiMsg = `You MUST define exactly 4 project objectives. ${schGuidance}
+      Use <h3>Objective X: Title</h3> format. For each:
+      - Define the current GAP (Why).
+      - Specify target outcomes (What).
+      - List at least 3 SMART KPIs with baseline and target values.`;
     }
 
     if (isMobility && (s.key === 'activities_narrative' || s.label.toLowerCase().includes('activities strategy'))) {
-      aiMsg = `Explain the logic of mobility flows. Link each flow to one of the 4 Objectives defined. Address logistics, preparation, and follow-up in high detail. Minimum 3 paragraphs.`;
+      aiMsg = `Detail the Mobility Flow Strategy. Explain how participants are selected, how they are prepared (pedagogically, culturally, linguistically), and how their learning outcomes are recognized (e.g., Europass). Minimum 4 paragraphs.`;
     }
 
-    return `SECTION: ${s.label}\nKEY: "${s.key}"\nINSTRUCTION: ${aiMsg}`;
+    return `SECTION: ${s.label}\nKEY: "${s.key}"\nINSTRUCTION: ${aiMsg}\nCONSTRAINT: usage of this specific KEY is MANDATORY.`;
   }).join('\n\n');
 
   const examplesContext = examples.length > 0 ? `### GOLD-STANDARD EXAMPLES (MIRROR QUALITY, DO NOT COPY CONTENT):
@@ -231,22 +257,39 @@ ${examples.map((ex: any) => `Title: ${ex.title}\nObjectives/Summary: ${JSON.stri
 9. **BUDGET**: Calculate unit costs based on participants. Use €100-€500 per participant for travel and €50-€150/day for individual support. Total must aim at the target budget of ${finalBudgetStr}.
 ` : `
 6. **WORK PACKAGES (WP)**: For Cooperation Partnerships (large projects), you MUST generate between 4 and 6 Work Packages.
-   - WP1: Project Management & Coordination (Mandatory)
-   - WP2 - WP4/5: Implementation, development, and results.
+   - WP1: Project Management & Coordination (Mandatory).
+   - WP2 - WP4/5: Core Technical Work. MUST include tangible **DELIVERABLES** (e.g., "IO1: E-Learning Platform", "IO2: Best Practice Guide").
    - Last WP: Impact, Dissemination, and Sustainability.
-7. **BUDGET**: Allocate the target budget of ${finalBudgetStr} across these Work Packages logically.
+   - **DESCRIPTION DEPTH**: For each WP, you MUST generate a structured narrative covering:
+     1. **Specific Objectives**: (e.g., "O1.1: To identify gaps...")
+     2. **Description of Activities**: Detailed tasks (T1.1, T1.2) with "Lead Partner" assigned.
+     3. **Main Results**: Tangible outputs (R1.1, R1.2).
+     4. **Mandatory Indicators**: List 3 Quantitative (e.g., "500 students") and 2 Qualitative indicators (e.g., "Satisfaction > 80%").
+     5. **Budget Explanation**: Justify the WP cost (e.g., "€85,000") by breaking it down into "Staff Working Days" (e.g., "Total 150 WD: 50 Researcher days @ 240€/day, 30 Technician days..."). Explain WHY this is cost-effective.
+7. **BUDGET STRATEGY (CRITICAL)**: 
+   - **Total Grant**: Aim for one of the standard lump sums: €120,000, €250,000, or €400,000 (unless a specific constraint exists).
+   - **WP1 (Management) CAP**: Absolutely MAX 20% of the total budget (e.g. max €50k for a €250k project).
+   - **Allocation**: Distribute the rest across Technical WPs (WP2, WP3, etc.) based on workload clarity.
 `;
 
-  return `You are a Senior European Grant Writer specialized in ${isMobility ? 'Education Mobility (Erasmus+)' : 'Cross-border Cooperation'}.
-Your task is to generate a HIGH-DEPTH, AUDIT-READY project proposal. Avoid generic fluff; use precise EU terminology.
+  const dynamicKeysExample = allSections.map(s => `    "${s.key}": "Detailed content for ${s.label}..."`).join(',\n');
 
-PROJECT: ${idea.title}
-DESCRIPTION: ${idea.description}
+  return `You are a Lead Researcher and Expert Grant Writer for EU Horizon/Erasmus+ projects.
+Your writing style must be **ACADEMIC, DENSE, and EVIDENCE-BASED** (similar to a scientific paper).
+CRITICAL QUALITY RULES:
+1. **NO BULLET POINTS IN NARRATIVES**: Write long, cohesive paragraphs (300+ words) for "Summary", "Context", and "Rationale". Use bullet points ONLY for lists of deliverables or tasks.
+2. **USE CITATIONS**: Support claims with references to EU policies or academic studies (e.g., "(Smith et al., 2023)", "(EU Digital Agenda, 2030)").
+3. **QUANTIFY IMPACT**: Do not say "many users". Say "engage 500 HE students and 50 teachers across 3 countries".
+4. **STAFF DAYS**: You MUST estimate "Working Days" (WD) for budget justifications (e.g., "40 days for Researcher @ 240€/day").
+5. **TECHNICAL TERMINOLOGY**: Use terms like "Transdisciplinary approach", "Pedagogical innovation", "Stakeholder synergy", "Micro-credentials".
+
+    PROJECT: ${idea.title}
+  DESCRIPTION: ${idea.description}
 TARGET BUDGET: ${finalBudgetStr}
-PARTNERS: ${partners.length}
+  PARTNERS: ${partners.length}
 ${partnerDictionary}
 
-### EXPERT IQ PLAYBOOK (MANDATORY DIRECTIVES):
+### EXPERT IQ PLAYBOOK(MANDATORY DIRECTIVES):
 ${directivePlaybook}
 
 ${examplesContext}
@@ -257,32 +300,33 @@ ${sectionInstructions}
 ${mobilityRules}
 
 STRICT JSON OUTPUT:
-{
-  "title": "${idea.title}",
-  "summary": "Full overview (300+ words)",
-  "partners": [...],
-  "workPackages": [
-    {
-      "name": "${isMobility ? 'Activity 1: [Flow Type]' : 'WP1: [Title]'}",
-      "description": "...",
-      "duration": "...",
-      "isMobility": ${isMobility},
-      "activityType": ${isMobility ? '"e.g., job_shadowing, courses, etc."' : 'null'},
-      "activities": [{"name": "Task", "description": "..."}],
-      "deliverables": ["..."]
+  {
+    "title": "${idea.title}",
+    "summary": "Full overview (300+ words)",
+    "partners": [...],
+    "workPackages": [
+            {
+              "name": "${isMobility ? 'Activity 1: [Flow Type]' : 'WP1: [Title]'}",
+              "description": "<h3>Specific Objectives</h3>... <h3>Indicators</h3>... <h3>Budget Justification</h3>...",
+              "duration": "...",
+              "isMobility": ${isMobility},
+            "activityType": ${isMobility ? '"e.g., job_shadowing, courses, etc."' : 'null'},
+            "activities": [{ "name": "Task", "description": "..." }],
+            "deliverables": ["..."]
     }
   ],
   "budget": [
-    { "item": "...", "cost": 0, "description": "...", "breakdown": [{"item": "...", "total": 0}] }
+    { "item": "...", "cost": 0, "description": "...", "breakdown": [{ "item": "...", "total": 0 }] }
   ],
-  "risks": [...],
-  "dynamicSections": {
-    "project_summary": "...",
-    "objectives": "Generate EXACTLY 4 detailed objectives numbered 1-4.",
-    "relevance": "..."
-  },
+    "risks": [...],
+    "dynamicSections": {
+${dynamicKeysExample}
+    },
   "mobilityMetadata": ${isMobility ? '{ "fieldOfApplication": "...", "nationalAgency": "...", "language": "..." }' : 'null'}
-}
-
-Return ONLY valid JSON.`;
+  }
+  
+  **IMPORTANT FORMATTING:**
+  - USE HTML TAGS inside the JSON strings for structure: <h3>Headings</h3>, <ul><li>Lists</li></ul>, <p>Paragraphs</p>.
+  - DO NOT use markdown ('**bold**'). Use <strong>bold</strong>.
+  `;
 }

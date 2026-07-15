@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Loader2, Search, CheckCircle, XCircle, Clock, Calendar, Euro } from 'lucide-react';
 import { searchEuFunding } from '../utils/euApiService';
-import { supabase } from '../utils/supabase';
+import { serverUrl } from '../utils/supabase/info';
 
 interface DisplayOpportunity {
     id: string;
@@ -43,37 +43,38 @@ export function FundingSearchHybrid() {
                 deadline: o.deadline
             })));
 
-            console.log('[Funding] Saving to Supabase...');
+            console.log('[Funding] Saving to Firestore cache...');
 
-            for (const opp of opportunities) {
-                console.log(`[Funding] Saving ${opp.call_id}: deadline="${opp.deadline}"`);
-
-                await supabase.from('funding_opportunities').upsert({
-                    call_id: opp.call_id,
-                    title: opp.title,
-                    description: opp.description,
-                    url: opp.url,
-                    status: opp.status || 'Open',
-                    deadline: opp.deadline || null,
-                    budget: opp.budget,
-                    funding_entity: opp.funding_entity,
-                    topic: opp.topic,
-                    ccm_id: opp.ccmId,
-                    search_query: query,
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'call_id' });
+            if (opportunities.length > 0) {
+                await fetch(`${serverUrl}/funding-opportunities`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        opportunities: opportunities.map(opp => ({
+                            call_id: opp.call_id,
+                            title: opp.title,
+                            description: opp.description,
+                            url: opp.url,
+                            status: opp.status || 'Open',
+                            deadline: opp.deadline || null,
+                            budget: opp.budget,
+                            funding_entity: opp.funding_entity,
+                            topic: opp.topic,
+                            ccmId: opp.ccmId,
+                            search_query: query
+                        }))
+                    })
+                });
             }
 
-            console.log('[Funding] Loading from Supabase...');
-            const { data, error } = await supabase
-                .from('funding_opportunities')
-                .select('*')
-                .eq('search_query', query)
-                .order('created_at', { ascending: false });
+            console.log('[Funding] Loading from Firestore cache...');
+            const res = await fetch(`${serverUrl}/funding-opportunities?query=${encodeURIComponent(query)}`);
+            if (!res.ok) {
+                throw new Error(`Failed to fetch cached opportunities: ${res.statusText}`);
+            }
+            const data = await res.json();
 
-            if (error) throw error;
-
-            console.log('[Funding] Data from DB:', data?.map(d => ({ call_id: d.call_id, deadline: d.deadline })));
+            console.log('[Funding] Data from Cache:', data?.map((d: any) => ({ call_id: d.call_id, deadline: d.deadline })));
 
             setResults(data || []);
 

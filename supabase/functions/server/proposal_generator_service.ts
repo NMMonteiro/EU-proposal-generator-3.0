@@ -68,9 +68,9 @@ export const generateProposalFull = async (params: any) => {
     });
 
     const retriever = new KnowledgeRetriever();
-    console.log('[PROPOSAL] Retrieving expert knowledge...');
-    const smartKeywords = KnowledgeRetriever.extractSmartKeywords(`${fundingScheme?.name || ''} ${idea.title} ${userPrompt || ''}`);
-    const expertKnowledge = await retriever.getRelevantKnowledge(smartKeywords, 4);
+    console.log('[PROPOSAL] Retrieving semantic intelligence from Global Library...');
+    const contextQuery = `${idea.title} ${summary} ${userPrompt || ''} ${fundingScheme?.name || ''}`;
+    const expertKnowledge = await retriever.getRelevantKnowledge(contextQuery, 6);
 
     // Build the prompt with all context
     const prompt = PromptBuilder.buildProposalPrompt(
@@ -89,12 +89,21 @@ export const generateProposalFull = async (params: any) => {
         ? `${prompt}\n\n### GLOBAL LIBRARY INTELLIGENCE (LATEST EU GUIDELINES):\n${expertKnowledge.content}`
         : prompt;
 
-    console.log('[PROPOSAL] Calling Gemini model (this may take 20-40s)...');
+    console.log('[PROPOSAL] Calling Gemini model (Elite Strategy Mode)...');
     const result = await model.generateContent(fullyInformedPrompt);
-    const text = result.response.text();
+    let text = result.response.text();
+
+    // --- STEP 2: QUALITY REVIEW & SELF-ENHANCEMENT (DISABLED FOR STABILITY) ---
+    // console.log('[PROPOSAL] Performing Self-Correction and Directive Alignment...');
+    // const reviewPrompt = `...`;
+    // const enhancedResult = await model.generateContent(reviewPrompt);
+    // text = enhancedResult.response.text();
+    console.log('[PROPOSAL] Bypass Reviewer: Returning primary generation result.');
     console.log('[PROPOSAL] Gemini response received. Parsing JSON...');
 
     const proposal = extractJSON(text);
+
+
 
     proposal.id = crypto.randomUUID();
     proposal.generatedAt = new Date().toISOString();
