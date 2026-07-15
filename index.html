@@ -6,45 +6,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Proposal Generator</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            background: '#ffffff',
-            foreground: '#0f172a',
+            background: 'rgb(var(--background))',
+            foreground: 'rgb(var(--foreground))',
             card: {
-              DEFAULT: '#ffffff',
-              foreground: '#0f172a'
+              DEFAULT: 'rgb(var(--card))',
+              foreground: 'rgb(var(--card-foreground))'
             },
             popover: {
-              DEFAULT: '#ffffff',
-              foreground: '#0f172a'
+              DEFAULT: 'rgb(var(--popover))',
+              foreground: 'rgb(var(--popover-foreground))'
             },
             primary: {
-              DEFAULT: '#2563eb',
-              foreground: '#ffffff'
+              DEFAULT: 'rgb(var(--primary))',
+              foreground: 'rgb(var(--primary-foreground))'
             },
             secondary: {
-              DEFAULT: '#f8fafc',
-              foreground: '#0f172a'
+              DEFAULT: 'rgb(var(--secondary))',
+              foreground: 'rgb(var(--secondary-foreground))'
             },
             muted: {
-              DEFAULT: '#f1f5f9',
-              foreground: '#64748b'
+              DEFAULT: 'rgb(var(--muted))',
+              foreground: 'rgb(var(--muted-foreground))'
             },
             accent: {
-              DEFAULT: '#eff6ff',
-              foreground: '#1e40af'
+              DEFAULT: 'rgb(var(--accent))',
+              foreground: 'rgb(var(--accent-foreground))'
             },
             destructive: {
-              DEFAULT: '#ef4444',
-              foreground: '#ffffff'
+              DEFAULT: 'rgb(var(--destructive))',
+              foreground: 'rgb(var(--destructive-foreground))'
             },
-            border: '#e2e8f0',
-            input: '#e2e8f0',
-            ring: '#3b82f6',
+            border: 'rgb(var(--border))',
+            input: 'rgb(var(--input))',
+            ring: 'rgb(var(--ring))',
           },
           borderRadius: {
             lg: 'var(--radius)',
@@ -52,7 +52,8 @@
             sm: 'calc(var(--radius) - 4px)',
           },
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+            serif: ['Lora', 'Georgia', 'serif'],
           },
         }
       }
@@ -61,7 +62,7 @@
   <link rel="icon" type="image/png" href="/favicon.png" />
 </head>
 
-<body class="bg-slate-50 text-slate-900 antialiased selection:bg-blue-100">
+<body class="bg-background text-foreground antialiased selection:bg-emerald-100 font-sans">
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
