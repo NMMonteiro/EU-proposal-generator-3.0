@@ -12,7 +12,7 @@ import { listPartners, getPartner, upsertPartner, deletePartner } from './partne
 import { enrichFundingScheme } from './funding_scheme_service';
 import { handleAiEdit, handleCopilotChat } from './ai_editor';
 import { listAnnexes, getAnnex, createAnnex, updateAnnex, deleteAnnex } from './annex_service';
-import { importPartnerPdf, importLibraryPdf, importExamplePdf } from './pdf_parser_service';
+import { importPartnerPdf, importLibraryPdf, importExamplePdf, importSchemePdf } from './pdf_parser_service';
 
 const app = express();
 
@@ -385,6 +385,19 @@ app.post('/import-example-pdf', upload.single('file'), async (req: Request, res:
         return res.json(data);
     } catch (err: any) {
         console.error('[API Error] import-example-pdf:', err);
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/import-scheme-pdf', upload.single('file'), async (req: Request, res: Response) => {
+    try {
+        const file = req.file;
+        if (!file) return res.status(400).json({ error: 'No file provided' });
+
+        const data = await importSchemePdf(file.buffer, file.originalname);
+        return res.json(data);
+    } catch (err: any) {
+        console.error('[API Error] import-scheme-pdf:', err);
         return res.status(500).json({ error: err.message });
     }
 });

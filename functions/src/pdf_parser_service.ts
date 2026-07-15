@@ -277,3 +277,66 @@ export const importExamplePdf = async (fileBuffer: Buffer, fileName: string) => 
 
     return syncResult;
 };
+
+export const importSchemePdf = async (fileBuffer: Buffer, fileName: string) => {
+    console.log(`[API] Processing scheme template PDF: ${fileName}`);
+    const base64Data = fileBuffer.toString('base64');
+
+    const model = getGeminiModel({ temperature: 0.0 }); // Zero temperature for deterministic extraction
+
+    const prompt = `You are a precision-oriented Document Analysis AI. Your mission is to extract the EXACT structure of an EU funding application form from the provided PDF/document.
+
+### THE GOLD STANDARD FOR EXTRACTION:
+1. **LITERAL LABELS:** Extract section names exactly as they are written (e.g., "Work package n°2 -"). Do not correct grammar or capitalize differently.
+2. **VERBATIM QUESTIONS:** Within each section, find every question or instruction and copy it LITERALLY. 
+   - Look for text in boxes, bulleted prompts, or italicized instructions.
+   - Example: If the form says "What are the concrete objectives you would like to achieve?", do not summarize it as "Define objectives." Copy the whole question.
+   - Place all these verbatim questions in the "description" field.
+3. **ZERO NOISE:**
+   - DO NOT extract page numbers ("1 / 20", "Page 5").
+   - DO NOT extract form metadata ("Form ID KA220-YOU...", "Deadline (Brussels Time)...").
+   - DO NOT extract footer/header repetitions.
+4. **HIERARCHY IS KEY:** 
+   - Maintain the logical order of sections.
+   - Return them as a flat array of sections ordered by "order" (1, 2, 3...).
+5. **AI PROMPT GENERATION:** Create a surgical "aiPrompt" for the generation engine. It must say: "Draft the [Label] section. Answer these specific questions verbatim from the guidelines: [List verbatim questions]. Use a professional, technical, and persuasive tone."
+
+Return ONLY valid JSON:
+{
+  "fundingScheme": "Exact Name of the Programme/Action",
+  "sections": [
+    {
+      "key": "unique_snake_case_key",
+      "label": "Exact literal label from document",
+      "charLimit": number | null,
+      "wordLimit": number | null,
+      "mandatory": true,
+      "order": number,
+      "description": "ALL VERBATIM QUESTIONS AND PROMPTS CONCATENATED",
+      "aiPrompt": "Draft the [Label] section by answering: [Question 1]? [Question 2]? ..."
+    }
+  ],
+  "metadata": {
+    "totalCharLimit": number | null,
+    "estimatedDuration": "string"
+  }
+}`;
+
+    const result = await model.generateContent([
+        { inlineData: { mimeType: 'application/pdf', data: base64Data } },
+        { text: prompt }
+    ]);
+
+    const responseText = result.response.text();
+    const extracted = extractJSON(responseText);
+    
+    console.log(`[API] Successfully parsed scheme template PDF: ${extracted.fundingScheme}`);
+    return {
+        success: true,
+        template: {
+            ...extracted,
+            needsReview: true
+        }
+    };
+};
+

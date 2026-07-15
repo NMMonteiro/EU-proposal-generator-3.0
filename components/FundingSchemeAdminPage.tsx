@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { FundingSchemeCRUD } from '../components/FundingSchemeCRUD';
-import { ArrowLeft, Settings } from 'lucide-react';
+import { FundingSchemeTemplateParser } from '../components/FundingSchemeTemplateParser';
+import { ArrowLeft, Settings, Database, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function FundingSchemeAdminPage() {
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<'manage' | 'parser'>('manage');
 
     return (
         <div className="min-h-screen bg-background">
@@ -16,7 +19,7 @@ export function FundingSchemeAdminPage() {
                             Funding Scheme Administration
                         </h2>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Manage funding templates and configure schemes
+                            Manage funding templates, parse documents, and configure schemes
                         </p>
                     </div>
                     <button
@@ -28,9 +31,39 @@ export function FundingSchemeAdminPage() {
                     </button>
                 </div>
 
+                {/* Tabs */}
+                <div className="border-b border-border">
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setActiveTab('manage')}
+                            className={`flex items-center gap-2 px-4 py-3 border-b-2 transition ${activeTab === 'manage'
+                                    ? 'border-primary text-primary font-semibold'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <Database className="h-4 w-4" />
+                            Manage Schemes
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('parser')}
+                            className={`flex items-center gap-2 px-4 py-3 border-b-2 transition ${activeTab === 'parser'
+                                    ? 'border-primary text-primary font-semibold'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            <Upload className="h-4 w-4" />
+                            Import/Parse Template
+                        </button>
+                    </div>
+                </div>
+
                 {/* Content */}
                 <div className="py-4">
-                    <FundingSchemeCRUD />
+                    {activeTab === 'manage' ? (
+                        <FundingSchemeCRUD />
+                    ) : (
+                        <FundingSchemeTemplateParser />
+                    )}
                 </div>
             </div>
         </div>
