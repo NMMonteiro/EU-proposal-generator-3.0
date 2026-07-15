@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from '
 import { Toaster } from 'sonner';
 import { Layout } from './components/Layout';
 import { ProposalGenerator } from './components/ProposalGenerator';
-import { FundingSearchPageSimple } from './components/FundingSearchPageSimple';
 import { FundingSearchHybrid } from './components/FundingSearchHybrid';
 import { PartnersPage } from './components/PartnersPage';
 import { SavedProposalsPage } from './components/SavedProposalsPage';

@@ -15,7 +15,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { toast } from 'sonner';
-import { supabase } from '../utils/supabase';
 import { functionsUrl, publicAnonKey } from '../utils/supabase/info';
 
 export function GlobalLibraryPage() {

@@ -390,3 +390,24 @@ The raw JSON display is still appearing despite the code changes. Possible cause
 - **Single Coordinator Enforcement:** Updated `utils/export-docx.ts` to strictly label only the first partner (Index 0) as "Coordinator" in exports, overriding any ambiguous metadata.
 - **Data Recovery:** Implemented fallback logic in `proposal_generator_service.ts` to map misplaced content if the AI deviates from the expected schema.
 
+
+## 18. Firebase Platform Migration, Robust PDF Upload Stream & Adaptable Forms (2026-07-15)
+**Objective:** Migrate the backend and database layer to Firebase (Cloud Functions, Hosting, Firestore) and implement critical UX and extraction quality improvements.
+
+### Firebase Platform Migration:
+- **Database Layer**: Transitioned from Supabase Postgres to **Firestore**, mapping collections for `proposals`, `partners`, `funding_schemes`, and `global_knowledge`.
+- **Backend API**: Converted Deno Edge functions to an Express-based server deployed as a **Node.js 22 Firebase Cloud Function (Cloud Run container backend)**.
+- **Frontend Hosting**: Moved the React client compilation to **Firebase Hosting** with single-page-app URL rewriting.
+- **API Models**: Upgraded all AI endpoints to **Gemini 2.5 Flash** (via `@google/generative-ai`) for proposal drafting, URL analysis, and PDF ingestion.
+
+### Robust PDF Upload Stream (Multer -> Busboy Fix):
+- **Problem**: Pre-consumed Cloud Function request streams caused legacy file parsers (like Multer) to fail with `Unexpected end of form` errors.
+- **Solution**: Developed custom middleware parsing raw pre-read buffers (`req.rawBody`) via `busboy` directly. 
+- **Result**: Logo, PIF, and playbook ingestion pipelines are fully operational and stable on Cloud Run.
+
+### PDF Extraction Enhancements & Form Toggles:
+- **Previous Projects Formatting**: Integrated bullet list processors in the PDF parsing pipeline to format structured table outputs (which previously caused `[object Object]` lists) into clean, human-readable Markdown lines.
+- **Keywords Extraction**: Enforced dynamic keywords tagging in the Gemini parser prompts.
+- **Adaptable UI Layouts**: Created layout mode selectors ("Minimalist Profile" vs. "Full PIF Form") dynamically hiding/showing detailed database fields (like OID, PIC, VAT, and advanced contacts) to fit both short profile summaries and full legal PIF documents.
+
+

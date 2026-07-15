@@ -1,8 +1,0 @@
-{
-    "imports": {
-        "deno-dom": "https://deno.land/x/deno_dom@v0.1.45/deno-dom-wasm.ts"
-    },
-    "tasks": {
-        "start": "deno run --allow-net --allow-env index.ts"
-    }
-}

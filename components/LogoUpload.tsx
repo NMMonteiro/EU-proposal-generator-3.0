@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../utils/supabase';
+import { serverUrl, publicAnonKey } from '../utils/supabase/info';
 import { Upload, Link2, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -35,36 +35,24 @@ export function LogoUpload({ currentLogoUrl, onLogoChange, label = 'Logo' }: Log
         try {
             setUploading(true);
 
-            // Generate unique filename
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const filePath = `logos/${fileName}`;
+            const formData = new FormData();
+            formData.append('file', file);
 
-            // Try to upload to Supabase Storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('partner-assets')
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
+            const response = await fetch(`${serverUrl}/partners/scheme/upload-logo`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${publicAnonKey}`
+                },
+                body: formData
+            });
 
-            if (uploadError) {
-                // If bucket doesn't exist, provide helpful error message
-                if (uploadError.message.includes('not found') || uploadError.message.includes('does not exist')) {
-                    console.error('Storage bucket error:', uploadError);
-                    toast.error('Storage bucket not configured. Please use URL method instead.');
-                    setUploadMethod('url');
-                    return;
-                }
-                throw uploadError;
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(errText || 'Upload failed');
             }
 
-            // Get public URL
-            const { data: urlData } = supabase.storage
-                .from('partner-assets')
-                .getPublicUrl(filePath);
-
-            const publicUrl = urlData.publicUrl;
+            const result = await response.json();
+            const publicUrl = result.url;
             setPreviewUrl(publicUrl);
             onLogoChange(publicUrl);
             toast.success('Logo uploaded successfully!');

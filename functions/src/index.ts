@@ -641,6 +641,24 @@ app.get('/funding-schemes', async (req: Request, res: Response) => {
     }
 });
 
+app.get('/funding-schemes/:id', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const doc = await db.collection('funding_schemes').doc(id).get();
+        if (!doc.exists) {
+            return res.status(404).json({ error: 'Funding scheme not found' });
+        }
+        const data = doc.data();
+        return res.json({
+            ...data,
+            id: doc.id
+        });
+    } catch (err: any) {
+        console.error('[API Error] get scheme:', err);
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 // --- 10.5 KNOWLEDGE LIBRARY ---
 
 app.get('/knowledge', async (req: Request, res: Response) => {

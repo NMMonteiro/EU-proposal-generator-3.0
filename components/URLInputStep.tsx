@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { supabase } from '../utils/supabase';
 import { serverUrl, publicAnonKey } from '../utils/supabase/info';
 import {
   Dialog,
@@ -46,17 +45,18 @@ export function URLInputStep({ onSubmit, onBack, initialSchemeId }: URLInputStep
 
   async function loadFundingSchemes() {
     try {
-      const { data, error } = await supabase
-        .from('funding_schemes')
-        .select('*')
-        .eq('is_active', true)
-        .order('is_default', { ascending: false });
-
-      if (error) throw error;
+      const response = await fetch(`${serverUrl}/funding-schemes`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch schemes');
+      const data = await response.json();
       setFundingSchemes(data || []);
 
       if (!selectedSchemeId) {
-        const defaultScheme = data?.find(s => s.is_default);
+        const defaultScheme = data?.find((s: any) => s.is_default);
         if (defaultScheme) {
           setSelectedSchemeId(defaultScheme.id);
         }
