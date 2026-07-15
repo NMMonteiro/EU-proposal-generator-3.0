@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Loader2, CheckCircle2, Lightbulb, BookOpen, Library, Calculator, Rocket } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Loader2, CheckCircle2, Lightbulb, BookOpen, Library, Calculator, Rocket, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -11,12 +12,31 @@ interface IdeasStepProps {
   analysisResult: AnalysisResult;
   sourceUrl: string;
   userPrompt: string;
-  onSelectIdea: (idea: Idea) => void;
+  onSelectIdea: (idea: Idea, updatedConstraints?: any) => void;
   onBack: () => void;
 }
 
 export function MobilityIdeasStep({ analysisResult, sourceUrl, userPrompt, onSelectIdea, onBack }: IdeasStepProps) {
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
+  const [customBudget, setCustomBudget] = useState<number>(250000);
+  const [customDuration, setCustomDuration] = useState<number>(24);
+  const [customStartDate, setCustomStartDate] = useState<string>('2026-09-01');
+
+  useEffect(() => {
+    if (analysisResult?.constraints) {
+      const budgetStr = analysisResult.constraints.budget || '';
+      const durationStr = analysisResult.constraints.duration || '';
+      
+      const bMatch = budgetStr.replace(/[^\d]/g, '');
+      const parsedBudget = bMatch ? parseInt(bMatch) : 250000;
+      
+      const dMatch = durationStr.match(/\d+/);
+      const parsedDuration = dMatch ? parseInt(dMatch[0]) : 24;
+
+      setCustomBudget(parsedBudget);
+      setCustomDuration(parsedDuration);
+    }
+  }, [analysisResult]);
 
   const handleSelectIdea = (idea: Idea) => {
     setSelectedIdea(idea);
@@ -24,7 +44,11 @@ export function MobilityIdeasStep({ analysisResult, sourceUrl, userPrompt, onSel
 
   const handleGenerateProposal = () => {
     if (selectedIdea) {
-      onSelectIdea(selectedIdea);
+      onSelectIdea(selectedIdea, {
+        budget: `€${customBudget.toLocaleString()}`,
+        duration: `${customDuration} months`,
+        startDate: customStartDate
+      });
     }
   };
 
@@ -98,6 +122,54 @@ export function MobilityIdeasStep({ analysisResult, sourceUrl, userPrompt, onSel
         </CardContent>
       </Card>
 
+      {/* Project Parameters Card */}
+      <Card className="bg-white border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+        <CardHeader className="bg-slate-50/50 border-b border-slate-100 px-6 py-4">
+          <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <Settings2 className="h-4.5 w-4.5 text-indigo-600" />
+            Project Schedule & Budget Settings
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-500">
+            Confirm standard parameters parsed from the guidelines or customize them below.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Target Budget (EUR)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-2 text-slate-400 text-sm">€</span>
+              <Input
+                type="number"
+                value={customBudget}
+                onChange={(e) => setCustomBudget(Number(e.target.value))}
+                className="pl-7 bg-white text-slate-800"
+              />
+            </div>
+            <p className="text-[10px] text-slate-400">Sets the exact limit for the budget rebalancer.</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Project Duration (Months)</label>
+            <Input
+              type="number"
+              value={customDuration}
+              onChange={(e) => setCustomDuration(Number(e.target.value))}
+              className="bg-white text-slate-800"
+            />
+            <p className="text-[10px] text-slate-400">Adjusts the timeline details.</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Project Start Date</label>
+            <Input
+              type="date"
+              value={customStartDate}
+              onChange={(e) => setCustomStartDate(e.target.value)}
+              className="bg-white text-slate-800"
+            />
+            <p className="text-[10px] text-slate-400">Baseline date for tasks scheduling.</p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Ideas Grid */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -148,7 +220,11 @@ export function MobilityIdeasStep({ analysisResult, sourceUrl, userPrompt, onSel
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSelectIdea(idea);
+                        onSelectIdea(idea, {
+                          budget: `€${customBudget.toLocaleString()}`,
+                          duration: `${customDuration} months`,
+                          startDate: customStartDate
+                        });
                       }}
                       className="bg-indigo-600 text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-full shadow-lg shadow-indigo-200 w-full text-center hover:bg-indigo-700 transition"
                     >

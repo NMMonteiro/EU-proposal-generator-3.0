@@ -52,8 +52,17 @@ export function ProposalGenerator({ onViewProposal }: ProposalGeneratorProps) {
     setCurrentStep('ideas');
   };
 
-  const handleSelectIdea = (idea: Idea) => {
+  const handleSelectIdea = (idea: Idea, updatedConstraints?: any) => {
     setSelectedIdea(idea);
+    if (updatedConstraints && analysisResult) {
+      setAnalysisResult({
+        ...analysisResult,
+        constraints: {
+          ...analysisResult.constraints,
+          ...updatedConstraints
+        }
+      });
+    }
     setCurrentStep('partners');
   };
 
