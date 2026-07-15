@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import {
     LayoutDashboard,
     Search,
@@ -18,7 +18,6 @@ import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
 import { Breadcrumbs } from './patterns';
 
 export function Layout() {
-    const location = useLocation();
     const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
     // State for expanded folders - default all to true
@@ -68,9 +67,9 @@ export function Layout() {
     ];
 
     const NavContent = () => (
-        <div className="flex flex-col h-full bg-white border-r border-slate-200 shadow-sm">
+        <div className="flex flex-col h-full bg-[#093A2F] border-r border-[#0F5A47]/40 shadow-sm select-none">
             <div className="p-6">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold text-[#FAF8F5] tracking-tight">
                     AI Proposal Studio
                 </h1>
             </div>
@@ -80,19 +79,19 @@ export function Layout() {
                     <div key={group.title} className="space-y-1">
                         <button
                             onClick={() => toggleFolder(group.title)}
-                            className="flex items-center w-full px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-900 transition-colors group"
+                            className="flex items-center w-full px-2 py-1.5 text-xs font-semibold text-[#6EE7B7]/70 uppercase tracking-wider hover:text-white transition-colors group"
                         >
                             {expandedFolders[group.title] ? (
-                                <ChevronDown className="w-3 h-3 mr-1.5 text-slate-400 group-hover:text-slate-900" />
+                                <ChevronDown className="w-3 h-3 mr-1.5 text-[#34D399]/40 group-hover:text-white" />
                             ) : (
-                                <ChevronRight className="w-3 h-3 mr-1.5 text-slate-400 group-hover:text-slate-900" />
+                                <ChevronRight className="w-3 h-3 mr-1.5 text-[#34D399]/40 group-hover:text-white" />
                             )}
-                            <Folder className="w-3 h-3 mr-2 text-slate-400 group-hover:text-slate-900" />
+                            <Folder className="w-3 h-3 mr-2 text-[#34D399]/40 group-hover:text-white" />
                             {group.title}
                         </button>
 
                         {expandedFolders[group.title] && (
-                            <div className="space-y-1 ml-2 border-l border-slate-200 pl-2">
+                            <div className="space-y-1 ml-2 border-l border-[#0F5A47]/40 pl-2">
                                 {group.items.map((item) => {
                                     const Icon = item.icon;
                                     return (
@@ -102,8 +101,8 @@ export function Layout() {
                                             onClick={() => setIsMobileOpen(false)}
                                             className={({ isActive }) =>
                                                 `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200 ${isActive
-                                                    ? 'bg-blue-50 text-blue-600 font-medium border border-blue-100'
-                                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
+                                                    ? 'bg-[#0F5A47]/70 text-[#FAF8F5] font-semibold border border-[#10B981]/20'
+                                                    : 'text-[#A7F3D0]/80 hover:text-white hover:bg-[#0F5A47]/30 border border-transparent'
                                                 }`
                                             }
                                         >
@@ -118,14 +117,14 @@ export function Layout() {
                 ))}
             </nav>
 
-            <div className="p-4 border-t border-slate-200 bg-slate-50">
+            <div className="p-4 border-t border-[#0F5A47]/40 bg-[#052E24]">
                 <div className="flex items-center gap-3 px-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#10B981] to-[#047857] flex items-center justify-center text-xs font-bold text-white shadow-sm">
                         AI
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">User Workspace</p>
-                        <p className="text-xs text-slate-500 truncate">Pro Plan</p>
+                        <p className="text-sm font-semibold text-white truncate">User Workspace</p>
+                        <p className="text-xs text-[#34D399] truncate">Pro Plan</p>
                     </div>
                 </div>
             </div>
@@ -133,7 +132,7 @@ export function Layout() {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 flex">
+        <div className="min-h-screen bg-[#FAF8F5] text-[#1E2522] flex font-sans">
             <a href="#main-content" className="skip-link">
                 Skip to main content
             </a>
@@ -145,23 +144,23 @@ export function Layout() {
             </div>
 
             {/* Mobile Header */}
-            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center px-4 z-50 shadow-sm">
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-[#093A2F] border-b border-[#0F5A47]/40 flex items-center px-4 z-50 shadow-sm">
                 <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-slate-600">
+                        <Button variant="ghost" size="icon" className="text-[#34D399] hover:text-white hover:bg-[#0F5A47]/30">
                             <Menu className="w-6 h-6" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-64 border-r border-slate-200 bg-white">
+                    <SheetContent side="left" className="p-0 w-64 border-r border-[#0F5A47]/40 bg-[#093A2F]">
                         <NavContent />
                     </SheetContent>
                 </Sheet>
-                <span className="ml-4 font-bold text-slate-900">AI Proposal Studio</span>
+                <span className="ml-4 font-bold text-white">AI Proposal Studio</span>
             </div>
 
             {/* Main Content */}
             <main id="main-content" className="flex-1 md:min-h-screen pt-16 md:pt-0 overflow-x-hidden focus:outline-none" tabIndex={-1}>
-                <div className="container mx-auto max-w-7xl animate-in fade-in duration-500">
+                <div className="container mx-auto max-w-7xl px-6 py-8 animate-in fade-in duration-500">
                     <Breadcrumbs className="mb-6" />
                     <Outlet />
                 </div>
