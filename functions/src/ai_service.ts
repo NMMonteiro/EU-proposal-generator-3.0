@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GoogleAIFileManager } from '@google/generative-ai/server';
+import { withRetry } from './utils';
 
 export const getAI = () => {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -29,6 +30,6 @@ export const getGeminiModel = (config?: any) => {
 export const embedText = async (text: string) => {
     const ai = getAI();
     const model = ai.getGenerativeModel({ model: 'gemini-embedding-001' });
-    const result = await model.embedContent(text);
+    const result = await withRetry(() => model.embedContent(text));
     return result.embedding.values;
 };

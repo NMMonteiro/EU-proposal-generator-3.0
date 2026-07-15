@@ -99,3 +99,21 @@ export const stripHtml = (html: string) => {
         .replace(/\s+/g, ' ')
         .trim();
 };
+
+export async function withRetry<T>(fn: () => Promise<T>, retries = 5, delay = 2000): Promise<T> {
+    try {
+        return await fn();
+    } catch (error: any) {
+        const isRateLimit = error?.status === 429 || 
+                            error?.message?.includes('429') || 
+                            error?.message?.includes('quota') ||
+                            error?.message?.toLowerCase().includes('too many requests');
+                            
+        if (isRateLimit && retries > 0) {
+            console.warn(`[AI Service] Quota hit / 429 received. Retrying in ${delay}ms... (Retries left: ${retries})`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            return withRetry(fn, retries - 1, delay * 2);
+        }
+        throw error;
+    }
+}

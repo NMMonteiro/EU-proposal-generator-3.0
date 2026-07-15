@@ -1,5 +1,5 @@
 import { getGeminiModel } from './ai_service';
-import { extractJSON } from './utils';
+import { extractJSON, withRetry } from './utils';
 
 export const importPartnerPdf = async (fileBuffer: Buffer, fileName: string, fileSize: number) => {
     console.log(`[DEBUG] importPartnerPdf started for file: ${fileName}, size: ${fileSize}`);
@@ -66,10 +66,10 @@ IMPORTANT EXTRACTION RULES:
 
 Return ONLY the JSON object, no additional text or markdown formatting.`;
 
-    const result = await model.generateContent([
+    const result = await withRetry(() => model.generateContent([
         { inlineData: { mimeType: 'application/pdf', data: base64Data } },
         { text: prompt }
-    ]);
+    ]));
 
     const extractedData = extractJSON(result.response.text());
 
@@ -188,10 +188,10 @@ export const importLibraryPdf = async (fileBuffer: Buffer, fileName: string) => 
           ]
         }`;
 
-    const result = await model.generateContent([
+    const result = await withRetry(() => model.generateContent([
         { inlineData: { mimeType: 'application/pdf', data: base64Data } },
         { text: prompt }
-    ]);
+    ]));
 
     const responseText = result.response.text();
     const extracted = extractJSON(responseText);
@@ -252,10 +252,10 @@ export const importExamplePdf = async (fileBuffer: Buffer, fileName: string) => 
     - metadata: { "year": "...", "funding_program": "..." }
     `;
 
-    const result = await model.generateContent([
+    const result = await withRetry(() => model.generateContent([
         { inlineData: { mimeType: 'application/pdf', data: base64Data } },
         { text: prompt }
-    ]);
+    ]));
 
     const exampleData = extractJSON(result.response.text());
     const { syncSchemeFromContent } = await import('./funding_scheme_service');
