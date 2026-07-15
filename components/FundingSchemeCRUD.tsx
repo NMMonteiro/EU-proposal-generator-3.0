@@ -187,18 +187,19 @@ export function FundingSchemeCRUD() {
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) {
-            return;
-        }
+    const [deleteConfirmScheme, setDeleteConfirmScheme] = useState<FundingScheme | null>(null);
+
+    const handleConfirmDelete = async () => {
+        if (!deleteConfirmScheme) return;
 
         try {
-            const res = await fetch(`${serverUrl}/funding-schemes/${id}`, {
+            const res = await fetch(`${serverUrl}/funding-schemes/${deleteConfirmScheme.id}`, {
                 method: 'DELETE'
             });
 
             if (!res.ok) throw new Error('Failed to delete scheme');
             toast.success('Funding scheme deleted successfully');
+            setDeleteConfirmScheme(null);
             loadSchemes();
         } catch (error: any) {
             console.error('Error deleting scheme:', error);
@@ -560,7 +561,7 @@ export function FundingSchemeCRUD() {
                                             <Edit2 className="h-4 w-4 text-muted-foreground" />
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(scheme.id, scheme.name)}
+                                            onClick={() => setDeleteConfirmScheme(scheme)}
                                             className="p-1.5 hover:bg-destructive/10 rounded-md transition"
                                             title="Delete"
                                         >
@@ -604,6 +605,32 @@ export function FundingSchemeCRUD() {
                     ))
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmScheme && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+                    <div className="bg-card border border-border rounded-xl p-6 max-w-md w-full mx-4 shadow-xl animate-in zoom-in-95 duration-200">
+                        <h4 className="text-lg font-bold text-foreground mb-2">Delete Funding Scheme</h4>
+                        <p className="text-sm text-muted-foreground mb-6">
+                            Are you sure you want to delete <span className="font-semibold text-foreground">"{deleteConfirmScheme.name}"</span>? This action cannot be undone and will remove the scheme template permanently.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setDeleteConfirmScheme(null)}
+                                className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition text-sm font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmDelete}
+                                className="px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive/90 transition text-sm font-medium"
+                            >
+                                Delete Scheme
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
