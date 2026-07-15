@@ -145,10 +145,16 @@ export function StandardIdeasStep({ analysisResult, sourceUrl, userPrompt, onSel
                 </div>
 
                 {selectedIdea === idea && (
-                  <div className="mt-6 flex items-center justify-center">
-                    <div className="bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full shadow-lg shadow-indigo-200 w-full text-center">
+                  <div className="mt-6 flex items-center justify-center w-full">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectIdea(idea);
+                      }}
+                      className="bg-indigo-600 text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-full shadow-lg shadow-indigo-200 w-full text-center hover:bg-indigo-700 transition"
+                    >
                       Scheme Ready: Continue to Step 3
-                    </div>
+                    </button>
                   </div>
                 )}
               </CardContent>
